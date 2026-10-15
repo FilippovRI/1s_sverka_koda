@@ -12,7 +12,8 @@ public static class CustomizationFinder
         string extensionName,
         string prefix,
         TransferScope? scope = null,
-        IReadOnlyList<SubsystemInfo>? subsystems = null)
+        IReadOnlyList<SubsystemInfo>? subsystems = null,
+        bool includeRemovedMetadata = false)
     {
         if (string.IsNullOrWhiteSpace(extensionName))
             throw new ArgumentException("Укажите имя расширения.", nameof(extensionName));
@@ -23,6 +24,8 @@ public static class CustomizationFinder
         var tree = subsystems ?? [];
         var allChanges = ConfigComparer.Compare(typical, customized);
         var changes = FilterByScope(allChanges, effectiveScope);
+        if (!includeRemovedMetadata)
+            changes = ExcludeRemovedMetadata(changes);
         var typicalByUuid = IndexByUuid(typical.Objects);
         var customizedByUuid = IndexByUuid(customized.Objects);
         var items = new List<TransferItem>();
@@ -71,6 +74,17 @@ public static class CustomizationFinder
                 && scope.ObjectNames.Contains(change.ObjectName))
             .ToList();
     }
+
+    /// <summary>
+    /// Удаления типовых объектов/реквизитов скрываем по умолчанию.
+    /// Новые объекты (Added без члена) остаются.
+    /// </summary>
+    private static IReadOnlyList<ConfigChange> ExcludeRemovedMetadata(IReadOnlyList<ConfigChange> changes) =>
+        changes
+            .Where(change =>
+                change.Kind != ChangeKind.Removed
+                && change.MemberDelta != MemberDelta.Removed)
+            .ToList();
 
     private static TransferItem? Classify(
         ConfigChange change,
@@ -130,16 +144,9 @@ public static class CustomizationFinder
                 null, null, false, null);
         }
 
+        // Формы (в т.ч. форма списка) в реестр не кладём — засоряют просмотр.
         if (change.MemberDelta != MemberDelta.None && IsFormRelated(change.MemberKind))
-        {
-            return Item(
-                change,
-                objectType,
-                TransferDecision.Highlight,
-                ProposedHook.None,
-                "Форма или элемент формы — только подсветка, не переносится",
-                null, null, false, null);
-        }
+            return null;
 
         if (change.MemberDelta == MemberDelta.Added)
         {
@@ -179,16 +186,10 @@ public static class CustomizationFinder
             var beforeMember = FindMember(typicalObject, change.MemberKind, change.MemberName);
             var afterMember = FindMember(customizedObject, change.MemberKind, change.MemberName);
             if (beforeMember != null && afterMember != null
-                && string.Equals(beforeMember.EssentialFingerprint, afterMember.EssentialFingerprint, StringComparison.Ordinal)
-                && !string.Equals(beforeMember.Fingerprint, afterMember.Fingerprint, StringComparison.Ordinal))
+                && string.Equals(beforeMember.EssentialFingerprint, afterMember.EssentialFingerprint, StringComparison.Ordinal))
             {
-                return Item(
-                    change,
-                    objectType,
-                    TransferDecision.Skip,
-                    ProposedHook.None,
-                    "Косметическое изменение представления",
-                    null, null, false, null);
+                // Синоним/подсказка без смены типа — в реестр не выносим.
+                return null;
             }
 
             return Item(
@@ -229,6 +230,9 @@ public static class CustomizationFinder
             }
 
             var proposal = HookSynthesizer.ForBodyChange(typicalMethod, customMethod);
+            if (proposal.Decision == TransferDecision.Skip)
+                return null;
+
             return Item(
                 change,
                 objectType,
@@ -240,6 +244,22 @@ public static class CustomizationFinder
                 customMethod.IsFunction,
                 null);
         }
+
+        if (change.Kind == ChangeKind.Properties
+            && typicalObject != null
+            && customizedObject != null
+            && string.Equals(
+                typicalObject.EssentialPropertiesFingerprint,
+                customizedObject.EssentialPropertiesFingerprint,
+                StringComparison.Ordinal))
+        {
+            // Косметика свойств объекта (синоним и т.п.) без отдельных доработок — не показывать.
+            return null;
+        }
+
+        // Служебные отличия заголовка конфигурации к переносу не относятся.
+        if (string.Equals(change.ObjectName, "Конфигурация", StringComparison.OrdinalIgnoreCase))
+            return null;
 
         if (change.Kind is ChangeKind.Renamed or ChangeKind.Properties or ChangeKind.Composition)
         {

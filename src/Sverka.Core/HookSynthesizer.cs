@@ -47,26 +47,19 @@ public static class HookSynthesizer
         }
 
         var insertAnalysis = AnalyzeInserts(typicalLines, customLines);
-        if (insertAnalysis.Kind == InsertKind.Multiple)
+        if (insertAnalysis.Kind is InsertKind.Single or InsertKind.Multiple
+            && insertAnalysis.Gaps.Count > 0)
         {
-            return new Proposal(
-                TransferDecision.Manual,
-                ProposedHook.None,
-                $"Несколько вставок в теле ({insertAnalysis.GapCount}) — автоматически не переносится, смотрите diff",
-                null);
-        }
-
-        if (insertAnalysis.Kind == InsertKind.Single
-            && insertAnalysis.GapFrom is int gapFrom
-            && insertAnalysis.GapTo is int gapTo)
-        {
-            var annotated = BuildAnnotatedBody(customized.BodyText, gapFrom, gapTo);
+            var annotated = BuildAnnotatedBody(customized.BodyText, insertAnalysis.Gaps);
             if (!string.IsNullOrWhiteSpace(annotated))
             {
+                var reason = insertAnalysis.Gaps.Count == 1
+                    ? "Доработка — одна вставка внутри типового тела (&ИзменениеИКонтроль)"
+                    : $"Доработка — {insertAnalysis.Gaps.Count} вставки внутри типового тела (&ИзменениеИКонтроль)";
                 return new Proposal(
                     TransferDecision.Auto,
                     ProposedHook.ChangeAndControl,
-                    "Доработка — одна вставка внутри типового тела (&ИзменениеИКонтроль)",
+                    reason,
                     annotated);
             }
         }
@@ -95,7 +88,7 @@ public static class HookSynthesizer
         Multiple,
     }
 
-    private sealed record InsertAnalysis(InsertKind Kind, int GapCount, int? GapFrom, int? GapTo);
+    private sealed record InsertAnalysis(InsertKind Kind, IReadOnlyList<(int From, int To)> Gaps);
 
     /// <summary>
     /// Все типовые строки должны сохраниться по порядку в доработанном теле.
@@ -106,7 +99,7 @@ public static class HookSynthesizer
         IReadOnlyList<string> custom)
     {
         if (typical.Count == 0 || custom.Count <= typical.Count)
-            return new InsertAnalysis(InsertKind.None, 0, null, null);
+            return new InsertAnalysis(InsertKind.None, []);
 
         var matchAt = new int[typical.Count];
         var customIndex = 0;
@@ -115,7 +108,7 @@ public static class HookSynthesizer
             while (customIndex < custom.Count && !string.Equals(typical[t], custom[customIndex], StringComparison.Ordinal))
                 customIndex++;
             if (customIndex >= custom.Count)
-                return new InsertAnalysis(InsertKind.None, 0, null, null);
+                return new InsertAnalysis(InsertKind.None, []);
             matchAt[t] = customIndex;
             customIndex++;
         }
@@ -136,18 +129,16 @@ public static class HookSynthesizer
             gaps.Add((afterLast, custom.Count));
 
         if (gaps.Count == 0)
-            return new InsertAnalysis(InsertKind.None, 0, null, null);
-        if (gaps.Count > 1)
-            return new InsertAnalysis(InsertKind.Multiple, gaps.Count, null, null);
-
-        var (gapFrom, gapTo) = gaps[0];
-        return new InsertAnalysis(InsertKind.Single, 1, gapFrom, gapTo);
+            return new InsertAnalysis(InsertKind.None, []);
+        return new InsertAnalysis(gaps.Count == 1 ? InsertKind.Single : InsertKind.Multiple, gaps);
     }
 
     /// <summary>
-    /// Полное доработанное тело с маркерами #Вставка вокруг единственного фрагмента.
+    /// Полное доработанное тело с маркерами #Вставка вокруг каждого фрагмента вставки.
     /// </summary>
-    private static string BuildAnnotatedBody(string customBodyText, int meaningfulFrom, int meaningfulTo)
+    private static string BuildAnnotatedBody(
+        string customBodyText,
+        IReadOnlyList<(int From, int To)> gaps)
     {
         var raw = BslText.Lines(customBodyText);
         var meaningfulIndexes = new List<int>();
@@ -157,23 +148,34 @@ public static class HookSynthesizer
                 meaningfulIndexes.Add(i);
         }
 
-        if (meaningfulFrom < 0 || meaningfulTo > meaningfulIndexes.Count || meaningfulFrom >= meaningfulTo)
+        var insertRanges = new List<(int FromRaw, int ToRaw)>();
+        foreach (var (meaningfulFrom, meaningfulTo) in gaps)
+        {
+            if (meaningfulFrom < 0 || meaningfulTo > meaningfulIndexes.Count || meaningfulFrom >= meaningfulTo)
+                continue;
+            var fromRaw = meaningfulIndexes[meaningfulFrom];
+            var toRawExclusive = meaningfulTo < meaningfulIndexes.Count
+                ? meaningfulIndexes[meaningfulTo]
+                : raw.Count;
+            insertRanges.Add((fromRaw, toRawExclusive));
+        }
+
+        if (insertRanges.Count == 0)
             return "";
 
-        var fromRaw = meaningfulIndexes[meaningfulFrom];
-        var toRawExclusive = meaningfulTo < meaningfulIndexes.Count
-            ? meaningfulIndexes[meaningfulTo]
-            : raw.Count;
-
         var result = new List<string>();
-        for (var i = 0; i < fromRaw; i++)
+        var rangeIndex = 0;
+        for (var i = 0; i < raw.Count; i++)
+        {
+            if (rangeIndex < insertRanges.Count && i == insertRanges[rangeIndex].FromRaw)
+                result.Add("#Вставка");
             result.Add(raw[i]);
-        result.Add("#Вставка");
-        for (var i = fromRaw; i < toRawExclusive; i++)
-            result.Add(raw[i]);
-        result.Add("#КонецВставки");
-        for (var i = toRawExclusive; i < raw.Count; i++)
-            result.Add(raw[i]);
+            if (rangeIndex < insertRanges.Count && i == insertRanges[rangeIndex].ToRaw - 1)
+            {
+                result.Add("#КонецВставки");
+                rangeIndex++;
+            }
+        }
 
         while (result.Count > 0 && string.IsNullOrWhiteSpace(result[0]))
             result.RemoveAt(0);

@@ -78,6 +78,7 @@ public sealed record MetadataObject(
     string Type,
     string Name,
     string PropertiesFingerprint,
+    string EssentialPropertiesFingerprint,
     string? ExtendedConfigurationObject,
     IReadOnlyList<ObjectMember> Members,
     IReadOnlyList<CodeModule> Modules)

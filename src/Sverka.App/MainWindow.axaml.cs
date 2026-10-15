@@ -108,10 +108,10 @@ public partial class MainWindow : Window
     }
 
     private async void OnBrowseTypical(object? sender, RoutedEventArgs e) =>
-        TypicalBox.Text = await PickFolder("Типовая выгрузка") ?? TypicalBox.Text;
+        TypicalBox.Text = await PickFolder("В типовой") ?? TypicalBox.Text;
 
     private async void OnBrowseCustomized(object? sender, RoutedEventArgs e) =>
-        CustomizedBox.Text = await PickFolder("Доработанная выгрузка") ?? CustomizedBox.Text;
+        CustomizedBox.Text = await PickFolder("В доработанной") ?? CustomizedBox.Text;
 
     private void OnClearTypical(object? sender, RoutedEventArgs e) => TypicalBox.Text = "";
 
@@ -250,10 +250,12 @@ public partial class MainWindow : Window
             }
 
             var includeDescendants = IncludeDescendantsBox.IsChecked != false;
+            var includeRemoved = ShowRemovedMetadataBox.IsChecked == true;
             var selected = CollectSelectedSubsystemNames();
             var scope = Analysis.BuildScope(_subsystemTree, selected, includeDescendants, _extraObjects);
 
-            var plan = await Task.Run(() => Analysis.RunTransfer(typical, customized, name, prefix, scope));
+            var plan = await Task.Run(() =>
+                Analysis.RunTransfer(typical, customized, name, prefix, scope, includeRemoved));
             _transfer = plan;
             _transfers = plan.Items.Select(item => new TransferRow(item)).ToList();
             ApplyTransferFilter();

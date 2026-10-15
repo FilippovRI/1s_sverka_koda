@@ -120,6 +120,7 @@ public static class DumpReader
             node.Name.LocalName,
             name,
             properties == null ? "" : FingerprintProperties(properties),
+            properties == null ? "" : FingerprintProperties(properties, skipPresentation: true),
             extended.Length == 0 ? null : extended,
             members,
             ReadModules(objectDirectory));
@@ -333,12 +334,12 @@ public static class DumpReader
         return modules;
     }
 
-    private static string FingerprintProperties(XElement properties)
+    private static string FingerprintProperties(XElement properties, bool skipPresentation = false)
     {
         var copy = new XElement(properties);
         foreach (var name in copy.Elements().Where(element => element.Name.LocalName == "Name").ToList())
             name.Remove();
-        return Canonical(copy);
+        return Canonical(copy, skipPresentation);
     }
 
     private static string CanonicalFile(string path)

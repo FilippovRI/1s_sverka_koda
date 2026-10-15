@@ -185,14 +185,15 @@
 
               <DockPanel Grid.Column="2">
                 <StackPanel DockPanel.Dock="Top" Spacing="6">
-                  <Grid ColumnDefinitions="110,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
-                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Типовая" />
-                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="TypicalBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка типовой" />
+                  <TextBlock FontWeight="SemiBold" FontSize="15" Text="К переносу в расширение" />
+                  <Grid ColumnDefinitions="130,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
+                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="В типовой" />
+                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="TypicalBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка типовой конфигурации" />
                     <Button Grid.Row="0" Grid.Column="2" Margin="0,0,8,6" Content="Обзор…" Click="OnBrowseTypical" />
                     <Button Grid.Row="0" Grid.Column="3" Margin="0,0,0,6" Content="Очистить" Click="OnClearTypical" />
 
-                    <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Доработанная" />
-                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="CustomizedBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка доработанной" />
+                    <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="В доработанной" />
+                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="CustomizedBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка доработанной конфигурации" />
                     <Button Grid.Row="1" Grid.Column="2" Margin="0,0,8,6" Content="Обзор…" Click="OnBrowseCustomized" />
                     <Button Grid.Row="1" Grid.Column="3" Margin="0,0,0,6" Content="Очистить" Click="OnClearCustomized" />
 
@@ -202,6 +203,9 @@
                     <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Префикс" />
                     <TextBox Grid.Row="3" Grid.Column="1" x:Name="TransferPrefixBox" Margin="0,0,8,0" Watermark="Дораб_" Text="Дораб_" />
                   </Grid>
+                  <CheckBox x:Name="ShowRemovedMetadataBox"
+                            IsChecked="False"
+                            Content="Показывать удалённые метаданные" />
                   <WrapPanel Orientation="Horizontal">
                     <Button x:Name="TransferFindButton" Margin="0,0,8,6" Content="Найти доработки" MinWidth="140" Click="OnFindTransfer" />
                     <Button x:Name="TransferSaveButton" Margin="0,0,8,6" Content="Сохранить черновик" IsEnabled="False" Click="OnSaveTransfer" />
@@ -240,11 +244,11 @@
                   </DataGrid>
                   <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0">
                     <DockPanel Margin="0,0,8,0">
-                      <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="Типовая (было)  − удалено" />
+                      <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="В типовой  − удалено" />
                       <TextBox x:Name="TransferBeforeText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono,Consolas,monospace" />
                     </DockPanel>
                     <DockPanel Grid.Column="1">
-                      <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="Доработанная (стало)  + добавлено" />
+                      <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="В доработанной  + добавлено" />
                       <TextBox x:Name="TransferAfterText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono,Consolas,monospace" />
                     </DockPanel>
                   </Grid>

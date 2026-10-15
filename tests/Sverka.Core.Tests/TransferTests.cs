@@ -121,7 +121,7 @@ public class TransferTests
     }
 
     [Fact]
-    public void CosmeticSynonymIsSkipped()
+    public void CosmeticSynonymIsNotListed()
     {
         using var typical = Dump.Create();
         using var customized = Dump.Create();
@@ -130,8 +130,7 @@ public class TransferTests
         customized.Catalog("Товары", catalogId, [new Attr("Артикул", "10", Synonym: "Артикул товара")]);
 
         var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
-        var item = Assert.Single(plan.Items);
-        Assert.Equal(TransferDecision.Skip, item.Decision);
+        Assert.Empty(plan.Items);
     }
 
     [Fact]
@@ -223,6 +222,55 @@ public class TransferTests
     }
 
     [Fact]
+    public void RemovedMetadataHiddenByDefaultButNewObjectsStay()
+    {
+        using var typical = Dump.Create();
+        using var customized = Dump.Create();
+        const string keepId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+        const string removedId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+        const string addedId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+        typical.Catalog("Товары", keepId, [("Артикул", "10"), ("Старый", "10")]);
+        typical.Catalog("Удалённый", removedId, [("Код", "10")]);
+        customized.Catalog("Товары", keepId, [("Артикул", "10")]);
+        customized.Catalog("Сайты", addedId, [("Код", "10")]);
+
+        var hidden = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
+        Assert.DoesNotContain(hidden.Items, item => item.ChangeKind == ChangeKind.Removed);
+        Assert.DoesNotContain(hidden.Items, item =>
+            item.Method == "Старый" && item.Decision != TransferDecision.Skip);
+        Assert.Contains(hidden.Items, item => item.ObjectName.Contains("Сайты", StringComparison.Ordinal));
+
+        var shown = CustomizationFinder.Find(
+            typical.Read(), customized.Read(), "Доработки", "Дораб_",
+            includeRemovedMetadata: true);
+        Assert.Contains(shown.Items, item => item.ChangeKind == ChangeKind.Removed);
+    }
+
+    [Fact]
+    public void ListFormChangesAreNotListed()
+    {
+        using var typical = Dump.Create();
+        using var customized = Dump.Create();
+        const string catalogId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+        typical.Catalog("Товары", catalogId, [("Артикул", "10")], forms: ["ФормаСписка"]);
+        customized.Catalog("Товары", catalogId, [("Артикул", "10")], forms: ["ФормаСписка"]);
+        typical.Form("Catalogs/Товары", "ФормаСписка", """
+            <Items>
+              <LabelField name="СтароеПоле"/>
+            </Items>
+            """);
+        customized.Form("Catalogs/Товары", "ФормаСписка", """
+            <Items>
+              <LabelField name="НовоеПоле"/>
+            </Items>
+            """);
+
+        var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
+        Assert.DoesNotContain(plan.Items, item =>
+            item.MemberKind != null && item.MemberKind.Contains("Form", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void SingleInsertBecomesChangeAndControl()
     {
         using var typical = Dump.Create();
@@ -270,7 +318,7 @@ public class TransferTests
     }
 
     [Fact]
-    public void MultipleInsertsAreManual()
+    public void MultipleInsertsBecomeChangeAndControl()
     {
         using var typical = Dump.Create();
         using var customized = Dump.Create();
@@ -293,8 +341,11 @@ public class TransferTests
 
         var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
         var item = Assert.Single(plan.Items);
-        Assert.Equal(TransferDecision.Manual, item.Decision);
-        Assert.Contains("Несколько вставок", item.Reason, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(TransferDecision.Auto, item.Decision);
+        Assert.Equal(ProposedHook.ChangeAndControl, item.ProposedHook);
+        Assert.Contains("#Вставка", item.HookBody, StringComparison.Ordinal);
+        Assert.Contains("ВставкаА", item.HookBody, StringComparison.Ordinal);
+        Assert.Contains("ВставкаБ", item.HookBody, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -37,14 +37,22 @@ public static class Analysis
         string customizedPath,
         string extensionName,
         string prefix,
-        TransferScope? scope = null)
+        TransferScope? scope = null,
+        bool includeRemovedMetadata = false)
     {
         var typical = DumpReader.Read(typicalPath);
         var customized = DumpReader.Read(customizedPath);
         var subsystems = SubsystemCatalog.Merge(
             SubsystemCatalog.Read(typicalPath),
             SubsystemCatalog.Read(customizedPath));
-        return CustomizationFinder.Find(typical, customized, extensionName, prefix, scope, subsystems);
+        return CustomizationFinder.Find(
+            typical,
+            customized,
+            extensionName,
+            prefix,
+            scope,
+            subsystems,
+            includeRemovedMetadata);
     }
 
     public static IReadOnlyList<SubsystemInfo> LoadSubsystems(string typicalPath, string customizedPath) =>
