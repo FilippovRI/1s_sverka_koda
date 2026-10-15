@@ -592,6 +592,33 @@ sealed class Dump : IDisposable
         Write($"CommonModules/{name}/Ext/Module.bsl", module);
     }
 
+    public void Subsystem(
+        string name,
+        string uuid,
+        IEnumerable<string> content,
+        string? parentPath = null)
+    {
+        var folder = parentPath == null
+            ? "Subsystems"
+            : Path.Combine(parentPath.Replace('/', Path.DirectorySeparatorChar), "Subsystems");
+        var items = string.Join("\n", content.Select(item =>
+            $"        <Item>{item}</Item>"));
+        Write($"{folder}/{name}.xml", $"""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <MetaDataObject>
+              <Subsystem uuid="{uuid}">
+                <Properties>
+                  <Name>{name}</Name>
+                  <Content>
+            {items}
+                  </Content>
+                </Properties>
+                <ChildObjects/>
+              </Subsystem>
+            </MetaDataObject>
+            """);
+    }
+
     public void Catalog(
         string name,
         string uuid,

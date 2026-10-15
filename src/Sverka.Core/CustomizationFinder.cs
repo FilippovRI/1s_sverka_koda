@@ -10,14 +10,19 @@ public static class CustomizationFinder
         ConfigurationDump typical,
         ConfigurationDump customized,
         string extensionName,
-        string prefix)
+        string prefix,
+        TransferScope? scope = null,
+        IReadOnlyList<SubsystemInfo>? subsystems = null)
     {
         if (string.IsNullOrWhiteSpace(extensionName))
             throw new ArgumentException("Укажите имя расширения.", nameof(extensionName));
         if (string.IsNullOrWhiteSpace(prefix))
             throw new ArgumentException("Укажите префикс расширения.", nameof(prefix));
 
-        var changes = ConfigComparer.Compare(typical, customized);
+        var effectiveScope = scope ?? TransferScope.All;
+        var tree = subsystems ?? [];
+        var allChanges = ConfigComparer.Compare(typical, customized);
+        var changes = FilterByScope(allChanges, effectiveScope);
         var typicalByUuid = IndexByUuid(typical.Objects);
         var customizedByUuid = IndexByUuid(customized.Objects);
         var items = new List<TransferItem>();
@@ -37,7 +42,34 @@ public static class CustomizationFinder
             .ThenBy(item => item.Reason, StringComparer.Ordinal)
             .ToList();
 
-        return new TransferPlan(extensionName.Trim(), prefix.Trim(), typical, customized, changes, items);
+        return new TransferPlan(
+            extensionName.Trim(),
+            prefix.Trim(),
+            typical,
+            customized,
+            changes,
+            items,
+            effectiveScope,
+            tree);
+    }
+
+    private static IReadOnlyList<ConfigChange> FilterByScope(
+        IReadOnlyList<ConfigChange> changes,
+        TransferScope scope)
+    {
+        // Нет фильтра — сравниваем всю конфигурацию.
+        if (!scope.HasFilter)
+            return changes;
+
+        // Фильтр задан, но итоговый набор объектов пуст.
+        if (scope.ObjectNames.Count == 0)
+            return [];
+
+        return changes
+            .Where(change =>
+                !string.Equals(change.ObjectName, "Конфигурация", StringComparison.OrdinalIgnoreCase)
+                && scope.ObjectNames.Contains(change.ObjectName))
+            .ToList();
     }
 
     private static TransferItem? Classify(
@@ -111,6 +143,17 @@ public static class CustomizationFinder
 
         if (change.MemberDelta == MemberDelta.Added)
         {
+            if (IsDataMember(change.MemberKind))
+            {
+                return Item(
+                    change,
+                    objectType,
+                    TransferDecision.DataMigration,
+                    ProposedHook.None,
+                    "Добавленный реквизит/ТЧ — в черновик миграции данных, XML расширения не пишем",
+                    null, null, false, null);
+            }
+
             return Item(
                 change,
                 objectType,
@@ -325,6 +368,14 @@ public static class CustomizationFinder
         !string.IsNullOrEmpty(memberKind)
         && (memberKind.Equals("Form", StringComparison.OrdinalIgnoreCase)
             || ConfigComparer.IsFormPart(memberKind));
+
+    private static bool IsDataMember(string? memberKind) =>
+        !string.IsNullOrEmpty(memberKind)
+        && (memberKind.Equals("Attribute", StringComparison.OrdinalIgnoreCase)
+            || memberKind.Equals("TabularSection", StringComparison.OrdinalIgnoreCase)
+            || memberKind.Equals("Dimension", StringComparison.OrdinalIgnoreCase)
+            || memberKind.Equals("Resource", StringComparison.OrdinalIgnoreCase)
+            || memberKind.Equals("Column", StringComparison.OrdinalIgnoreCase));
 
     private static string GuessType(string fullName)
     {

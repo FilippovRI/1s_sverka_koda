@@ -46,13 +46,29 @@ public static class HookSynthesizer
                 prefix);
         }
 
-        if (TryFindSingleInsert(typicalLines, customLines, customized.BodyText, out var insertBody, out var reason))
+        var insertAnalysis = AnalyzeInserts(typicalLines, customLines);
+        if (insertAnalysis.Kind == InsertKind.Multiple)
         {
             return new Proposal(
-                TransferDecision.Auto,
-                ProposedHook.ChangeAndControl,
-                reason,
-                insertBody);
+                TransferDecision.Manual,
+                ProposedHook.None,
+                $"Несколько вставок в теле ({insertAnalysis.GapCount}) — автоматически не переносится, смотрите diff",
+                null);
+        }
+
+        if (insertAnalysis.Kind == InsertKind.Single
+            && insertAnalysis.GapFrom is int gapFrom
+            && insertAnalysis.GapTo is int gapTo)
+        {
+            var annotated = BuildAnnotatedBody(customized.BodyText, gapFrom, gapTo);
+            if (!string.IsNullOrWhiteSpace(annotated))
+            {
+                return new Proposal(
+                    TransferDecision.Auto,
+                    ProposedHook.ChangeAndControl,
+                    "Доработка — одна вставка внутри типового тела (&ИзменениеИКонтроль)",
+                    annotated);
+            }
         }
 
         // Полная замена с вызовом типовой логики через ПродолжитьВызов → &Вместо.
@@ -68,8 +84,102 @@ public static class HookSynthesizer
         return new Proposal(
             TransferDecision.Manual,
             ProposedHook.None,
-            "Тело изменено так, что безопасный хук не выводится автоматически",
+            "Тело изменено так, что безопасный хук не выводится автоматически — смотрите diff",
             null);
+    }
+
+    private enum InsertKind
+    {
+        None,
+        Single,
+        Multiple,
+    }
+
+    private sealed record InsertAnalysis(InsertKind Kind, int GapCount, int? GapFrom, int? GapTo);
+
+    /// <summary>
+    /// Все типовые строки должны сохраниться по порядку в доработанном теле.
+    /// Промежутки без типовых строк — вставки.
+    /// </summary>
+    private static InsertAnalysis AnalyzeInserts(
+        IReadOnlyList<string> typical,
+        IReadOnlyList<string> custom)
+    {
+        if (typical.Count == 0 || custom.Count <= typical.Count)
+            return new InsertAnalysis(InsertKind.None, 0, null, null);
+
+        var matchAt = new int[typical.Count];
+        var customIndex = 0;
+        for (var t = 0; t < typical.Count; t++)
+        {
+            while (customIndex < custom.Count && !string.Equals(typical[t], custom[customIndex], StringComparison.Ordinal))
+                customIndex++;
+            if (customIndex >= custom.Count)
+                return new InsertAnalysis(InsertKind.None, 0, null, null);
+            matchAt[t] = customIndex;
+            customIndex++;
+        }
+
+        var gaps = new List<(int From, int To)>();
+        if (matchAt[0] > 0)
+            gaps.Add((0, matchAt[0]));
+        for (var t = 0; t < typical.Count - 1; t++)
+        {
+            var from = matchAt[t] + 1;
+            var to = matchAt[t + 1];
+            if (from < to)
+                gaps.Add((from, to));
+        }
+
+        var afterLast = matchAt[^1] + 1;
+        if (afterLast < custom.Count)
+            gaps.Add((afterLast, custom.Count));
+
+        if (gaps.Count == 0)
+            return new InsertAnalysis(InsertKind.None, 0, null, null);
+        if (gaps.Count > 1)
+            return new InsertAnalysis(InsertKind.Multiple, gaps.Count, null, null);
+
+        var (gapFrom, gapTo) = gaps[0];
+        return new InsertAnalysis(InsertKind.Single, 1, gapFrom, gapTo);
+    }
+
+    /// <summary>
+    /// Полное доработанное тело с маркерами #Вставка вокруг единственного фрагмента.
+    /// </summary>
+    private static string BuildAnnotatedBody(string customBodyText, int meaningfulFrom, int meaningfulTo)
+    {
+        var raw = BslText.Lines(customBodyText);
+        var meaningfulIndexes = new List<int>();
+        for (var i = 0; i < raw.Count; i++)
+        {
+            if (BslText.Normalize(raw[i]).Length > 0)
+                meaningfulIndexes.Add(i);
+        }
+
+        if (meaningfulFrom < 0 || meaningfulTo > meaningfulIndexes.Count || meaningfulFrom >= meaningfulTo)
+            return "";
+
+        var fromRaw = meaningfulIndexes[meaningfulFrom];
+        var toRawExclusive = meaningfulTo < meaningfulIndexes.Count
+            ? meaningfulIndexes[meaningfulTo]
+            : raw.Count;
+
+        var result = new List<string>();
+        for (var i = 0; i < fromRaw; i++)
+            result.Add(raw[i]);
+        result.Add("#Вставка");
+        for (var i = fromRaw; i < toRawExclusive; i++)
+            result.Add(raw[i]);
+        result.Add("#КонецВставки");
+        for (var i = toRawExclusive; i < raw.Count; i++)
+            result.Add(raw[i]);
+
+        while (result.Count > 0 && string.IsNullOrWhiteSpace(result[0]))
+            result.RemoveAt(0);
+        while (result.Count > 0 && string.IsNullOrWhiteSpace(result[^1]))
+            result.RemoveAt(result.Count - 1);
+        return string.Join("\n", result);
     }
 
     private static bool BodyCallsProceed(string body) =>
@@ -124,62 +234,6 @@ public static class HookSynthesizer
         return true;
     }
 
-    /// <summary>
-    /// Ищет один непрерывный блок вставки: типовые строки идут подряд в доработанном
-    /// теле, а между двумя соседними типовыми (или с краю) есть ровно один фрагмент extra.
-    /// </summary>
-    private static bool TryFindSingleInsert(
-        IReadOnlyList<string> typical,
-        IReadOnlyList<string> custom,
-        string customBodyText,
-        out string insertBody,
-        out string reason)
-    {
-        insertBody = "";
-        reason = "";
-        if (typical.Count == 0 || custom.Count <= typical.Count)
-            return false;
-
-        var matchAt = new int[typical.Count];
-        var customIndex = 0;
-        for (var t = 0; t < typical.Count; t++)
-        {
-            while (customIndex < custom.Count && !string.Equals(typical[t], custom[customIndex], StringComparison.Ordinal))
-                customIndex++;
-            if (customIndex >= custom.Count)
-                return false;
-            matchAt[t] = customIndex;
-            customIndex++;
-        }
-
-        // Все типовые строки найдены по порядку. Вставки — промежутки между матчами и по краям.
-        var gaps = new List<(int From, int To)>();
-        if (matchAt[0] > 0)
-            gaps.Add((0, matchAt[0]));
-        for (var t = 0; t < typical.Count - 1; t++)
-        {
-            var from = matchAt[t] + 1;
-            var to = matchAt[t + 1];
-            if (from < to)
-                gaps.Add((from, to));
-        }
-
-        var afterLast = matchAt[^1] + 1;
-        if (afterLast < custom.Count)
-            gaps.Add((afterLast, custom.Count));
-
-        if (gaps.Count != 1)
-            return false;
-
-        var (gapFrom, gapTo) = gaps[0];
-        insertBody = SliceOriginalByMeaningfulRange(customBodyText, gapFrom, gapTo);
-        if (string.IsNullOrWhiteSpace(insertBody))
-            return false;
-
-        reason = "Доработка — одна вставка внутри типового тела";
-        return true;
-    }
-
     private static List<string> MeaningfulLines(string body)
     {
         var result = new List<string>();
@@ -223,26 +277,6 @@ public static class HookSynthesizer
             toRawExclusive = meaningfulIndexes[meaningfulCount];
         }
 
-        return JoinRaw(raw, fromRaw, toRawExclusive);
-    }
-
-    private static string SliceOriginalByMeaningfulRange(string bodyText, int meaningfulFrom, int meaningfulTo)
-    {
-        var raw = BslText.Lines(bodyText);
-        var meaningfulIndexes = new List<int>();
-        for (var i = 0; i < raw.Count; i++)
-        {
-            if (BslText.Normalize(raw[i]).Length > 0)
-                meaningfulIndexes.Add(i);
-        }
-
-        if (meaningfulFrom < 0 || meaningfulTo > meaningfulIndexes.Count || meaningfulFrom >= meaningfulTo)
-            return "";
-
-        var fromRaw = meaningfulIndexes[meaningfulFrom];
-        var toRawExclusive = meaningfulTo < meaningfulIndexes.Count
-            ? meaningfulIndexes[meaningfulTo]
-            : raw.Count;
         return JoinRaw(raw, fromRaw, toRawExclusive);
     }
 

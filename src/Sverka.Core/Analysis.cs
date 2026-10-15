@@ -36,11 +36,43 @@ public static class Analysis
         string typicalPath,
         string customizedPath,
         string extensionName,
-        string prefix)
+        string prefix,
+        TransferScope? scope = null)
     {
         var typical = DumpReader.Read(typicalPath);
         var customized = DumpReader.Read(customizedPath);
-        return CustomizationFinder.Find(typical, customized, extensionName, prefix);
+        var subsystems = SubsystemCatalog.Merge(
+            SubsystemCatalog.Read(typicalPath),
+            SubsystemCatalog.Read(customizedPath));
+        return CustomizationFinder.Find(typical, customized, extensionName, prefix, scope, subsystems);
+    }
+
+    public static IReadOnlyList<SubsystemInfo> LoadSubsystems(string typicalPath, string customizedPath) =>
+        SubsystemCatalog.Merge(
+            SubsystemCatalog.Read(typicalPath),
+            SubsystemCatalog.Read(customizedPath));
+
+    public static TransferScope BuildScope(
+        IReadOnlyList<SubsystemInfo> subsystems,
+        IEnumerable<string> selectedFullNames,
+        bool includeDescendants,
+        IEnumerable<string>? extraObjectNames = null)
+    {
+        var names = selectedFullNames
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var extras = (extraObjectNames ?? [])
+            .Select(name => name.Trim())
+            .Where(name => name.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var objects = SubsystemCatalog.CollectObjectNames(subsystems, names, includeDescendants);
+        foreach (var extra in extras)
+            objects.Add(extra);
+        return new TransferScope(names, objects, includeDescendants, extras);
     }
 
     public static void WriteTransferReports(string directory, TransferPlan plan, bool writeDraft)
@@ -48,10 +80,15 @@ public static class Analysis
         Directory.CreateDirectory(directory);
         ReportWriter.WriteTransfer(Path.Combine(directory, "transfer.json"), plan);
         ReportWriter.WriteTransferHtml(Path.Combine(directory, "transfer.html"), plan);
+        SubsystemCatalog.SaveSelection(Path.Combine(directory, "subsystems.json"), plan.Scope);
+        DataMigrationWriter.Write(Path.Combine(directory, "migration"), plan);
         if (!writeDraft)
             return;
         ExtensionDraftWriter.Write(Path.Combine(directory, "extension"), plan);
     }
+
+    public static void WriteTransferScope(string path, TransferScope scope) =>
+        SubsystemCatalog.SaveSelection(path, scope);
 
     public static void WriteReports(string directory, AnalysisResult result)
     {

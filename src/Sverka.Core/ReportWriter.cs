@@ -79,6 +79,13 @@ public static class ReportWriter
             prefix = plan.Prefix,
             typical = Header(plan.Typical),
             customized = Header(plan.Customized),
+            scope = new
+            {
+                subsystems = plan.Scope.SelectedSubsystemNames,
+                extraObjects = plan.Scope.ExtraObjectNames,
+                includeDescendants = plan.Scope.IncludeDescendants,
+                objects = plan.Scope.ObjectNames.OrderBy(item => item, StringComparer.OrdinalIgnoreCase),
+            },
             items = plan.Items.Select(item => new
             {
                 @object = item.ObjectName,
@@ -124,6 +131,15 @@ public static class ReportWriter
         var body = new StringBuilder();
         body.Append("<p>Расширение: ").Append(Encode(plan.ExtensionName))
             .Append(", префикс: ").Append(Encode(plan.Prefix)).Append("</p>");
+        if (plan.Scope.HasFilter)
+        {
+            body.Append("<p>Область: подсистемы [")
+                .Append(Encode(string.Join(", ", plan.Scope.SelectedSubsystemNames)))
+                .Append("], доп. объекты [")
+                .Append(Encode(string.Join(", ", plan.Scope.ExtraObjectNames)))
+                .Append("] (итого объектов: ").Append(plan.Scope.ObjectNames.Count).Append(")</p>");
+        }
+
         body.Append("<p>Авто: ").Append(auto)
             .Append(", вручную: ").Append(manual)
             .Append(", подсветка: ").Append(highlight)
@@ -132,10 +148,12 @@ public static class ReportWriter
             .Append("<table><thead><tr><th>Объект</th><th>Метод</th><th>Вид</th><th>Решение</th><th>Хук</th><th>Причина</th></tr></thead><tbody>")
             .Append(rows)
             .Append("</tbody></table>");
+        var data = plan.Items.Count(item => item.Decision == TransferDecision.DataMigration);
+        body.Append("<p>Данные (миграция): ").Append(data).Append("</p>");
         body.Append("<h2>Дальше в Конфигураторе</h2><ol>")
             .Append("<li>Загрузите черновик расширения из папки extension/.</li>")
-            .Append("<li>Проверьте хуки и метаданные, не удаляя доработки из основной конфигурации.</li>")
-            .Append("<li>Перенесите данные (реквизиты/объекты с пометкой «Данные») служебной обработкой.</li>")
+            .Append("<li>Проверьте хуки, не удаляя доработки из основной конфигурации.</li>")
+            .Append("<li>Доработайте и выполните migration/ПереносДанных.bsl для пунктов «Данные».</li>")
             .Append("<li>Сверьте выборки, затем очистите основную и верните конфигурацию на замок.</li>")
             .Append("</ol>");
 

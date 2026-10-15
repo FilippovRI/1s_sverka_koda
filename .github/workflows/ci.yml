@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Test
+        run: dotnet test 1c-sverka.sln -c Release --nologo
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Publish single-file
+        run: >
+          dotnet publish src/Sverka.App/Sverka.App.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:IncludeAllContentForSelfExtract=true
+          -o publish
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sverka-win-x64
+          path: publish/sverka.exe
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: publish/sverka.exe
+          generate_release_notes: true
+          body: |
+            Самодостаточный `sverka.exe` (win-x64, single-file с нативными библиотеками Avalonia/Skia).
+
+            ## К типовой
+            - Фильтр по подсистемам (дерево, доп. объекты, `subsystems.json`)
+            - Diff «Было/Стало» с маркерами −/+
+            - Черновик расширения (модули) + `migration/ПереносДанных.bsl`

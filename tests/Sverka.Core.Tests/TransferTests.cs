@@ -160,7 +160,7 @@ public class TransferTests
     }
 
     [Fact]
-    public void AddedAttributeIsHighlightOnlyWithoutXmlStub()
+    public void AddedAttributeIsDataMigrationWithBslStub()
     {
         using var typical = Dump.Create();
         using var customized = Dump.Create();
@@ -170,7 +170,7 @@ public class TransferTests
 
         var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
         var item = Assert.Single(plan.Items);
-        Assert.Equal(TransferDecision.Highlight, item.Decision);
+        Assert.Equal(TransferDecision.DataMigration, item.Decision);
         Assert.Equal("СайтИд", item.Method);
 
         var directory = Path.Combine(Path.GetTempPath(), "sverka-transfer-" + Guid.NewGuid().ToString("N"));
@@ -179,12 +179,30 @@ public class TransferTests
             ExtensionDraftWriter.Write(directory, plan);
             Assert.True(File.Exists(Path.Combine(directory, "Configuration.xml")));
             Assert.False(Directory.Exists(Path.Combine(directory, "Catalogs")));
+
+            var migrationDir = Path.Combine(directory, "migration");
+            DataMigrationWriter.Write(migrationDir, plan);
+            var bsl = File.ReadAllText(Path.Combine(migrationDir, "ПереносДанных.bsl"), Encoding.UTF8);
+            Assert.Contains("СайтИд", bsl, StringComparison.Ordinal);
+            Assert.Contains("ВыполнитьПеренос", bsl, StringComparison.Ordinal);
         }
         finally
         {
             if (Directory.Exists(directory))
                 Directory.Delete(directory, true);
         }
+    }
+
+    [Fact]
+    public void TextDiffMarksInsertedAndDeletedLines()
+    {
+        var (left, right) = TextDiff.MarkSides(
+            "Статус = 1;\nСтарое = 9;\nИтог = 2;",
+            "Статус = 1;\nДоработка = Истина;\nИтог = 2;");
+        Assert.Contains("- Старое = 9;", left, StringComparison.Ordinal);
+        Assert.Contains("+ Доработка = Истина;", right, StringComparison.Ordinal);
+        Assert.Contains("  Статус = 1;", left, StringComparison.Ordinal);
+        Assert.Contains("  Итог = 2;", right, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -228,6 +246,10 @@ public class TransferTests
         Assert.Equal(TransferDecision.Auto, item.Decision);
         Assert.Equal(ProposedHook.ChangeAndControl, item.ProposedHook);
         Assert.Contains("Доработка = Истина", item.HookBody, StringComparison.Ordinal);
+        Assert.Contains("#Вставка", item.HookBody, StringComparison.Ordinal);
+        Assert.Contains("#КонецВставки", item.HookBody, StringComparison.Ordinal);
+        Assert.Contains("Статус = 1", item.HookBody, StringComparison.Ordinal);
+        Assert.Contains("Итог = 2", item.HookBody, StringComparison.Ordinal);
 
         var directory = Path.Combine(Path.GetTempPath(), "sverka-transfer-" + Guid.NewGuid().ToString("N"));
         try
@@ -238,11 +260,185 @@ public class TransferTests
                 Encoding.UTF8);
             Assert.Contains("&ИзменениеИКонтроль(\"НекотораяПроцедура\")", module, StringComparison.Ordinal);
             Assert.Contains("#Вставка", module, StringComparison.Ordinal);
+            Assert.Contains("Статус = 1", module, StringComparison.Ordinal);
         }
         finally
         {
             if (Directory.Exists(directory))
                 Directory.Delete(directory, true);
         }
+    }
+
+    [Fact]
+    public void MultipleInsertsAreManual()
+    {
+        using var typical = Dump.Create();
+        using var customized = Dump.Create();
+        typical.CommonModule("Расчеты", ModuleId, """
+            Процедура НекотораяПроцедура(Документ)
+            	Статус = 1;
+            	Итог = 2;
+            	Финиш = 3;
+            КонецПроцедуры
+            """);
+        customized.CommonModule("Расчеты", ModuleId, """
+            Процедура НекотораяПроцедура(Документ)
+            	Статус = 1;
+            	ВставкаА = Истина;
+            	Итог = 2;
+            	ВставкаБ = Истина;
+            	Финиш = 3;
+            КонецПроцедуры
+            """);
+
+        var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
+        var item = Assert.Single(plan.Items);
+        Assert.Equal(TransferDecision.Manual, item.Decision);
+        Assert.Contains("Несколько вставок", item.Reason, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void SubsystemScopeFiltersObjects()
+    {
+        using var typical = Dump.Create();
+        using var customized = Dump.Create();
+        const string salesModule = "11111111-1111-1111-1111-111111111111";
+        const string stockModule = "22222222-2222-2222-2222-222222222222";
+        const string salesSub = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+        typical.CommonModule("ПродажиСервер", salesModule, """
+            Процедура Провести(Документ)
+            	Статус = 1;
+            КонецПроцедуры
+            """);
+        typical.CommonModule("СкладСервер", stockModule, """
+            Процедура Провести(Документ)
+            	Статус = 1;
+            КонецПроцедуры
+            """);
+        customized.CommonModule("ПродажиСервер", salesModule, """
+            Процедура Провести(Документ)
+            	Статус = 1;
+            	ДоработкаПродаж = Истина;
+            КонецПроцедуры
+            """);
+        customized.CommonModule("СкладСервер", stockModule, """
+            Процедура Провести(Документ)
+            	Статус = 1;
+            	ДоработкаСклада = Истина;
+            КонецПроцедуры
+            """);
+        typical.Subsystem("Продажи", salesSub, ["CommonModule.ПродажиСервер"]);
+        customized.Subsystem("Продажи", salesSub, ["CommonModule.ПродажиСервер"]);
+
+        var tree = SubsystemCatalog.Merge(
+            SubsystemCatalog.Read(typical.Root),
+            SubsystemCatalog.Read(customized.Root));
+        var scope = Analysis.BuildScope(tree, ["Продажи"], includeDescendants: true);
+        Assert.Contains("CommonModule.ПродажиСервер", scope.ObjectNames);
+        Assert.DoesNotContain("CommonModule.СкладСервер", scope.ObjectNames);
+
+        var plan = CustomizationFinder.Find(
+            typical.Read(),
+            customized.Read(),
+            "Доработки",
+            "Дораб_",
+            scope,
+            tree);
+        var item = Assert.Single(plan.Items.Where(entry => entry.Decision != TransferDecision.Skip));
+        Assert.Equal("CommonModule.ПродажиСервер", item.ObjectName);
+        Assert.Equal(TransferDecision.Auto, item.Decision);
+        Assert.Equal(ProposedHook.After, item.ProposedHook);
+    }
+
+    [Fact]
+    public void ExtraObjectAddedToScopeWithoutSubsystem()
+    {
+        using var typical = Dump.Create();
+        using var customized = Dump.Create();
+        const string stockModule = "22222222-2222-2222-2222-222222222222";
+        typical.CommonModule("СкладСервер", stockModule, """
+            Процедура Провести(Документ)
+            	Статус = 1;
+            КонецПроцедуры
+            """);
+        customized.CommonModule("СкладСервер", stockModule, """
+            Процедура Провести(Документ)
+            	Статус = 1;
+            	ДоработкаСклада = Истина;
+            КонецПроцедуры
+            """);
+
+        var scope = Analysis.BuildScope([], [], includeDescendants: true, ["CommonModule.СкладСервер"]);
+        Assert.True(scope.HasFilter);
+        Assert.Contains("CommonModule.СкладСервер", scope.ExtraObjectNames);
+        Assert.Contains("CommonModule.СкладСервер", scope.ObjectNames);
+
+        var plan = CustomizationFinder.Find(
+            typical.Read(), customized.Read(), "Доработки", "Дораб_", scope, []);
+        var item = Assert.Single(plan.Items);
+        Assert.Equal("CommonModule.СкладСервер", item.ObjectName);
+        Assert.Equal(TransferDecision.Auto, item.Decision);
+    }
+
+    [Fact]
+    public void SubsystemsJsonRoundTripKeepsExtras()
+    {
+        var scope = Analysis.BuildScope(
+            [],
+            ["Продажи"],
+            includeDescendants: true,
+            ["CommonModule.СкладСервер"]);
+        var path = Path.Combine(Path.GetTempPath(), "sverka-scope-" + Guid.NewGuid().ToString("N") + ".json");
+        try
+        {
+            SubsystemCatalog.SaveSelection(path, scope);
+            var loaded = SubsystemCatalog.TryLoadSelection(path);
+            Assert.NotNull(loaded);
+            Assert.Contains("Продажи", loaded!.SelectedSubsystemNames);
+            Assert.Contains("CommonModule.СкладСервер", loaded.ExtraObjectNames);
+            Assert.True(loaded.IncludeDescendants);
+        }
+        finally
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void NestedSubsystemIncludedWhenDescendantsEnabled()
+    {
+        using var typical = Dump.Create();
+        using var customized = Dump.Create();
+        const string moduleId = "11111111-1111-1111-1111-111111111111";
+        const string parentId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+        const string childId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+        typical.CommonModule("ОптСервер", moduleId, """
+            Процедура Провести(Документ)
+            	Статус = 1;
+            КонецПроцедуры
+            """);
+        customized.CommonModule("ОптСервер", moduleId, """
+            Процедура Провести(Документ)
+            	Статус = 1;
+            	Хвост = 1;
+            КонецПроцедуры
+            """);
+        typical.Subsystem("Продажи", parentId, []);
+        typical.Subsystem("Опт", childId, ["CommonModule.ОптСервер"], parentPath: "Subsystems/Продажи");
+        customized.Subsystem("Продажи", parentId, []);
+        customized.Subsystem("Опт", childId, ["CommonModule.ОптСервер"], parentPath: "Subsystems/Продажи");
+
+        var tree = SubsystemCatalog.Merge(
+            SubsystemCatalog.Read(typical.Root),
+            SubsystemCatalog.Read(customized.Root));
+        Assert.Contains(SubsystemCatalog.Flatten(tree), node => node.FullName == "Продажи.Опт");
+
+        var scope = Analysis.BuildScope(tree, ["Продажи"], includeDescendants: true);
+        Assert.Contains("CommonModule.ОптСервер", scope.ObjectNames);
+
+        var plan = CustomizationFinder.Find(
+            typical.Read(), customized.Read(), "Доработки", "Дораб_", scope, tree);
+        Assert.Contains(plan.Items, item => item.ObjectName == "CommonModule.ОптСервер");
     }
 }

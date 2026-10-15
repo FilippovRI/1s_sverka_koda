@@ -151,6 +151,38 @@ public enum ProposedHook
 }
 
 /// <summary>
+/// Узел дерева подсистем файловой выгрузки.
+/// Content — полные имена объектов (Catalog.Товары).
+/// </summary>
+public sealed record SubsystemInfo(
+    string Name,
+    string FullName,
+    string Uuid,
+    IReadOnlyList<string> Content,
+    IReadOnlyList<SubsystemInfo> Children);
+
+/// <summary>
+/// Область сравнения «как в сравнении/объединении 1С»: выбранные подсистемы,
+/// вручную добавленные объекты и итоговый набор имён для фильтра.
+/// </summary>
+public sealed record TransferScope(
+    IReadOnlyList<string> SelectedSubsystemNames,
+    IReadOnlySet<string> ObjectNames,
+    bool IncludeDescendants,
+    IReadOnlyList<string> ExtraObjectNames)
+{
+    public bool HasFilter => SelectedSubsystemNames.Count > 0 || ExtraObjectNames.Count > 0;
+
+    public bool IsEmpty => ObjectNames.Count == 0 && !HasFilter;
+
+    public static TransferScope All => new(
+        [],
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+        true,
+        []);
+}
+
+/// <summary>
 /// Одна доработка относительно типовой выгрузки той же версии.
 /// </summary>
 public sealed record TransferItem(
@@ -175,7 +207,9 @@ public sealed record TransferPlan(
     ConfigurationDump Typical,
     ConfigurationDump Customized,
     IReadOnlyList<ConfigChange> Changes,
-    IReadOnlyList<TransferItem> Items);
+    IReadOnlyList<TransferItem> Items,
+    TransferScope Scope,
+    IReadOnlyList<SubsystemInfo> Subsystems);
 
 public static class ExitCodes
 {

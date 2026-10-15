@@ -150,12 +150,11 @@ public static class ExtensionDraftWriter
                 	ПродолжитьВызов();
                 {end}
                 """,
+            // HookBody уже содержит полное тело с #Вставка / #КонецВставки.
             ProposedHook.ChangeAndControl => $"""
                 &ИзменениеИКонтроль("{target}")
                 {header}
-                #Вставка
                 {Indent(body)}
-                #КонецВставки
                 {end}
                 """,
             _ => $"""
