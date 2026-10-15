@@ -127,6 +127,56 @@ public sealed record ExtensionSummary(
     public int Total => Critical + Adaptation + Warning + Unchecked;
 }
 
+/// <summary>
+/// Решение по доработке при приведении к типовой: автоматом в расширение,
+/// вручную, нужна миграция данных, или пропуск (косметика).
+/// </summary>
+public enum TransferDecision
+{
+    Auto,
+    Manual,
+    /// <summary>Только подсветка в реестре: не генерируем файлы расширения.</summary>
+    Highlight,
+    DataMigration,
+    Skip,
+}
+
+public enum ProposedHook
+{
+    None,
+    Before,
+    After,
+    Instead,
+    ChangeAndControl,
+}
+
+/// <summary>
+/// Одна доработка относительно типовой выгрузки той же версии.
+/// </summary>
+public sealed record TransferItem(
+    string ObjectName,
+    string? ObjectUuid,
+    string ObjectType,
+    string? Module,
+    string? Method,
+    string? MemberKind,
+    ChangeKind ChangeKind,
+    TransferDecision Decision,
+    string Reason,
+    ProposedHook ProposedHook,
+    string? HookBody,
+    string? MethodHeader,
+    bool IsFunction,
+    string? AddedMethodSource);
+
+public sealed record TransferPlan(
+    string ExtensionName,
+    string Prefix,
+    ConfigurationDump Typical,
+    ConfigurationDump Customized,
+    IReadOnlyList<ConfigChange> Changes,
+    IReadOnlyList<TransferItem> Items);
+
 public static class ExitCodes
 {
     public const int Ok = 0;

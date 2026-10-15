@@ -75,6 +75,9 @@
             <TextBlock FontSize="16" FontWeight="SemiBold" Text="6. Сравните прогоны на вкладке «История»" />
             <TextBlock TextWrapping="Wrap" Text="Сохранённые отчёты нужны для памяти между обновлениями. На вкладке «История» укажите папку прошлого прогона и папку текущего прогона — те самые папки, куда раньше писалась кнопка «Сохранить отчёт». Программа читает из них config.json и impact.json." />
             <TextBlock TextWrapping="Wrap" Text="Новое — строка появилась только в текущем прогоне, это свежая проблема после нового обновления. Снятое — строка была в прошлом прогоне и исчезла, значит место уже поправлено или изменение ушло. Осталось — строка есть в обоих прогонах, её ещё не разобрали. Строки сопоставляются по объекту, модулю, методу, виду и сути, а не по порядку в файле." />
+
+            <TextBlock FontSize="16" FontWeight="SemiBold" Text="7. Вкладка «К типовой» — вынос доработок в расширение" />
+            <TextBlock TextWrapping="Wrap" Text="Укажите выгрузку типовой конфигурации той же версии и выгрузку доработанной. Реестр: Авто — в черновик идут только правки модулей (хуки); Подсветка — новые объекты, формы и прочие метаданные без генерации XML; Вручную — опасные случаи; Пропуск — косметика. «Сохранить черновик» пишет extension/ с модулями плюс transfer.html/json. Базу программа не меняет." />
           </StackPanel>
         </ScrollViewer>
       </TabItem>
@@ -141,6 +144,52 @@
               <DataGridTextColumn Header="Метод" Binding="{Binding Method}" Width="*" />
               <DataGridTextColumn Header="Вмешательство" Binding="{Binding Intervention}" Width="*" />
               <DataGridTextColumn Header="Уровень" Binding="{Binding Severity}" Width="140" />
+              <DataGridTextColumn Header="Причина" Binding="{Binding Reason}" Width="3*" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </TabItem>
+      <TabItem Header="К типовой">
+        <DockPanel Margin="0,8,0,0">
+          <StackPanel DockPanel.Dock="Top" Spacing="8">
+            <TextBlock TextWrapping="Wrap" Text="Поиск доработок относительно типовой выгрузки той же версии и черновик расширения. Базу программа не меняет: только файлы и реестр." />
+            <Grid ColumnDefinitions="140,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
+              <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Типовая" />
+              <TextBox Grid.Row="0" Grid.Column="1" x:Name="TypicalBox" Margin="0,0,8,8" IsReadOnly="True" Watermark="Выгрузка типовой конфигурации" />
+              <Button Grid.Row="0" Grid.Column="2" Margin="0,0,8,8" Content="Обзор…" Click="OnBrowseTypical" />
+              <Button Grid.Row="0" Grid.Column="3" Margin="0,0,0,8" Content="Очистить" Click="OnClearTypical" />
+
+              <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Доработанная" />
+              <TextBox Grid.Row="1" Grid.Column="1" x:Name="CustomizedBox" Margin="0,0,8,8" IsReadOnly="True" Watermark="Выгрузка доработанной конфигурации" />
+              <Button Grid.Row="1" Grid.Column="2" Margin="0,0,8,8" Content="Обзор…" Click="OnBrowseCustomized" />
+              <Button Grid.Row="1" Grid.Column="3" Margin="0,0,0,8" Content="Очистить" Click="OnClearCustomized" />
+
+              <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Имя расширения" />
+              <TextBox Grid.Row="2" Grid.Column="1" x:Name="TransferNameBox" Margin="0,0,8,8" Watermark="Например, Доработки" Text="Доработки" />
+
+              <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Префикс" />
+              <TextBox Grid.Row="3" Grid.Column="1" x:Name="TransferPrefixBox" Margin="0,0,8,0" Watermark="Например, Дораб_" Text="Дораб_" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button x:Name="TransferFindButton" Content="Найти доработки" MinWidth="160" Click="OnFindTransfer" />
+              <Button x:Name="TransferSaveButton" Content="Сохранить черновик" IsEnabled="False" Click="OnSaveTransfer" />
+              <TextBox x:Name="TransferFilterBox" Width="280" Watermark="Фильтр по объекту, решению, причине" TextChanged="OnTransferFilterChanged" />
+              <TextBlock x:Name="TransferStatusText" VerticalAlignment="Center" TextWrapping="Wrap" Text="Доработки ещё не искали." />
+            </StackPanel>
+          </StackPanel>
+          <DataGrid x:Name="TransferGrid"
+                    Margin="0,8,0,0"
+                    IsReadOnly="True"
+                    AutoGenerateColumns="False"
+                    CanUserReorderColumns="False"
+                    GridLinesVisibility="Horizontal"
+                    SelectionMode="Single">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Объект" Binding="{Binding ObjectName}" Width="2*" />
+              <DataGridTextColumn Header="Метод" Binding="{Binding Method}" Width="*" />
+              <DataGridTextColumn Header="Вид" Binding="{Binding Kind}" Width="120" />
+              <DataGridTextColumn Header="Решение" Binding="{Binding Decision}" Width="110" />
+              <DataGridTextColumn Header="Хук" Binding="{Binding Hook}" Width="140" />
               <DataGridTextColumn Header="Причина" Binding="{Binding Reason}" Width="3*" />
             </DataGrid.Columns>
           </DataGrid>

@@ -9,6 +9,9 @@
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AssemblyName>sverka</AssemblyName>
     <RootNamespace>Sverka.App</RootNamespace>
+    <!-- Без этого single-file exe падает: DllNotFoundException libSkiaSharp -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>

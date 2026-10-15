@@ -8,10 +8,12 @@ namespace Sverka.App;
 public partial class MainWindow : Window
 {
     private AnalysisResult? _result;
+    private TransferPlan? _transfer;
     private List<ChangeRow> _changes = [];
     private List<FindingRow> _findings = [];
     private List<SummaryRow> _summaries = [];
     private List<HistoryRow> _history = [];
+    private List<TransferRow> _transfers = [];
 
     public MainWindow()
     {
@@ -91,6 +93,81 @@ public partial class MainWindow : Window
             SetStatus(exception.Message);
         }
     }
+
+    private async void OnBrowseTypical(object? sender, RoutedEventArgs e) =>
+        TypicalBox.Text = await PickFolder("Типовая выгрузка") ?? TypicalBox.Text;
+
+    private async void OnBrowseCustomized(object? sender, RoutedEventArgs e) =>
+        CustomizedBox.Text = await PickFolder("Доработанная выгрузка") ?? CustomizedBox.Text;
+
+    private void OnClearTypical(object? sender, RoutedEventArgs e) => TypicalBox.Text = "";
+
+    private void OnClearCustomized(object? sender, RoutedEventArgs e) => CustomizedBox.Text = "";
+
+    private async void OnFindTransfer(object? sender, RoutedEventArgs e)
+    {
+        var typical = TypicalBox.Text?.Trim();
+        var customized = CustomizedBox.Text?.Trim();
+        var name = TransferNameBox.Text?.Trim();
+        var prefix = TransferPrefixBox.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(typical) || string.IsNullOrWhiteSpace(customized))
+        {
+            SetTransferStatus("Нужны обе выгрузки: типовая и доработанная.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(prefix))
+        {
+            SetTransferStatus("Укажите имя расширения и префикс.");
+            return;
+        }
+
+        TransferFindButton.IsEnabled = false;
+        TransferSaveButton.IsEnabled = false;
+        SetTransferStatus("Ищу доработки…");
+        try
+        {
+            var plan = await Task.Run(() => Analysis.RunTransfer(typical, customized, name, prefix));
+            _transfer = plan;
+            _transfers = plan.Items.Select(item => new TransferRow(item)).ToList();
+            ApplyTransferFilter();
+            TransferSaveButton.IsEnabled = true;
+            SetTransferStatus(DescribeTransfer(plan));
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or InvalidDataException or DirectoryNotFoundException or ArgumentException)
+        {
+            _transfer = null;
+            _transfers = [];
+            ApplyTransferFilter();
+            SetTransferStatus(exception.Message);
+        }
+        finally
+        {
+            TransferFindButton.IsEnabled = true;
+        }
+    }
+
+    private async void OnSaveTransfer(object? sender, RoutedEventArgs e)
+    {
+        if (_transfer == null)
+            return;
+
+        var folder = await PickFolder("Куда сохранить черновик расширения");
+        if (folder == null)
+            return;
+
+        try
+        {
+            Analysis.WriteTransferReports(folder, _transfer, writeDraft: true);
+            SetTransferStatus($"Черновик записан в {folder} (extension/, transfer.html, transfer.json)");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            SetTransferStatus(exception.Message);
+        }
+    }
+
+    private void OnTransferFilterChanged(object? sender, TextChangedEventArgs e) => ApplyTransferFilter();
 
     private async void OnBrowsePreviousRun(object? sender, RoutedEventArgs e) =>
         PreviousRunBox.Text = await PickFolder("Папка прошлого прогона") ?? PreviousRunBox.Text;
@@ -172,6 +249,18 @@ public partial class MainWindow : Window
             row => $"{row.Status} {row.Section} {row.ObjectName} {row.Method} {row.Kind} {row.Summary}").ToList();
     }
 
+    private void ApplyTransferFilter()
+    {
+        if (TransferGrid == null)
+            return;
+
+        var filter = TransferFilterBox.Text?.Trim();
+        TransferGrid.ItemsSource = FilterRows(
+            _transfers,
+            filter,
+            row => $"{row.ObjectName} {row.Method} {row.Kind} {row.Decision} {row.Hook} {row.Reason}").ToList();
+    }
+
     private static IEnumerable<T> FilterRows<T>(IEnumerable<T> rows, string? filter, Func<T, string> text)
     {
         if (string.IsNullOrWhiteSpace(filter))
@@ -196,6 +285,17 @@ public partial class MainWindow : Window
     private void SetStatus(string text) => StatusText.Text = text;
 
     private void SetHistoryStatus(string text) => HistoryStatusText.Text = text;
+
+    private void SetTransferStatus(string text) => TransferStatusText.Text = text;
+
+    private static string DescribeTransfer(TransferPlan plan)
+    {
+        var auto = plan.Items.Count(item => item.Decision == TransferDecision.Auto);
+        var manual = plan.Items.Count(item => item.Decision == TransferDecision.Manual);
+        var highlight = plan.Items.Count(item => item.Decision == TransferDecision.Highlight);
+        var skip = plan.Items.Count(item => item.Decision == TransferDecision.Skip);
+        return $"Доработок: {plan.Items.Count}. Авто {auto}, вручную {manual}, подсветка {highlight}, пропуск {skip}.";
+    }
 
     private static string DescribeHistory(IReadOnlyList<RunDelta> deltas)
     {
@@ -279,4 +379,14 @@ public sealed class SummaryRow(ExtensionSummary summary)
     public int Warning => summary.Warning;
     public int Unchecked => summary.Unchecked;
     public int Total => summary.Total;
+}
+
+public sealed class TransferRow(TransferItem item)
+{
+    public string ObjectName => item.ObjectName;
+    public string Method => item.Method ?? "";
+    public string Kind => ReportWriter.KindName(item.ChangeKind);
+    public string Decision => ReportWriter.TransferDecisionName(item.Decision);
+    public string Hook => ReportWriter.ProposedHookName(item.ProposedHook);
+    public string Reason => item.Reason;
 }

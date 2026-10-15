@@ -32,6 +32,27 @@ public static class Analysis
     public static IReadOnlyList<RunDelta> CompareRuns(string previousPath, string currentPath) =>
         RunComparer.Compare(previousPath, currentPath);
 
+    public static TransferPlan RunTransfer(
+        string typicalPath,
+        string customizedPath,
+        string extensionName,
+        string prefix)
+    {
+        var typical = DumpReader.Read(typicalPath);
+        var customized = DumpReader.Read(customizedPath);
+        return CustomizationFinder.Find(typical, customized, extensionName, prefix);
+    }
+
+    public static void WriteTransferReports(string directory, TransferPlan plan, bool writeDraft)
+    {
+        Directory.CreateDirectory(directory);
+        ReportWriter.WriteTransfer(Path.Combine(directory, "transfer.json"), plan);
+        ReportWriter.WriteTransferHtml(Path.Combine(directory, "transfer.html"), plan);
+        if (!writeDraft)
+            return;
+        ExtensionDraftWriter.Write(Path.Combine(directory, "extension"), plan);
+    }
+
     public static void WriteReports(string directory, AnalysisResult result)
     {
         Directory.CreateDirectory(directory);

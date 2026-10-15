@@ -71,6 +71,77 @@ public static class ReportWriter
         WriteJson(path, report);
     }
 
+    public static void WriteTransfer(string path, TransferPlan plan)
+    {
+        var report = new
+        {
+            extension = plan.ExtensionName,
+            prefix = plan.Prefix,
+            typical = Header(plan.Typical),
+            customized = Header(plan.Customized),
+            items = plan.Items.Select(item => new
+            {
+                @object = item.ObjectName,
+                module = item.Module,
+                method = item.Method,
+                memberKind = item.MemberKind,
+                kind = KindName(item.ChangeKind),
+                decision = TransferDecisionName(item.Decision),
+                hook = ProposedHookName(item.ProposedHook),
+                reason = item.Reason,
+            }),
+            summary = new
+            {
+                auto = plan.Items.Count(item => item.Decision == TransferDecision.Auto),
+                manual = plan.Items.Count(item => item.Decision == TransferDecision.Manual),
+                highlight = plan.Items.Count(item => item.Decision == TransferDecision.Highlight),
+                dataMigration = plan.Items.Count(item => item.Decision == TransferDecision.DataMigration),
+                skip = plan.Items.Count(item => item.Decision == TransferDecision.Skip),
+            },
+        };
+        WriteJson(path, report);
+    }
+
+    public static void WriteTransferHtml(string path, TransferPlan plan)
+    {
+        var rows = new StringBuilder();
+        foreach (var item in plan.Items)
+        {
+            rows.Append("<tr><td>")
+                .Append(Encode(item.ObjectName)).Append("</td><td>")
+                .Append(Encode(item.Method)).Append("</td><td>")
+                .Append(Encode(KindName(item.ChangeKind))).Append("</td><td>")
+                .Append(Encode(TransferDecisionName(item.Decision))).Append("</td><td>")
+                .Append(Encode(ProposedHookName(item.ProposedHook))).Append("</td><td>")
+                .Append(Encode(item.Reason)).Append("</td></tr>");
+        }
+
+        var auto = plan.Items.Count(item => item.Decision == TransferDecision.Auto);
+        var manual = plan.Items.Count(item => item.Decision == TransferDecision.Manual);
+        var highlight = plan.Items.Count(item => item.Decision == TransferDecision.Highlight);
+        var skip = plan.Items.Count(item => item.Decision == TransferDecision.Skip);
+
+        var body = new StringBuilder();
+        body.Append("<p>Расширение: ").Append(Encode(plan.ExtensionName))
+            .Append(", префикс: ").Append(Encode(plan.Prefix)).Append("</p>");
+        body.Append("<p>Авто: ").Append(auto)
+            .Append(", вручную: ").Append(manual)
+            .Append(", подсветка: ").Append(highlight)
+            .Append(", пропуск: ").Append(skip).Append("</p>");
+        body.Append("<h2>Реестр доработок</h2>")
+            .Append("<table><thead><tr><th>Объект</th><th>Метод</th><th>Вид</th><th>Решение</th><th>Хук</th><th>Причина</th></tr></thead><tbody>")
+            .Append(rows)
+            .Append("</tbody></table>");
+        body.Append("<h2>Дальше в Конфигураторе</h2><ol>")
+            .Append("<li>Загрузите черновик расширения из папки extension/.</li>")
+            .Append("<li>Проверьте хуки и метаданные, не удаляя доработки из основной конфигурации.</li>")
+            .Append("<li>Перенесите данные (реквизиты/объекты с пометкой «Данные») служебной обработкой.</li>")
+            .Append("<li>Сверьте выборки, затем очистите основную и верните конфигурацию на замок.</li>")
+            .Append("</ol>");
+
+        WriteHtmlDocument(path, "Перенос доработок в расширение", body.ToString());
+    }
+
     public static void WriteConfigHtml(string path, IReadOnlyList<ConfigChange> changes)
     {
         var rows = new StringBuilder();
@@ -221,6 +292,26 @@ public static class ReportWriter
         Severity.Warning => "Предупреждение",
         Severity.Unchecked => "Не проверено",
         _ => severity.ToString(),
+    };
+
+    public static string TransferDecisionName(TransferDecision decision) => decision switch
+    {
+        TransferDecision.Auto => "Авто",
+        TransferDecision.Manual => "Вручную",
+        TransferDecision.Highlight => "Подсветка",
+        TransferDecision.DataMigration => "Данные",
+        TransferDecision.Skip => "Пропуск",
+        _ => decision.ToString(),
+    };
+
+    public static string ProposedHookName(ProposedHook hook) => hook switch
+    {
+        ProposedHook.None => "",
+        ProposedHook.Before => "Перед",
+        ProposedHook.After => "После",
+        ProposedHook.Instead => "Вместо",
+        ProposedHook.ChangeAndControl => "ИзменениеИКонтроль",
+        _ => hook.ToString(),
     };
 
     public static string RunStatusName(RunStatus status) => status switch
