@@ -43,7 +43,11 @@ public partial class MainWindow : Window
 
     private void OnClearExtensions(object? sender, RoutedEventArgs e) => ExtensionsBox.Text = "";
 
-    private void OnShowHelp(object? sender, RoutedEventArgs e) => Pages.SelectedIndex = 0;
+    private void OnShowHelp(object? sender, RoutedEventArgs e)
+    {
+        MainPages.SelectedIndex = 0;
+        ComparePages.SelectedIndex = 0;
+    }
 
     private async void OnCompare(object? sender, RoutedEventArgs e)
     {
@@ -69,7 +73,8 @@ public partial class MainWindow : Window
             SummaryGrid.ItemsSource = _summaries;
             ApplyFilter();
             SaveButton.IsEnabled = true;
-            Pages.SelectedIndex = 1;
+            MainPages.SelectedIndex = 0;
+            ComparePages.SelectedIndex = 1;
             SetStatus(Describe(result));
         }
         catch (Exception exception) when (exception is FileNotFoundException or InvalidDataException or DirectoryNotFoundException or ArgumentException)

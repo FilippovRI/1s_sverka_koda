@@ -2,296 +2,297 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Sverka.App.MainWindow"
         Title="Сверка 1С"
-        Width="1180"
-        Height="780"
-        MinWidth="900"
-        MinHeight="600">
-  <DockPanel Margin="16">
-    <Border DockPanel.Dock="Bottom" Margin="0,12,0,0" Padding="0,8,0,0">
+        Width="1280"
+        Height="820"
+        MinWidth="960"
+        MinHeight="640">
+  <DockPanel Margin="12">
+    <Border DockPanel.Dock="Bottom" Margin="0,8,0,0" Padding="0,6,0,0">
       <TextBlock x:Name="StatusText" TextWrapping="Wrap" Text="Выберите каталоги кнопками «Обзор…» и нажмите «Сверить»." />
     </Border>
 
-    <StackPanel DockPanel.Dock="Top" Spacing="8">
-      <Grid ColumnDefinitions="120,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto">
-        <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Выгрузка ДО" />
-        <TextBox Grid.Row="0" Grid.Column="1" x:Name="BeforeBox" Margin="0,0,8,8" IsReadOnly="True" Watermark="Папка выгрузки конфигурации" />
-        <Button Grid.Row="0" Grid.Column="2" Margin="0,0,8,8" Content="Обзор…" Click="OnBrowseBefore" />
-        <Button Grid.Row="0" Grid.Column="3" Margin="0,0,0,8" Content="Очистить" Click="OnClearBefore" />
-
-        <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Выгрузка ПОСЛЕ" />
-        <TextBox Grid.Row="1" Grid.Column="1" x:Name="AfterBox" Margin="0,0,8,8" IsReadOnly="True" Watermark="Папка выгрузки конфигурации" />
-        <Button Grid.Row="1" Grid.Column="2" Margin="0,0,8,8" Content="Обзор…" Click="OnBrowseAfter" />
-        <Button Grid.Row="1" Grid.Column="3" Margin="0,0,0,8" Content="Очистить" Click="OnClearAfter" />
-
-        <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Расширения" />
-        <TextBox Grid.Row="2" Grid.Column="1" x:Name="ExtensionsBox" Margin="0,0,8,0" IsReadOnly="True" Watermark="Необязательно" />
-        <Button Grid.Row="2" Grid.Column="2" Margin="0,0,8,0" Content="Обзор…" Click="OnBrowseExtensions" />
-        <Button Grid.Row="2" Grid.Column="3" Content="Очистить" Click="OnClearExtensions" />
-      </Grid>
-
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button x:Name="CompareButton" Content="Сверить" MinWidth="120" Click="OnCompare" />
-        <Button x:Name="SaveButton" Content="Сохранить отчёт" IsEnabled="False" Click="OnSave" />
-        <Button Content="Инструкция" Click="OnShowHelp" />
-        <TextBox x:Name="FilterBox" Width="280" Watermark="Фильтр по объекту, методу, уровню" TextChanged="OnFilterChanged" />
-      </StackPanel>
-    </StackPanel>
-
-    <TabControl x:Name="Pages" Margin="0,16,0,0">
-      <TabItem Header="Инструкция">
-        <ScrollViewer Margin="0,8,0,0" HorizontalScrollBarVisibility="Disabled">
-          <StackPanel Spacing="14" MaxWidth="820" HorizontalAlignment="Left">
-            <TextBlock FontSize="20" FontWeight="SemiBold" Text="Как сверить обновление" />
-            <TextBlock TextWrapping="Wrap" Text="Программа сравнивает две папки с выгрузкой конфигурации 1С. Сначала показывает, что изменилось в самой конфигурации. Если указаны расширения, отдельно отмечает места, где эти изменения затрагивают ваш код. Базу данных программа не открывает и ничего в ней не меняет." />
-
-            <TextBlock FontSize="16" FontWeight="SemiBold" Text="1. Подготовьте папки в Конфигураторе" />
-            <TextBlock TextWrapping="Wrap" Text="Для версии до обновления: Конфигурация → Выгрузить конфигурацию в файлы. Укажите пустую папку. В ней должен появиться файл Configuration.xml." />
-            <TextBlock TextWrapping="Wrap" Text="Для версии после обновления повторите выгрузку в другую пустую папку. Не складывайте две версии в один каталог." />
-            <TextBlock TextWrapping="Wrap" Text="Расширение выгружается так же, отдельной папкой: откройте расширение и снова выберите «Выгрузить конфигурацию в файлы». Несколько расширений можно положить соседними папками внутрь одной общей. В программе тогда указывается эта общая папка." />
-
-            <TextBlock FontSize="16" FontWeight="SemiBold" Text="2. Укажите папки в окне" />
-            <TextBlock TextWrapping="Wrap" Text="«Выгрузка ДО» — папка старой конфигурации. «Выгрузка ПОСЛЕ» — папка новой. «Расширения» можно не заполнять: тогда будет только список изменений конфигурации. Каталог выбирается кнопкой «Обзор…». «Очистить» убирает выбранную папку. Затем нажмите «Сверить»." />
-
-            <TextBlock FontSize="16" FontWeight="SemiBold" Text="3. Прочитайте вкладку «Конфигурация»" />
-            <TextBlock TextWrapping="Wrap" Text="Каждая строка — одно отличие. Щелчок по строке метода показывает его текст слева как «Было» и справа как «Стало». Комментарии и пустые строки отличием не считаются. Если в модуле изменились десять процедур, в списке будут эти процедуры, а не весь файл целиком." />
-            <TextBlock TextWrapping="Wrap" Text="Добавлен — объекта или метода не было в старой выгрузке. Удалён — он исчез. Переименован — тот же объект, другое имя. Свойства — изменились реквизиты или свойства объекта. Состав — изменились форма, макет, права или набор реквизитов. Модуль — изменились параметры или текст процедуры." />
-
-            <TextBlock FontSize="16" FontWeight="SemiBold" Text="4. Прочитайте вкладку «Расширения»" />
-            <TextBlock TextWrapping="Wrap" Text="Сюда попадают только те изменения конфигурации, до которых дотягивается расширение: перехват процедуры, вставка, вызов общего модуля или заимствованный реквизит. Остальные изменения конфигурации остаются на вкладке «Конфигурация» и сами по себе не означают поломку расширения." />
-            <TextBlock TextWrapping="Wrap" Text="Критично — метод или реквизит, на который опирается расширение, удалён, либо у перехваченного метода изменились параметры. Это нужно исправить до работы пользователей." />
-            <TextBlock TextWrapping="Wrap" Text="Адаптация — расширение вставляет свой код внутрь процедуры через ИзменениеИКонтроль, и обновление изменило именно те строки, рядом с которыми стоит вставка. Это место надо открыть и проверить вручную в первую очередь." />
-            <TextBlock TextWrapping="Wrap" Text="Предупреждение — расширение работает после изменившегося метода, продолжает его вызов, обращается к нему из своего кода, использует изменившийся реквизит либо вставка стоит на месте, но тело процедуры изменилось в стороне от неё. Компиляция часто сохраняется, но смысл типового кода мог сдвинуться." />
-            <TextBlock TextWrapping="Wrap" Text="Программа отличает эти два случая по строкам-якорям: если строки типовой процедуры вокруг вставки уцелели после обновления, строка понижается до предупреждения; если они изменились, остаётся адаптация." />
-            <TextBlock TextWrapping="Wrap" Text="Не проверено — в модуле расширения есть Выполнить или Вычислить. Программа не может сама понять, какую процедуру так запускают, поэтому строка только напоминает посмотреть модуль." />
-
-            <TextBlock FontSize="16" FontWeight="SemiBold" Text="Почему часть изменений в списке не появляется" />
-            <TextBlock TextWrapping="Wrap" Text="Обработчик «Перед» отрабатывает до типовой процедуры и видит только её входные параметры, поэтому переписанное тело типовой процедуры ему ничем не грозит — такой строки в списке не будет. Останутся только удаление процедуры и изменение её параметров, и это по-прежнему «Критично»." />
-            <TextBlock TextWrapping="Wrap" Text="Обработчик «После» зависит от того, что типовая процедура успела посчитать и записать, поэтому изменение её тела остаётся предупреждением. Обработчик «Вместо» без ПродолжитьВызов вообще не запускает типовое тело, и его правка тоже пропускается; с ПродолжитьВызов остаётся предупреждение." />
-            <TextBlock TextWrapping="Wrap" Text="У заимствованных реквизитов программа отделяет правку представления от содержательной: изменение синонима, комментария или подсказки строки не даёт, а изменение типа, длины, точности или состава даёт предупреждение. На вкладке «Конфигурация» видны оба случая — там перечислены все отличия без оценки риска." />
-
-            <TextBlock FontSize="16" FontWeight="SemiBold" Text="5. Сохраните отчёт при необходимости" />
-            <TextBlock TextWrapping="Wrap" Text="Кнопка «Сохранить отчёт» спрашивает папку и записывает туда config.html для чтения в браузере и config.json для передачи дальше. Если расширения были указаны, рядом появятся impact.html и impact.json. Поле «Фильтр» сужает списки по объекту, методу или уровню, не запуская сверку заново." />
-
-            <TextBlock FontSize="16" FontWeight="SemiBold" Text="6. Сравните прогоны на вкладке «История»" />
-            <TextBlock TextWrapping="Wrap" Text="Сохранённые отчёты нужны для памяти между обновлениями. На вкладке «История» укажите папку прошлого прогона и папку текущего прогона — те самые папки, куда раньше писалась кнопка «Сохранить отчёт». Программа читает из них config.json и impact.json." />
-            <TextBlock TextWrapping="Wrap" Text="Новое — строка появилась только в текущем прогоне, это свежая проблема после нового обновления. Снятое — строка была в прошлом прогоне и исчезла, значит место уже поправлено или изменение ушло. Осталось — строка есть в обоих прогонах, её ещё не разобрали. Строки сопоставляются по объекту, модулю, методу, виду и сути, а не по порядку в файле." />
-
-            <TextBlock FontSize="16" FontWeight="SemiBold" Text="7. Вкладка «К типовой» — вынос доработок в расширение" />
-            <TextBlock TextWrapping="Wrap" Text="Укажите выгрузку типовой той же версии и доработанную. Загрузите подсистемы (дерево) или subsystems.json; при необходимости добавьте объекты вручную. Реестр: Авто — хуки; Подсветка — формы и новые объекты; Данные — реквизиты (migration/ПереносДанных.bsl); Вручную / Пропуск. Щелчок показывает Было/Стало с маркерами −/+. «Сохранить область» — только subsystems.json; «Сохранить черновик» — extension/, migration/, отчёты." />
-          </StackPanel>
-        </ScrollViewer>
-      </TabItem>
-      <TabItem Header="Конфигурация">
-        <Grid RowDefinitions="*,220" Margin="0,8,0,0">
-          <DataGrid x:Name="ChangesGrid"
-                    IsReadOnly="True"
-                    AutoGenerateColumns="False"
-                    CanUserReorderColumns="False"
-                    GridLinesVisibility="Horizontal"
-                    SelectionMode="Single"
-                    SelectionChanged="OnChangeSelected">
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="Объект" Binding="{Binding ObjectName}" Width="2*" />
-              <DataGridTextColumn Header="Модуль" Binding="{Binding Module}" Width="*" />
-              <DataGridTextColumn Header="Метод" Binding="{Binding Method}" Width="*" />
-              <DataGridTextColumn Header="Вид" Binding="{Binding Kind}" Width="140" />
-              <DataGridTextColumn Header="Что изменилось" Binding="{Binding Summary}" Width="2*" />
-            </DataGrid.Columns>
-          </DataGrid>
-          <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0">
-            <DockPanel Margin="0,0,8,0">
-              <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="Было  − удалено" />
-              <TextBox x:Name="BeforeText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono,Consolas,monospace" />
-            </DockPanel>
-            <DockPanel Grid.Column="1">
-              <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="Стало  + добавлено" />
-              <TextBox x:Name="AfterText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono,Consolas,monospace" />
-            </DockPanel>
-          </Grid>
-        </Grid>
-      </TabItem>
-      <TabItem Header="Расширения">
-        <DockPanel Margin="0,8,0,0">
-          <StackPanel DockPanel.Dock="Top" Spacing="4">
-            <TextBlock FontWeight="SemiBold" Text="Сводка по расширениям" />
-            <DataGrid x:Name="SummaryGrid"
-                      MaxHeight="200"
-                      IsReadOnly="True"
-                      AutoGenerateColumns="False"
-                      CanUserReorderColumns="False"
-                      GridLinesVisibility="Horizontal"
-                      SelectionMode="Single">
-              <DataGrid.Columns>
-                <DataGridTextColumn Header="Расширение" Binding="{Binding Extension}" Width="2*" />
-                <DataGridTextColumn Header="Критично" Binding="{Binding Critical}" Width="*" />
-                <DataGridTextColumn Header="Адаптация" Binding="{Binding Adaptation}" Width="*" />
-                <DataGridTextColumn Header="Предупреждение" Binding="{Binding Warning}" Width="*" />
-                <DataGridTextColumn Header="Не проверено" Binding="{Binding Unchecked}" Width="*" />
-                <DataGridTextColumn Header="Всего" Binding="{Binding Total}" Width="*" />
-              </DataGrid.Columns>
-            </DataGrid>
-            <TextBlock Margin="0,4,0,4" FontWeight="SemiBold" Text="Находки" />
-          </StackPanel>
-          <DataGrid x:Name="FindingsGrid"
-                    IsReadOnly="True"
-                    AutoGenerateColumns="False"
-                    CanUserReorderColumns="False"
-                    GridLinesVisibility="Horizontal"
-                    SelectionMode="Single">
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="Расширение" Binding="{Binding Extension}" Width="*" />
-              <DataGridTextColumn Header="Объект" Binding="{Binding ObjectName}" Width="2*" />
-              <DataGridTextColumn Header="Метод" Binding="{Binding Method}" Width="*" />
-              <DataGridTextColumn Header="Вмешательство" Binding="{Binding Intervention}" Width="*" />
-              <DataGridTextColumn Header="Уровень" Binding="{Binding Severity}" Width="140" />
-              <DataGridTextColumn Header="Причина" Binding="{Binding Reason}" Width="3*" />
-            </DataGrid.Columns>
-          </DataGrid>
-        </DockPanel>
-      </TabItem>
-      <TabItem Header="К типовой">
-        <Grid ColumnDefinitions="340,*" Margin="0,8,0,0">
-          <DockPanel Margin="0,0,12,0">
-            <StackPanel DockPanel.Dock="Top" Spacing="8">
-              <TextBlock FontWeight="SemiBold" Text="Область сравнения" />
-              <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.85"
-                         Text="Как фильтр в сравнении/объединении 1С. Галочка на родителе отмечает вложенные. Доп. объекты — для модулей вне Content подсистем." />
-              <WrapPanel Orientation="Horizontal">
-                <Button Margin="0,0,6,6" Content="Загрузить" Click="OnLoadSubsystems" />
-                <Button Margin="0,0,6,6" Content="Из файла…" Click="OnLoadScopeFile" />
-                <Button Margin="0,0,6,6" Content="Все" Click="OnSelectAllSubsystems" />
-                <Button Margin="0,0,6,6" Content="Снять" Click="OnClearSubsystems" />
-              </WrapPanel>
-              <CheckBox x:Name="IncludeDescendantsBox" IsChecked="True" Content="Включать вложенные по имени родителя" />
-              <TextBlock x:Name="SubsystemStatusText" TextWrapping="Wrap" FontSize="12" Text="Подсистемы не загружены — сравнение по всей конфигурации." />
-            </StackPanel>
-            <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0" MaxHeight="160">
-              <TextBlock DockPanel.Dock="Top" FontWeight="SemiBold" Margin="0,0,0,4" Text="Доп. объекты" />
-              <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
-                <TextBox x:Name="ExtraObjectBox" Width="200" Watermark="CommonModule.Имя" />
-                <Button Content="+" MinWidth="32" Click="OnAddExtraObject" />
-                <Button Content="−" MinWidth="32" Click="OnRemoveExtraObject" />
-              </StackPanel>
-              <ListBox x:Name="ExtraObjectsList" SelectionMode="Single" />
-            </DockPanel>
-            <TreeView x:Name="SubsystemTree" Margin="0,8,0,0">
-              <TreeView.ItemTemplate>
-                <TreeDataTemplate ItemsSource="{Binding Children}">
-                  <CheckBox Content="{Binding Title}"
-                            IsThreeState="True"
-                            IsChecked="{Binding IsChecked, Mode=TwoWay}" />
-                </TreeDataTemplate>
-              </TreeView.ItemTemplate>
-            </TreeView>
-          </DockPanel>
-
-          <DockPanel Grid.Column="1">
-            <StackPanel DockPanel.Dock="Top" Spacing="8">
-              <TextBlock TextWrapping="Wrap" Text="Поиск доработок относительно типовой той же версии. Авто — только модули; формы, новые объекты и прочие метаданные — подсветка без XML." />
-              <Grid ColumnDefinitions="140,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
-                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Типовая" />
-                <TextBox Grid.Row="0" Grid.Column="1" x:Name="TypicalBox" Margin="0,0,8,8" IsReadOnly="True" Watermark="Выгрузка типовой конфигурации" />
-                <Button Grid.Row="0" Grid.Column="2" Margin="0,0,8,8" Content="Обзор…" Click="OnBrowseTypical" />
-                <Button Grid.Row="0" Grid.Column="3" Margin="0,0,0,8" Content="Очистить" Click="OnClearTypical" />
-
-                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Доработанная" />
-                <TextBox Grid.Row="1" Grid.Column="1" x:Name="CustomizedBox" Margin="0,0,8,8" IsReadOnly="True" Watermark="Выгрузка доработанной конфигурации" />
-                <Button Grid.Row="1" Grid.Column="2" Margin="0,0,8,8" Content="Обзор…" Click="OnBrowseCustomized" />
-                <Button Grid.Row="1" Grid.Column="3" Margin="0,0,0,8" Content="Очистить" Click="OnClearCustomized" />
-
-                <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Имя расширения" />
-                <TextBox Grid.Row="2" Grid.Column="1" x:Name="TransferNameBox" Margin="0,0,8,8" Watermark="Например, Доработки" Text="Доработки" />
-
-                <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Префикс" />
-                <TextBox Grid.Row="3" Grid.Column="1" x:Name="TransferPrefixBox" Margin="0,0,8,0" Watermark="Например, Дораб_" Text="Дораб_" />
-              </Grid>
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button x:Name="TransferFindButton" Content="Найти доработки" MinWidth="160" Click="OnFindTransfer" />
-                <Button x:Name="TransferSaveButton" Content="Сохранить черновик" IsEnabled="False" Click="OnSaveTransfer" />
-                <Button Content="Сохранить область" Click="OnSaveScope" />
-                <ComboBox x:Name="TransferDecisionFilter" Width="140" SelectedIndex="0" SelectionChanged="OnTransferDecisionFilterChanged">
-                  <ComboBoxItem Content="Все решения" />
-                  <ComboBoxItem Content="Авто" />
-                  <ComboBoxItem Content="Подсветка" />
-                  <ComboBoxItem Content="Вручную" />
-                  <ComboBoxItem Content="Данные" />
-                  <ComboBoxItem Content="Пропуск" />
-                </ComboBox>
-                <TextBox x:Name="TransferFilterBox" Width="200" Watermark="Фильтр по объекту, причине" TextChanged="OnTransferFilterChanged" />
-              </StackPanel>
-              <TextBlock x:Name="TransferStatusText" TextWrapping="Wrap" Text="Доработки ещё не искали." />
-            </StackPanel>
-
-            <Grid RowDefinitions="*,200" Margin="0,8,0,0">
-              <DataGrid x:Name="TransferGrid"
-                        IsReadOnly="True"
-                        AutoGenerateColumns="False"
-                        CanUserReorderColumns="False"
-                        GridLinesVisibility="Horizontal"
-                        SelectionMode="Single"
-                        SelectionChanged="OnTransferSelected"
-                        LoadingRow="OnTransferLoadingRow">
-                <DataGrid.Columns>
-                  <DataGridTextColumn Header="Объект" Binding="{Binding ObjectName}" Width="2*" />
-                  <DataGridTextColumn Header="Метод" Binding="{Binding Method}" Width="*" />
-                  <DataGridTextColumn Header="Вид" Binding="{Binding Kind}" Width="100" />
-                  <DataGridTextColumn Header="Решение" Binding="{Binding Decision}" Width="100" />
-                  <DataGridTextColumn Header="Хук" Binding="{Binding Hook}" Width="130" />
-                  <DataGridTextColumn Header="Причина" Binding="{Binding Reason}" Width="3*" />
-                </DataGrid.Columns>
-              </DataGrid>
-              <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0">
-                <DockPanel Margin="0,0,8,0">
-                  <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="Типовая (было)  − удалено" />
-                  <TextBox x:Name="TransferBeforeText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono,Consolas,monospace" />
-                </DockPanel>
-                <DockPanel Grid.Column="1">
-                  <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="Доработанная (стало)  + добавлено" />
-                  <TextBox x:Name="TransferAfterText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono,Consolas,monospace" />
-                </DockPanel>
-              </Grid>
-            </Grid>
-          </DockPanel>
-        </Grid>
-      </TabItem>
-      <TabItem Header="История">
+    <TabControl x:Name="MainPages">
+      <!-- Раздел 1: сверка обновления — шапка + конфигурация/расширения -->
+      <TabItem Header="Сверка обновления">
         <DockPanel Margin="0,8,0,0">
           <StackPanel DockPanel.Dock="Top" Spacing="8">
-            <TextBlock TextWrapping="Wrap" Text="Сравнение двух сохранённых прогонов. Укажите папки, куда раньше был записан отчёт (config.json, при наличии impact.json)." />
-            <Grid ColumnDefinitions="140,*,Auto,Auto" RowDefinitions="Auto,Auto">
-              <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Прошлый прогон" />
-              <TextBox Grid.Row="0" Grid.Column="1" x:Name="PreviousRunBox" Margin="0,0,8,8" IsReadOnly="True" Watermark="Папка с сохранённым отчётом" />
-              <Button Grid.Row="0" Grid.Column="2" Margin="0,0,8,8" Content="Обзор…" Click="OnBrowsePreviousRun" />
-              <Button Grid.Row="0" Grid.Column="3" Margin="0,0,0,8" Content="Очистить" Click="OnClearPreviousRun" />
+            <Grid ColumnDefinitions="120,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto">
+              <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Выгрузка ДО" />
+              <TextBox Grid.Row="0" Grid.Column="1" x:Name="BeforeBox" Margin="0,0,8,8" IsReadOnly="True" Watermark="Папка выгрузки конфигурации" />
+              <Button Grid.Row="0" Grid.Column="2" Margin="0,0,8,8" Content="Обзор…" Click="OnBrowseBefore" />
+              <Button Grid.Row="0" Grid.Column="3" Margin="0,0,0,8" Content="Очистить" Click="OnClearBefore" />
 
-              <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Текущий прогон" />
-              <TextBox Grid.Row="1" Grid.Column="1" x:Name="CurrentRunBox" Margin="0,0,8,0" IsReadOnly="True" Watermark="Папка с сохранённым отчётом" />
-              <Button Grid.Row="1" Grid.Column="2" Margin="0,0,8,0" Content="Обзор…" Click="OnBrowseCurrentRun" />
-              <Button Grid.Row="1" Grid.Column="3" Content="Очистить" Click="OnClearCurrentRun" />
+              <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Выгрузка ПОСЛЕ" />
+              <TextBox Grid.Row="1" Grid.Column="1" x:Name="AfterBox" Margin="0,0,8,8" IsReadOnly="True" Watermark="Папка выгрузки конфигурации" />
+              <Button Grid.Row="1" Grid.Column="2" Margin="0,0,8,8" Content="Обзор…" Click="OnBrowseAfter" />
+              <Button Grid.Row="1" Grid.Column="3" Margin="0,0,0,8" Content="Очистить" Click="OnClearAfter" />
+
+              <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Расширения" />
+              <TextBox Grid.Row="2" Grid.Column="1" x:Name="ExtensionsBox" Margin="0,0,8,0" IsReadOnly="True" Watermark="Необязательно" />
+              <Button Grid.Row="2" Grid.Column="2" Margin="0,0,8,0" Content="Обзор…" Click="OnBrowseExtensions" />
+              <Button Grid.Row="2" Grid.Column="3" Content="Очистить" Click="OnClearExtensions" />
             </Grid>
+
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button x:Name="CompareRunsButton" Content="Сравнить прогоны" MinWidth="160" Click="OnCompareRuns" />
-              <TextBox x:Name="HistoryFilterBox" Width="280" Watermark="Фильтр по статусу, объекту, методу" TextChanged="OnHistoryFilterChanged" />
-              <TextBlock x:Name="HistoryStatusText" VerticalAlignment="Center" TextWrapping="Wrap" Text="Прогоны не сравнивались." />
+              <Button x:Name="CompareButton" Content="Сверить" MinWidth="120" Click="OnCompare" />
+              <Button x:Name="SaveButton" Content="Сохранить отчёт" IsEnabled="False" Click="OnSave" />
+              <Button Content="Инструкция" Click="OnShowHelp" />
+              <TextBox x:Name="FilterBox" Width="320" Watermark="Фильтр по объекту, методу, уровню" TextChanged="OnFilterChanged" />
             </StackPanel>
           </StackPanel>
-          <DataGrid x:Name="HistoryGrid"
-                    Margin="0,8,0,0"
-                    IsReadOnly="True"
-                    AutoGenerateColumns="False"
-                    CanUserReorderColumns="False"
-                    GridLinesVisibility="Horizontal"
-                    SelectionMode="Single">
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="Статус" Binding="{Binding Status}" Width="110" />
-              <DataGridTextColumn Header="Раздел" Binding="{Binding Section}" Width="130" />
-              <DataGridTextColumn Header="Объект" Binding="{Binding ObjectName}" Width="2*" />
-              <DataGridTextColumn Header="Метод" Binding="{Binding Method}" Width="*" />
-              <DataGridTextColumn Header="Вид" Binding="{Binding Kind}" Width="160" />
-              <DataGridTextColumn Header="Суть" Binding="{Binding Summary}" Width="3*" />
-            </DataGrid.Columns>
-          </DataGrid>
+
+          <TabControl x:Name="ComparePages" Margin="0,12,0,0">
+            <TabItem Header="Инструкция">
+              <ScrollViewer Margin="0,8,0,0" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="14" MaxWidth="820" HorizontalAlignment="Left">
+                  <TextBlock FontSize="20" FontWeight="SemiBold" Text="Как сверить обновление" />
+                  <TextBlock TextWrapping="Wrap" Text="Программа сравнивает две папки с выгрузкой конфигурации 1С. Сначала показывает, что изменилось в самой конфигурации. Если указаны расширения, отдельно отмечает места, где эти изменения затрагивают ваш код. Базу данных программа не открывает и ничего в ней не меняет." />
+
+                  <TextBlock FontSize="16" FontWeight="SemiBold" Text="1. Подготовьте папки в Конфигураторе" />
+                  <TextBlock TextWrapping="Wrap" Text="Для версии до обновления: Конфигурация → Выгрузить конфигурацию в файлы. Укажите пустую папку. В ней должен появиться файл Configuration.xml." />
+                  <TextBlock TextWrapping="Wrap" Text="Для версии после обновления повторите выгрузку в другую пустую папку. Не складывайте две версии в один каталог." />
+                  <TextBlock TextWrapping="Wrap" Text="Расширение выгружается так же, отдельной папкой: откройте расширение и снова выберите «Выгрузить конфигурацию в файлы». Несколько расширений можно положить соседними папками внутрь одной общей. В программе тогда указывается эта общая папка." />
+
+                  <TextBlock FontSize="16" FontWeight="SemiBold" Text="2. Укажите папки в окне" />
+                  <TextBlock TextWrapping="Wrap" Text="На вкладке «Сверка обновления»: «Выгрузка ДО», «Выгрузка ПОСЛЕ» и при необходимости «Расширения». Затем нажмите «Сверить»." />
+
+                  <TextBlock FontSize="16" FontWeight="SemiBold" Text="3. Прочитайте вкладку «Конфигурация»" />
+                  <TextBlock TextWrapping="Wrap" Text="Каждая строка — одно отличие. Щелчок по строке метода показывает его текст слева как «Было» и справа как «Стало» с маркерами −/+. Комментарии и пустые строки отличием не считаются." />
+
+                  <TextBlock FontSize="16" FontWeight="SemiBold" Text="4. Прочитайте вкладку «Расширения»" />
+                  <TextBlock TextWrapping="Wrap" Text="Сюда попадают только те изменения конфигурации, до которых дотягивается расширение. Уровни: Критично, Адаптация, Предупреждение, Не проверено." />
+
+                  <TextBlock FontSize="16" FontWeight="SemiBold" Text="5. Сохраните отчёт и сравните прогоны" />
+                  <TextBlock TextWrapping="Wrap" Text="«Сохранить отчёт» пишет config.html/json (и impact при наличии расширений). Сравнение двух прогонов — на верхней вкладке «К типовой / История» → «История»." />
+
+                  <TextBlock FontSize="16" FontWeight="SemiBold" Text="6. Вынос доработок в расширение" />
+                  <TextBlock TextWrapping="Wrap" Text="Верхняя вкладка «К типовой / История»: фильтр по подсистемам, реестр доработок, черновик extension/ и migration/ПереносДанных.bsl." />
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Конфигурация">
+              <Grid RowDefinitions="*,180" Margin="0,8,0,0">
+                <DataGrid x:Name="ChangesGrid"
+                          IsReadOnly="True"
+                          AutoGenerateColumns="False"
+                          CanUserReorderColumns="True"
+                          CanUserResizeColumns="True"
+                          GridLinesVisibility="Horizontal"
+                          SelectionMode="Single"
+                          SelectionChanged="OnChangeSelected">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="Объект" Binding="{Binding ObjectName}" Width="3*" MinWidth="180" />
+                    <DataGridTextColumn Header="Модуль" Binding="{Binding Module}" Width="2*" MinWidth="120" />
+                    <DataGridTextColumn Header="Метод" Binding="{Binding Method}" Width="2*" MinWidth="120" />
+                    <DataGridTextColumn Header="Вид" Binding="{Binding Kind}" Width="120" MinWidth="90" />
+                    <DataGridTextColumn Header="Что изменилось" Binding="{Binding Summary}" Width="4*" MinWidth="200" />
+                  </DataGrid.Columns>
+                </DataGrid>
+                <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0">
+                  <DockPanel Margin="0,0,8,0">
+                    <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="Было  − удалено" />
+                    <TextBox x:Name="BeforeText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono,Consolas,monospace" />
+                  </DockPanel>
+                  <DockPanel Grid.Column="1">
+                    <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="Стало  + добавлено" />
+                    <TextBox x:Name="AfterText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono,Consolas,monospace" />
+                  </DockPanel>
+                </Grid>
+              </Grid>
+            </TabItem>
+            <TabItem Header="Расширения">
+              <DockPanel Margin="0,8,0,0">
+                <StackPanel DockPanel.Dock="Top" Spacing="4">
+                  <TextBlock FontWeight="SemiBold" Text="Сводка по расширениям" />
+                  <DataGrid x:Name="SummaryGrid"
+                            MaxHeight="160"
+                            IsReadOnly="True"
+                            AutoGenerateColumns="False"
+                            CanUserResizeColumns="True"
+                            GridLinesVisibility="Horizontal"
+                            SelectionMode="Single">
+                    <DataGrid.Columns>
+                      <DataGridTextColumn Header="Расширение" Binding="{Binding Extension}" Width="2*" MinWidth="140" />
+                      <DataGridTextColumn Header="Критично" Binding="{Binding Critical}" Width="*" />
+                      <DataGridTextColumn Header="Адаптация" Binding="{Binding Adaptation}" Width="*" />
+                      <DataGridTextColumn Header="Предупреждение" Binding="{Binding Warning}" Width="*" />
+                      <DataGridTextColumn Header="Не проверено" Binding="{Binding Unchecked}" Width="*" />
+                      <DataGridTextColumn Header="Всего" Binding="{Binding Total}" Width="*" />
+                    </DataGrid.Columns>
+                  </DataGrid>
+                  <TextBlock Margin="0,4,0,4" FontWeight="SemiBold" Text="Находки" />
+                </StackPanel>
+                <DataGrid x:Name="FindingsGrid"
+                          IsReadOnly="True"
+                          AutoGenerateColumns="False"
+                          CanUserReorderColumns="True"
+                          CanUserResizeColumns="True"
+                          GridLinesVisibility="Horizontal"
+                          SelectionMode="Single">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="Расширение" Binding="{Binding Extension}" Width="*" MinWidth="100" />
+                    <DataGridTextColumn Header="Объект" Binding="{Binding ObjectName}" Width="2*" MinWidth="160" />
+                    <DataGridTextColumn Header="Метод" Binding="{Binding Method}" Width="*" MinWidth="100" />
+                    <DataGridTextColumn Header="Вмешательство" Binding="{Binding Intervention}" Width="*" MinWidth="100" />
+                    <DataGridTextColumn Header="Уровень" Binding="{Binding Severity}" Width="120" MinWidth="90" />
+                    <DataGridTextColumn Header="Причина" Binding="{Binding Reason}" Width="3*" MinWidth="180" />
+                  </DataGrid.Columns>
+                </DataGrid>
+              </DockPanel>
+            </TabItem>
+          </TabControl>
         </DockPanel>
+      </TabItem>
+
+      <!-- Раздел 2: перенос к типовой + история -->
+      <TabItem Header="К типовой / История">
+        <TabControl x:Name="TransferPages" Margin="0,8,0,0">
+          <TabItem Header="К типовой">
+            <Grid ColumnDefinitions="260,6,*" Margin="0,8,0,0">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Spacing="6">
+                  <TextBlock FontWeight="SemiBold" Text="Область" />
+                  <WrapPanel Orientation="Horizontal">
+                    <Button Margin="0,0,6,6" Content="Загрузить" Click="OnLoadSubsystems" />
+                    <Button Margin="0,0,6,6" Content="Из файла…" Click="OnLoadScopeFile" />
+                    <Button Margin="0,0,6,6" Content="Все" Click="OnSelectAllSubsystems" />
+                    <Button Margin="0,0,6,6" Content="Снять" Click="OnClearSubsystems" />
+                  </WrapPanel>
+                  <CheckBox x:Name="IncludeDescendantsBox" IsChecked="True" Content="Включать вложенные" />
+                  <TextBlock x:Name="SubsystemStatusText" TextWrapping="Wrap" FontSize="12" Text="Подсистемы не загружены — вся конфигурация." />
+                </StackPanel>
+                <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0" MaxHeight="140">
+                  <TextBlock DockPanel.Dock="Top" FontWeight="SemiBold" Margin="0,0,0,4" Text="Доп. объекты" />
+                  <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+                    <TextBox x:Name="ExtraObjectBox" Width="160" Watermark="CommonModule.Имя" />
+                    <Button Content="+" MinWidth="28" Click="OnAddExtraObject" />
+                    <Button Content="−" MinWidth="28" Click="OnRemoveExtraObject" />
+                  </StackPanel>
+                  <ListBox x:Name="ExtraObjectsList" SelectionMode="Single" />
+                </DockPanel>
+                <TreeView x:Name="SubsystemTree" Margin="0,8,0,0">
+                  <TreeView.ItemTemplate>
+                    <TreeDataTemplate ItemsSource="{Binding Children}">
+                      <CheckBox Content="{Binding Title}"
+                                IsThreeState="True"
+                                IsChecked="{Binding IsChecked, Mode=TwoWay}" />
+                    </TreeDataTemplate>
+                  </TreeView.ItemTemplate>
+                </TreeView>
+              </DockPanel>
+
+              <GridSplitter Grid.Column="1" Width="6" ResizeDirection="Columns" />
+
+              <DockPanel Grid.Column="2">
+                <StackPanel DockPanel.Dock="Top" Spacing="6">
+                  <Grid ColumnDefinitions="110,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
+                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Типовая" />
+                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="TypicalBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка типовой" />
+                    <Button Grid.Row="0" Grid.Column="2" Margin="0,0,8,6" Content="Обзор…" Click="OnBrowseTypical" />
+                    <Button Grid.Row="0" Grid.Column="3" Margin="0,0,0,6" Content="Очистить" Click="OnClearTypical" />
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Доработанная" />
+                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="CustomizedBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка доработанной" />
+                    <Button Grid.Row="1" Grid.Column="2" Margin="0,0,8,6" Content="Обзор…" Click="OnBrowseCustomized" />
+                    <Button Grid.Row="1" Grid.Column="3" Margin="0,0,0,6" Content="Очистить" Click="OnClearCustomized" />
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Имя расширения" />
+                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="TransferNameBox" Margin="0,0,8,6" Watermark="Доработки" Text="Доработки" />
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Префикс" />
+                    <TextBox Grid.Row="3" Grid.Column="1" x:Name="TransferPrefixBox" Margin="0,0,8,0" Watermark="Дораб_" Text="Дораб_" />
+                  </Grid>
+                  <WrapPanel Orientation="Horizontal">
+                    <Button x:Name="TransferFindButton" Margin="0,0,8,6" Content="Найти доработки" MinWidth="140" Click="OnFindTransfer" />
+                    <Button x:Name="TransferSaveButton" Margin="0,0,8,6" Content="Сохранить черновик" IsEnabled="False" Click="OnSaveTransfer" />
+                    <Button Margin="0,0,8,6" Content="Сохранить область" Click="OnSaveScope" />
+                    <ComboBox x:Name="TransferDecisionFilter" Margin="0,0,8,6" Width="130" SelectedIndex="0" SelectionChanged="OnTransferDecisionFilterChanged">
+                      <ComboBoxItem Content="Все решения" />
+                      <ComboBoxItem Content="Авто" />
+                      <ComboBoxItem Content="Подсветка" />
+                      <ComboBoxItem Content="Вручную" />
+                      <ComboBoxItem Content="Данные" />
+                      <ComboBoxItem Content="Пропуск" />
+                    </ComboBox>
+                    <TextBox x:Name="TransferFilterBox" Margin="0,0,8,6" Width="220" Watermark="Фильтр" TextChanged="OnTransferFilterChanged" />
+                  </WrapPanel>
+                  <TextBlock x:Name="TransferStatusText" TextWrapping="Wrap" Text="Доработки ещё не искали." />
+                </StackPanel>
+
+                <Grid RowDefinitions="*,160" Margin="0,8,0,0">
+                  <DataGrid x:Name="TransferGrid"
+                            IsReadOnly="True"
+                            AutoGenerateColumns="False"
+                            CanUserReorderColumns="True"
+                            CanUserResizeColumns="True"
+                            GridLinesVisibility="Horizontal"
+                            SelectionMode="Single"
+                            SelectionChanged="OnTransferSelected"
+                            LoadingRow="OnTransferLoadingRow">
+                    <DataGrid.Columns>
+                      <DataGridTextColumn Header="Объект" Binding="{Binding ObjectName}" Width="3*" MinWidth="180" />
+                      <DataGridTextColumn Header="Метод" Binding="{Binding Method}" Width="2*" MinWidth="120" />
+                      <DataGridTextColumn Header="Вид" Binding="{Binding Kind}" Width="110" MinWidth="80" />
+                      <DataGridTextColumn Header="Решение" Binding="{Binding Decision}" Width="110" MinWidth="80" />
+                      <DataGridTextColumn Header="Хук" Binding="{Binding Hook}" Width="140" MinWidth="100" />
+                      <DataGridTextColumn Header="Причина" Binding="{Binding Reason}" Width="4*" MinWidth="200" />
+                    </DataGrid.Columns>
+                  </DataGrid>
+                  <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0">
+                    <DockPanel Margin="0,0,8,0">
+                      <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="Типовая (было)  − удалено" />
+                      <TextBox x:Name="TransferBeforeText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono,Consolas,monospace" />
+                    </DockPanel>
+                    <DockPanel Grid.Column="1">
+                      <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="Доработанная (стало)  + добавлено" />
+                      <TextBox x:Name="TransferAfterText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono,Consolas,monospace" />
+                    </DockPanel>
+                  </Grid>
+                </Grid>
+              </DockPanel>
+            </Grid>
+          </TabItem>
+          <TabItem Header="История">
+            <DockPanel Margin="0,8,0,0">
+              <StackPanel DockPanel.Dock="Top" Spacing="8">
+                <TextBlock TextWrapping="Wrap" Text="Сравнение двух сохранённых прогонов (папки с config.json / impact.json)." />
+                <Grid ColumnDefinitions="140,*,Auto,Auto" RowDefinitions="Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Прошлый прогон" />
+                  <TextBox Grid.Row="0" Grid.Column="1" x:Name="PreviousRunBox" Margin="0,0,8,8" IsReadOnly="True" Watermark="Папка с сохранённым отчётом" />
+                  <Button Grid.Row="0" Grid.Column="2" Margin="0,0,8,8" Content="Обзор…" Click="OnBrowsePreviousRun" />
+                  <Button Grid.Row="0" Grid.Column="3" Margin="0,0,0,8" Content="Очистить" Click="OnClearPreviousRun" />
+
+                  <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Текущий прогон" />
+                  <TextBox Grid.Row="1" Grid.Column="1" x:Name="CurrentRunBox" Margin="0,0,8,0" IsReadOnly="True" Watermark="Папка с сохранённым отчётом" />
+                  <Button Grid.Row="1" Grid.Column="2" Margin="0,0,8,0" Content="Обзор…" Click="OnBrowseCurrentRun" />
+                  <Button Grid.Row="1" Grid.Column="3" Content="Очистить" Click="OnClearCurrentRun" />
+                </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button x:Name="CompareRunsButton" Content="Сравнить прогоны" MinWidth="160" Click="OnCompareRuns" />
+                  <TextBox x:Name="HistoryFilterBox" Width="320" Watermark="Фильтр по статусу, объекту, методу" TextChanged="OnHistoryFilterChanged" />
+                  <TextBlock x:Name="HistoryStatusText" VerticalAlignment="Center" TextWrapping="Wrap" Text="Прогоны не сравнивались." />
+                </StackPanel>
+              </StackPanel>
+              <DataGrid x:Name="HistoryGrid"
+                        Margin="0,8,0,0"
+                        IsReadOnly="True"
+                        AutoGenerateColumns="False"
+                        CanUserReorderColumns="True"
+                        CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal"
+                        SelectionMode="Single">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Статус" Binding="{Binding Status}" Width="110" MinWidth="90" />
+                  <DataGridTextColumn Header="Раздел" Binding="{Binding Section}" Width="130" MinWidth="100" />
+                  <DataGridTextColumn Header="Объект" Binding="{Binding ObjectName}" Width="3*" MinWidth="180" />
+                  <DataGridTextColumn Header="Метод" Binding="{Binding Method}" Width="2*" MinWidth="120" />
+                  <DataGridTextColumn Header="Вид" Binding="{Binding Kind}" Width="140" MinWidth="100" />
+                  <DataGridTextColumn Header="Суть" Binding="{Binding Summary}" Width="4*" MinWidth="200" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </DockPanel>
+          </TabItem>
+        </TabControl>
       </TabItem>
     </TabControl>
   </DockPanel>
