@@ -95,7 +95,8 @@ public static class FormProgrammaticWriter
                 var name = LastSegment(PartNameOf(item.Method));
                 var prefixed = plan.Prefix + name;
                 sb.AppendLine("\t// " + item.Reason);
-                sb.AppendLine("\tДобавляемыеРеквизиты.Добавить(Новый РеквизитФормы(\"" + Escape(prefixed) + "\", Новый ОписаниеТипов(\"Булево\"))); // TODO: тип");
+                var typeExpr = FormPartHints.ОписаниеТиповLiteral(item.MethodHeader);
+                sb.AppendLine("\tДобавляемыеРеквизиты.Добавить(Новый РеквизитФормы(\"" + Escape(prefixed) + "\", " + typeExpr + "));");
             }
 
             sb.AppendLine("\tИзменитьРеквизиты(ДобавляемыеРеквизиты);");
@@ -111,8 +112,14 @@ public static class FormProgrammaticWriter
                 var name = LastSegment(path);
                 var prefixed = plan.Prefix + name;
                 sb.AppendLine("\t// " + item.Reason + " (" + path + ")");
-                sb.AppendLine("\tЭлемент = Элементы.Добавить(\"" + Escape(prefixed) + "\", Тип(\"ПолеФормы\")); // TODO: родитель, Тип(\"КнопкаФормы\")/ГруппаФормы");
-                sb.AppendLine("\tЭлемент.Вид = ВидПоляФормы.ПолеВвода; // TODO");
+                var parentHint = ParentHint(path);
+                var elType = FormPartHints.MapElementType(item.MethodHeader);
+                var view = FormPartHints.MapFieldView(item.MethodHeader);
+                sb.AppendLine("\tЭлемент = Элементы.Добавить(\"" + Escape(prefixed) + "\", Тип(\"" + elType + "\")"
+                    + (parentHint == null ? "" : ", Элементы." + Escape(parentHint)) + ");"
+                    + (parentHint == null ? " // TODO: указать родителя" : ""));
+                if (elType == "ПолеФормы")
+                    sb.AppendLine("\tЭлемент.Вид = " + view + ";");
                 sb.AppendLine("\t// Элемент.ПутьКДанным = \"" + Escape(prefixed) + "\";");
                 sb.AppendLine();
             }
@@ -160,10 +167,11 @@ public static class FormProgrammaticWriter
         var name = prefix + LastSegment(part);
         if (kind.Equals("FormAttribute", StringComparison.OrdinalIgnoreCase))
         {
+            var typeExpr = FormPartHints.ОписаниеТиповLiteral(item.MethodHeader);
             return string.Join("\n",
                 "// Реквизит формы: " + part,
                 "ДобавляемыеРеквизиты = Новый Массив;",
-                "ДобавляемыеРеквизиты.Добавить(Новый РеквизитФормы(\"" + name + "\", Новый ОписаниеТипов(\"Булево\"))); // TODO: тип",
+                "ДобавляемыеРеквизиты.Добавить(Новый РеквизитФормы(\"" + name + "\", " + typeExpr + "));",
                 "ИзменитьРеквизиты(ДобавляемыеРеквизиты);");
         }
 
@@ -177,11 +185,24 @@ public static class FormProgrammaticWriter
                 "Кнопка.ИмяКоманды = \"" + name + "\";");
         }
 
+        var parentHint = ParentHint(part);
+        var elType = FormPartHints.MapElementType(item.MethodHeader);
+        var view = FormPartHints.MapFieldView(item.MethodHeader);
         return string.Join("\n",
             "// Элемент формы: " + part,
-            "Элемент = Элементы.Добавить(\"" + name + "\", Тип(\"ПолеФормы\")); // TODO: родитель",
-            "Элемент.Вид = ВидПоляФормы.ПолеВвода; // TODO",
+            "Элемент = Элементы.Добавить(\"" + name + "\", Тип(\"" + elType + "\")"
+            + (parentHint == null ? "" : ", Элементы." + parentHint) + ");"
+            + (parentHint == null ? " // TODO: указать родителя" : ""),
+            elType == "ПолеФормы" ? "Элемент.Вид = " + view + ";" : "// вид не для " + elType,
             "// Элемент.ПутьКДанным = \"" + name + "\";");
+    }
+
+    private static string? ParentHint(string partPath)
+    {
+        var segments = partPath.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length < 2)
+            return null;
+        return segments[^2];
     }
 
     private static bool IsKind(TransferItem item, string kind) =>

@@ -87,7 +87,8 @@ public static class Analysis
         string directory,
         TransferPlan plan,
         bool writeDraft,
-        TransferSession? session = null)
+        TransferSession? session = null,
+        DraftWriteMode draftMode = DraftWriteMode.AllAuto)
     {
         Directory.CreateDirectory(directory);
         ReportWriter.WriteTransfer(Path.Combine(directory, "transfer.json"), plan);
@@ -109,17 +110,37 @@ public static class Analysis
             return;
 
         var extensionDir = Path.Combine(directory, "extension");
-        var doneKeys = activeSession.Items
-            .Where(entry => entry.Status == TransferWorkStatus.Done)
-            .Select(entry => entry.Key)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        // Если есть отметки «Готово» — инкремент только по ним; иначе полный авто-черновик.
-        IReadOnlySet<string>? onlyKeys = doneKeys.Count > 0 ? doneKeys : null;
+        var onlyKeys = ResolveDraftKeys(plan, activeSession, draftMode);
         ExtensionDraftWriter.Write(extensionDir, plan, onlyKeys, merge: true);
         var formsDir = Path.Combine(directory, "forms");
         FormProgrammaticWriter.Write(formsDir, plan, onlyKeys);
         var coverage = CoverageChecker.Analyze(plan, extensionDir, activeSession, formsDir);
         CoverageChecker.WriteReports(directory, coverage);
+    }
+
+    private static IReadOnlySet<string>? ResolveDraftKeys(
+        TransferPlan plan,
+        TransferSession session,
+        DraftWriteMode mode)
+    {
+        var doneKeys = session.Items
+            .Where(entry => entry.Status == TransferWorkStatus.Done)
+            .Select(entry => entry.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return mode switch
+        {
+            DraftWriteMode.DoneOnly => doneKeys,
+            DraftWriteMode.DoneAndAuto =>
+                plan.Items
+                    .Where(item =>
+                        item.Decision is TransferDecision.Auto or TransferDecision.FormProgrammatic
+                        || doneKeys.Contains(TransferSession.ItemKey(item)))
+                    .Select(TransferSession.ItemKey)
+                    .Concat(doneKeys)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase),
+            _ => null, // AllAuto — писать все Auto/Форма без фильтра ключей
+        };
     }
 
     public static void WriteTransferScope(string path, TransferScope scope) =>

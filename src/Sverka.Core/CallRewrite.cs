@@ -287,4 +287,135 @@ public static class CallRewrite
         var kind = method.IsFunction ? "Функция" : "Процедура";
         return $"{kind} {method.Name}()";
     }
+
+    public sealed record UnprovenCall(
+        string ObjectName,
+        string? ObjectUuid,
+        string ObjectType,
+        string Module,
+        string CallerMethod,
+        string Detail);
+
+    /// <summary>
+    /// Вызовы, которые нельзя безопасно переписать автоматически:
+    /// без префикса модуля вне своего модуля, либо через Выполнить/Вычислить.
+    /// </summary>
+    public static IReadOnlyList<UnprovenCall> FindUnprovenCallSites(
+        ConfigurationDump customized,
+        TransferScope scope,
+        string targetObjectFullName,
+        string targetMethod,
+        int typicalParamCount)
+    {
+        var shortModule = ShortName(targetObjectFullName);
+        var result = new List<UnprovenCall>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var owner in customized.Objects)
+        {
+            if (scope.HasFilter && scope.ObjectNames.Count > 0 && !scope.ObjectNames.Contains(owner.FullName))
+                continue;
+
+            var sameModule = owner.FullName.Equals(targetObjectFullName, StringComparison.OrdinalIgnoreCase);
+            foreach (var module in owner.Modules)
+            {
+                if (IsFormModule(module.RelativePath))
+                    continue;
+
+                foreach (var method in module.Methods)
+                {
+                    if (BslText.ContainsDynamicCall(method.BodyText)
+                        && method.BodyText.Contains(targetMethod, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var key = owner.FullName + "|" + module.RelativePath + "|" + method.Name + "|dyn";
+                        if (seen.Add(key))
+                        {
+                            result.Add(new UnprovenCall(
+                                owner.FullName, owner.Uuid, owner.Type, module.RelativePath, method.Name,
+                                $"Не доказано: в теле есть Выполнить/Вычислить и упоминание «{targetMethod}»"));
+                        }
+                    }
+
+                    if (CountUnqualifiedExtraArgCalls(method.BodyText, targetMethod, typicalParamCount) > 0
+                        && !sameModule)
+                    {
+                        var key = owner.FullName + "|" + module.RelativePath + "|" + method.Name + "|uq";
+                        if (seen.Add(key))
+                        {
+                            result.Add(new UnprovenCall(
+                                owner.FullName, owner.Uuid, owner.Type, module.RelativePath, method.Name,
+                                $"Не доказано: вызов «{targetMethod}(…)» без модуля (не {shortModule}.) с числом аргументов > типового"));
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private static int CountUnqualifiedExtraArgCalls(string body, string targetMethod, int typicalParamCount)
+    {
+        var count = 0;
+        foreach (var raw in BslText.Lines(body))
+        {
+            var work = BslText.StripComment(raw);
+            var i = 0;
+            var inString = false;
+            while (i < work.Length)
+            {
+                var c = work[i];
+                if (c == '"')
+                {
+                    if (inString && i + 1 < work.Length && work[i + 1] == '"')
+                    {
+                        i += 2;
+                        continue;
+                    }
+
+                    inString = !inString;
+                    i++;
+                    continue;
+                }
+
+                if (inString || !IsIdentStart(c))
+                {
+                    i++;
+                    continue;
+                }
+
+                var start = i;
+                i++;
+                while (i < work.Length && IsIdentPart(work[i]))
+                    i++;
+
+                // Module.Method — пропускаем (это квалифицированный вызов).
+                if (i < work.Length && work[i] == '.')
+                {
+                    i++;
+                    while (i < work.Length && IsIdentPart(work[i]))
+                        i++;
+                    continue;
+                }
+
+                var ident = work[start..i];
+                var after = SkipWs(work, i);
+                if (after < work.Length && work[after] == '('
+                    && ident.Equals(targetMethod, StringComparison.OrdinalIgnoreCase))
+                {
+                    var close = FindMatchingParen(work, after);
+                    if (close > after)
+                    {
+                        var args = work[(after + 1)..close];
+                        if (BslSignature.ParameterCount($"x({args})") > typicalParamCount)
+                            count++;
+                        i = close + 1;
+                        continue;
+                    }
+                }
+            }
+        }
+
+        return count;
+    }
 }

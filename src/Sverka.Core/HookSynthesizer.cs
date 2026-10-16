@@ -169,16 +169,107 @@ public static class HookSynthesizer
             annotated);
     }
 
+    /// <summary>
+    /// Patience-якоря: сначала уникальные общие строки, между ними — обычный LCS.
+    /// Меньше «плавающих» #Вставка/#Удаление на длинных методах.
+    /// </summary>
     private static List<LineOp> DiffLines(IReadOnlyList<LinePair> a, IReadOnlyList<LinePair> b)
     {
-        var n = a.Count;
-        var m = b.Count;
+        var countA = CountNorms(a);
+        var countB = CountNorms(b);
+        var anchors = new List<(int Ai, int Bi)>();
+        var usedB = new HashSet<int>();
+        for (var i = 0; i < a.Count; i++)
+        {
+            var norm = a[i].Norm;
+            if (countA[norm] != 1 || !countB.TryGetValue(norm, out var cb) || cb != 1)
+                continue;
+            for (var j = 0; j < b.Count; j++)
+            {
+                if (usedB.Contains(j))
+                    continue;
+                if (!string.Equals(a[i].Norm, b[j].Norm, StringComparison.Ordinal))
+                    continue;
+                anchors.Add((i, j));
+                usedB.Add(j);
+                break;
+            }
+        }
+
+        if (anchors.Count == 0)
+            return DiffLinesLcs(a, b, 0, a.Count, 0, b.Count);
+
+        anchors.Sort((left, right) => left.Ai.CompareTo(right.Ai));
+        // Отбрасываем якоря, нарушающие монотонность по Bi.
+        var mono = new List<(int Ai, int Bi)>();
+        var lastBi = -1;
+        foreach (var anchor in anchors)
+        {
+            if (anchor.Bi <= lastBi)
+                continue;
+            mono.Add(anchor);
+            lastBi = anchor.Bi;
+        }
+
+        var ops = new List<LineOp>();
+        var ai = 0;
+        var bi = 0;
+        foreach (var (anchorAi, anchorBi) in mono)
+        {
+            ops.AddRange(DiffLinesLcs(a, b, ai, anchorAi, bi, anchorBi));
+            ops.Add(new LineOp(LineOpKind.Equal, a[anchorAi].Original, b[anchorBi].Original));
+            ai = anchorAi + 1;
+            bi = anchorBi + 1;
+        }
+
+        ops.AddRange(DiffLinesLcs(a, b, ai, a.Count, bi, b.Count));
+        return ops;
+    }
+
+    private static Dictionary<string, int> CountNorms(IReadOnlyList<LinePair> lines)
+    {
+        var map = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var line in lines)
+        {
+            map.TryGetValue(line.Norm, out var count);
+            map[line.Norm] = count + 1;
+        }
+
+        return map;
+    }
+
+    private static List<LineOp> DiffLinesLcs(
+        IReadOnlyList<LinePair> a,
+        IReadOnlyList<LinePair> b,
+        int aFrom,
+        int aTo,
+        int bFrom,
+        int bTo)
+    {
+        var n = aTo - aFrom;
+        var m = bTo - bFrom;
+        if (n == 0 && m == 0)
+            return [];
+        if (n == 0)
+        {
+            return Enumerable.Range(bFrom, m)
+                .Select(j => new LineOp(LineOpKind.Insert, null, b[j].Original))
+                .ToList();
+        }
+
+        if (m == 0)
+        {
+            return Enumerable.Range(aFrom, n)
+                .Select(i => new LineOp(LineOpKind.Delete, a[i].Original, null))
+                .ToList();
+        }
+
         var lcs = new int[n + 1, m + 1];
         for (var i = n - 1; i >= 0; i--)
         {
             for (var j = m - 1; j >= 0; j--)
             {
-                if (string.Equals(a[i].Norm, b[j].Norm, StringComparison.Ordinal))
+                if (string.Equals(a[aFrom + i].Norm, b[bFrom + j].Norm, StringComparison.Ordinal))
                     lcs[i, j] = lcs[i + 1, j + 1] + 1;
                 else
                     lcs[i, j] = Math.Max(lcs[i + 1, j], lcs[i, j + 1]);
@@ -190,33 +281,33 @@ public static class HookSynthesizer
         var y = 0;
         while (x < n && y < m)
         {
-            if (string.Equals(a[x].Norm, b[y].Norm, StringComparison.Ordinal))
+            if (string.Equals(a[aFrom + x].Norm, b[bFrom + y].Norm, StringComparison.Ordinal))
             {
-                ops.Add(new LineOp(LineOpKind.Equal, a[x].Original, b[y].Original));
+                ops.Add(new LineOp(LineOpKind.Equal, a[aFrom + x].Original, b[bFrom + y].Original));
                 x++;
                 y++;
             }
             else if (lcs[x + 1, y] >= lcs[x, y + 1])
             {
-                ops.Add(new LineOp(LineOpKind.Delete, a[x].Original, null));
+                ops.Add(new LineOp(LineOpKind.Delete, a[aFrom + x].Original, null));
                 x++;
             }
             else
             {
-                ops.Add(new LineOp(LineOpKind.Insert, null, b[y].Original));
+                ops.Add(new LineOp(LineOpKind.Insert, null, b[bFrom + y].Original));
                 y++;
             }
         }
 
         while (x < n)
         {
-            ops.Add(new LineOp(LineOpKind.Delete, a[x].Original, null));
+            ops.Add(new LineOp(LineOpKind.Delete, a[aFrom + x].Original, null));
             x++;
         }
 
         while (y < m)
         {
-            ops.Add(new LineOp(LineOpKind.Insert, null, b[y].Original));
+            ops.Add(new LineOp(LineOpKind.Insert, null, b[bFrom + y].Original));
             y++;
         }
 

@@ -180,7 +180,7 @@
                   <StackPanel DockPanel.Dock="Top" Spacing="6">
                     <TextBlock FontWeight="SemiBold" Text="2. Объекты области" />
                     <TextBlock TextWrapping="Wrap" FontSize="11" Opacity="0.85"
-                               Text="Общие модули, константы, документы, отчёты, обработки, РС — по выбранным подсистемам." />
+                               Text="Общие модули, справочники, константы, документы, отчёты, обработки, РС — по выбранным подсистемам." />
                     <WrapPanel Orientation="Horizontal">
                       <Button Margin="0,0,6,6" Content="Обновить" Click="OnRebuildObjectFilter" />
                       <Button Margin="0,0,6,6" Content="Все" Click="OnSelectAllObjects" />
@@ -233,6 +233,14 @@
                         <TextBox Grid.Row="3" Grid.Column="1" x:Name="TransferPrefixBox" Margin="0,0,8,0" Watermark="Дораб_" Text="Дораб_" />
                       </Grid>
                       <CheckBox x:Name="ShowRemovedMetadataBox" IsChecked="False" Content="Показывать удалённые метаданные" />
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock VerticalAlignment="Center" Text="Черновик:" />
+                        <ComboBox x:Name="DraftModeBox" Width="160" SelectedIndex="0">
+                          <ComboBoxItem Content="Весь Auto" />
+                          <ComboBoxItem Content="Только Готово" />
+                          <ComboBoxItem Content="Готово + Auto" />
+                        </ComboBox>
+                      </StackPanel>
                       <WrapPanel Orientation="Horizontal">
                         <Button x:Name="TransferFindButton" Margin="0,0,8,6" Content="Найти доработки" MinWidth="140" Click="OnFindTransfer" />
                         <Button x:Name="TransferSaveButton" Margin="0,0,8,6" Content="Сохранить черновик" IsEnabled="False" Click="OnSaveTransfer" />

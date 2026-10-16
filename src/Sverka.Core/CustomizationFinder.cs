@@ -38,6 +38,7 @@ public static class CustomizationFinder
         }
 
         AppendSignatureCallRewrites(items, typical, customized, effectiveScope, prefix.Trim());
+        AppendUnprovenCallWarnings(items, typical, customized, effectiveScope);
 
         items = items
             .OrderBy(item => item.Decision)
@@ -164,6 +165,63 @@ public static class CustomizationFinder
                         hit.CallerIsFunction,
                         null));
                 }
+            }
+        }
+    }
+
+    private static void AppendUnprovenCallWarnings(
+        List<TransferItem> items,
+        ConfigurationDump typical,
+        ConfigurationDump customized,
+        TransferScope scope)
+    {
+        var expansions = items
+            .Where(item =>
+                item.Decision == TransferDecision.Auto
+                && !string.IsNullOrEmpty(item.AddedMethodSource)
+                && !string.IsNullOrEmpty(item.Method)
+                && item.Reason.StartsWith("Сигнатура расширена", StringComparison.Ordinal))
+            .ToList();
+
+        foreach (var expansion in expansions)
+        {
+            var typicalMethod = FindMethod(
+                typical.Objects.FirstOrDefault(obj =>
+                    obj.FullName.Equals(expansion.ObjectName, StringComparison.OrdinalIgnoreCase)
+                    || (!string.IsNullOrEmpty(expansion.ObjectUuid)
+                        && obj.Uuid.Equals(expansion.ObjectUuid, StringComparison.OrdinalIgnoreCase))),
+                expansion.Module ?? "",
+                expansion.Method!);
+            var typicalParams = typicalMethod == null
+                ? 0
+                : BslSignature.ParameterCount(typicalMethod.SignatureNormalized);
+
+            foreach (var hit in CallRewrite.FindUnprovenCallSites(
+                         customized, scope, expansion.ObjectName, expansion.Method!, typicalParams))
+            {
+                var exists = items.Any(item =>
+                    item.ObjectName.Equals(hit.ObjectName, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(item.Module, hit.Module, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(item.Method, hit.CallerMethod, StringComparison.OrdinalIgnoreCase)
+                    && item.Reason.StartsWith("Не доказано:", StringComparison.Ordinal));
+                if (exists)
+                    continue;
+
+                items.Add(new TransferItem(
+                    hit.ObjectName,
+                    hit.ObjectUuid,
+                    hit.ObjectType,
+                    hit.Module,
+                    hit.CallerMethod,
+                    null,
+                    ChangeKind.Module,
+                    TransferDecision.Manual,
+                    hit.Detail,
+                    ProposedHook.None,
+                    null,
+                    null,
+                    false,
+                    null));
             }
         }
     }
@@ -551,10 +609,13 @@ public static class CustomizationFinder
         if (IsListFormName(formName))
             return null;
 
+        var afterMember = change.MemberName == null
+            ? null
+            : FindMember(customizedObject, change.MemberKind, change.MemberName);
+
         if (change.MemberDelta == MemberDelta.Modified && change.MemberName != null)
         {
             var beforeMember = FindMember(typicalObject, change.MemberKind, change.MemberName);
-            var afterMember = FindMember(customizedObject, change.MemberKind, change.MemberName);
             if (beforeMember != null && afterMember != null
                 && string.Equals(beforeMember.EssentialFingerprint, afterMember.EssentialFingerprint, StringComparison.Ordinal))
             {
@@ -572,6 +633,14 @@ public static class CustomizationFinder
         };
 
         var action = change.MemberDelta == MemberDelta.Added ? "добавлен" : "изменён";
+        var typeHint = FormPartHints.ExtractTypeDescription(afterMember?.Fingerprint);
+        var elementKind = FormPartHints.ExtractElementKind(afterMember?.Fingerprint);
+        // MethodHeader: для атрибута — тип; для элемента — XML-имя узла (InputField…).
+        var headerHint = change.MemberKind != null
+            && change.MemberKind.Equals("FormAttribute", StringComparison.OrdinalIgnoreCase)
+            ? typeHint
+            : elementKind ?? typeHint;
+
         var draftItem = new TransferItem(
             change.ObjectName,
             change.ObjectUuid,
@@ -584,10 +653,9 @@ public static class CustomizationFinder
             $"{kindLabel} {action} — скелет программного создания (не XML формы)",
             ProposedHook.None,
             null,
-            null,
+            headerHint,
             false,
             null);
-        // Префикс подставит UI/writer; здесь — нейтральный для превью в реестре.
         var skeleton = FormProgrammaticWriter.PreviewFragment("Дораб_", draftItem);
         return draftItem with { HookBody = skeleton };
     }

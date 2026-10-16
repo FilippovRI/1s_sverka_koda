@@ -10,6 +10,7 @@ public static class ObjectTypeFilter
     private static readonly (string Key, string Title)[] KnownTypes =
     [
         ("CommonModule", "Общие модули"),
+        ("Catalog", "Справочники"),
         ("Constant", "Константы"),
         ("Document", "Документы"),
         ("Report", "Отчёты"),

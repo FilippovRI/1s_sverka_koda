@@ -481,7 +481,42 @@ public class TransferTests
         Assert.Contains(groups, group => group.TypeKey == "CommonModule" && group.ObjectNames.Contains("CommonModule.А"));
         Assert.Contains(groups, group => group.TypeKey == "Document");
         Assert.Contains(groups, group => group.TypeKey == "DataProcessor");
-        Assert.DoesNotContain(groups, group => group.TypeKey == "Catalog");
+        Assert.Contains(groups, group => group.TypeKey == "Catalog" && group.ObjectNames.Contains("Catalog.В"));
+    }
+
+    [Fact]
+    public void UnprovenCallWithoutModuleIsManual()
+    {
+        using var typical = Dump.Create();
+        using var customized = Dump.Create();
+        const string calcId = "11111111-1111-1111-1111-111111111111";
+        const string otherId = "33333333-3333-3333-3333-333333333333";
+        typical.CommonModule("Расчеты", calcId, """
+            Процедура Посчитать(Документ)
+            	Статус = 1;
+            КонецПроцедуры
+            """);
+        typical.CommonModule("Прочее", otherId, """
+            Процедура Вызвать()
+            	Возврат;
+            КонецПроцедуры
+            """);
+        customized.CommonModule("Расчеты", calcId, """
+            Процедура Посчитать(Документ, Доп)
+            	Статус = 1;
+            КонецПроцедуры
+            """);
+        customized.CommonModule("Прочее", otherId, """
+            Процедура Вызвать()
+            	Посчитать(Неопределено, Истина);
+            КонецПроцедуры
+            """);
+
+        var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
+        Assert.Contains(plan.Items, item =>
+            item.Decision == TransferDecision.Manual
+            && item.Method == "Вызвать"
+            && item.Reason.StartsWith("Не доказано:", StringComparison.Ordinal));
     }
 
     [Fact]

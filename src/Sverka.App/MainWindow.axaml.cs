@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     private bool _suppressObjectFilterRebuild;
     private bool _suppressSubsystemSync;
     private bool _transferScanRunning;
+    private string? _lastTransferScopeKey;
 
     public MainWindow()
     {
@@ -306,10 +307,19 @@ public partial class MainWindow : Window
 
             var includeRemoved = ShowRemovedMetadataBox.IsChecked == true;
             var scope = BuildCurrentScope();
+            var scopeKey = ScopeCacheKey(typical, customized, name!, prefix!, scope, includeRemoved);
+            if (_transfer != null
+                && string.Equals(_lastTransferScopeKey, scopeKey, StringComparison.Ordinal)
+                && !showBusyInStatus)
+            {
+                // Тихий авто-пересчёт при неизменной области — пропускаем.
+                return;
+            }
 
             var plan = await Task.Run(() =>
                 Analysis.RunTransfer(typical, customized, name, prefix, scope, includeRemoved));
             _transfer = plan;
+            _lastTransferScopeKey = scopeKey;
             _session.ExtensionName = name!;
             _session.Prefix = prefix!;
             _session.TypicalPath = typical;
@@ -652,7 +662,7 @@ public partial class MainWindow : Window
         if (SubsystemStatusText != null)
         {
             SubsystemStatusText.Text = groups.Count == 0
-                ? "В выбранных подсистемах нет объектов нужных типов (модули, документы, обработки…)."
+                ? "В выбранных подсистемах нет объектов нужных типов (модули, справочники, документы…)."
                 : $"Объектов в фильтре: {groups.Sum(group => group.ObjectNames.Count)}.";
         }
     }
@@ -710,7 +720,7 @@ public partial class MainWindow : Window
             SyncSessionFromRows();
             _session.TypicalPath = TypicalBox.Text?.Trim();
             _session.CustomizedPath = CustomizedBox.Text?.Trim();
-            Analysis.WriteTransferReports(folder, _transfer, writeDraft: true, _session);
+            Analysis.WriteTransferReports(folder, _transfer, writeDraft: true, _session, CurrentDraftMode());
             _lastDraftFolder = folder;
             if (TransferCoverageButton != null)
                 TransferCoverageButton.IsEnabled = true;
@@ -863,6 +873,27 @@ public partial class MainWindow : Window
             TransferSaveButton.IsEnabled = enabled;
         if (TransferSaveButtonCompact != null)
             TransferSaveButtonCompact.IsEnabled = enabled;
+    }
+
+    private DraftWriteMode CurrentDraftMode() => (DraftModeBox?.SelectedIndex ?? 0) switch
+    {
+        1 => DraftWriteMode.DoneOnly,
+        2 => DraftWriteMode.DoneAndAuto,
+        _ => DraftWriteMode.AllAuto,
+    };
+
+    private static string ScopeCacheKey(
+        string typical,
+        string customized,
+        string name,
+        string prefix,
+        TransferScope scope,
+        bool includeRemoved)
+    {
+        var objects = string.Join("\n", scope.ObjectNames.OrderBy(item => item, StringComparer.OrdinalIgnoreCase));
+        var subs = string.Join("\n", scope.SelectedSubsystemNames.OrderBy(item => item, StringComparer.OrdinalIgnoreCase));
+        return string.Join("|",
+            typical, customized, name, prefix, includeRemoved, scope.IncludeDescendants, subs, objects);
     }
 
     private string DescribeSessionProgress()
