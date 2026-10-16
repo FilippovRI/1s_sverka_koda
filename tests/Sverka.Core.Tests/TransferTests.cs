@@ -235,6 +235,63 @@ public class TransferTests
     }
 
     [Fact]
+    public void AddedFormAttributeBecomesFormProgrammaticSkeleton()
+    {
+        using var typical = Dump.Create();
+        using var customized = Dump.Create();
+        const string catalogId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+        typical.Catalog("Номенклатура", catalogId, [("Артикул", "10")], forms: ["ФормаЭлемента"]);
+        customized.Catalog("Номенклатура", catalogId, [("Артикул", "10")], forms: ["ФормаЭлемента"]);
+        typical.Form("Catalogs/Номенклатура", "ФормаЭлемента", """
+              <Attributes>
+                <Attribute name="Объект" id="1">
+                  <Type>CatalogObject.Номенклатура</Type>
+                </Attribute>
+              </Attributes>
+            """);
+        customized.Form("Catalogs/Номенклатура", "ФормаЭлемента", """
+              <Attributes>
+                <Attribute name="Объект" id="1">
+                  <Type>CatalogObject.Номенклатура</Type>
+                </Attribute>
+                <Attribute name="Служебный" id="2">
+                  <Type>Булево</Type>
+                </Attribute>
+              </Attributes>
+              <Commands>
+                <Command name="ДопКоманда" id="1">
+                  <Action>ДопКоманда</Action>
+                </Command>
+              </Commands>
+            """);
+
+        var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
+        Assert.Contains(plan.Items, item =>
+            item.Decision == TransferDecision.FormProgrammatic
+            && item.MemberKind == "FormAttribute"
+            && item.Method == "ФормаЭлемента.Служебный"
+            && item.HookBody != null
+            && item.HookBody.Contains("ИзменитьРеквизиты", StringComparison.Ordinal));
+        Assert.Contains(plan.Items, item =>
+            item.Decision == TransferDecision.FormProgrammatic
+            && item.MemberKind == "FormCommand"
+            && item.Method == "ФормаЭлемента.ДопКоманда");
+
+        var dir = Path.Combine(Path.GetTempPath(), "sverka-forms-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Analysis.WriteTransferReports(dir, plan, writeDraft: true);
+            Assert.True(Directory.Exists(Path.Combine(dir, "forms")));
+            Assert.NotEmpty(Directory.EnumerateFiles(Path.Combine(dir, "forms"), "*.bsl"));
+        }
+        finally
+        {
+            if (Directory.Exists(dir))
+                Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void TransferSessionRoundTripsWorkStatus()
     {
         var session = new TransferSession { ExtensionName = "Доработки", Prefix = "Дораб_" };

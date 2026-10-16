@@ -256,6 +256,7 @@
                       <ComboBoxItem Content="Подсветка" />
                       <ComboBoxItem Content="Вручную" />
                       <ComboBoxItem Content="Данные" />
+                      <ComboBoxItem Content="Форма" />
                       <ComboBoxItem Content="Пропуск" />
                     </ComboBox>
                     <ComboBox x:Name="TransferWorkFilter" Margin="0,0,8,4" Width="110" SelectedIndex="0" SelectionChanged="OnTransferWorkFilterChanged">

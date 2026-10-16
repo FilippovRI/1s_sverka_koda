@@ -50,9 +50,12 @@ public static class CoverageChecker
     public static CoverageReport Analyze(
         TransferPlan plan,
         string extensionDirectory,
-        TransferSession? session = null)
+        TransferSession? session = null,
+        string? formsDirectory = null)
     {
         var draftText = LoadDraftText(extensionDirectory);
+        if (!string.IsNullOrEmpty(formsDirectory))
+            draftText += "\n" + LoadDraftText(formsDirectory);
         var items = new List<CoverageItem>();
         foreach (var item in plan.Items)
         {
@@ -115,12 +118,30 @@ public static class CoverageChecker
                 "Вручную: нет авто-файла — отметьте Готово после переноса или Пропуск");
         }
 
-        // Auto — ищем след в черновике.
+        // Auto / FormProgrammatic — ищем след в черновике (extension/ + forms/).
         if (string.IsNullOrWhiteSpace(draftText))
         {
             return new CoverageItem(
                 key, item.ObjectName, item.Method, item.Decision,
-                CoverageStatus.Missing, "Папка extension/ пуста или не найдена");
+                CoverageStatus.Missing, "Папка extension/ (и forms/) пуста или не найдена");
+        }
+
+        if (item.Decision == TransferDecision.FormProgrammatic)
+        {
+            var part = FormProgrammaticWriter.PartNameOf(item.Method);
+            var shortPart = part.Contains('.') ? part[(part.LastIndexOf('.') + 1)..] : part;
+            var prefixed = prefix + shortPart;
+            if (draftText.Contains(prefixed, StringComparison.OrdinalIgnoreCase)
+                || draftText.Contains(FormProgrammaticWriter.FormNameOf(item.Method), StringComparison.OrdinalIgnoreCase))
+            {
+                return new CoverageItem(
+                    key, item.ObjectName, item.Method, item.Decision,
+                    CoverageStatus.Covered, "Найдено в forms/ (программный скелет)");
+            }
+
+            return new CoverageItem(
+                key, item.ObjectName, item.Method, item.Decision,
+                CoverageStatus.Missing, "Скелет формы не найден в forms/");
         }
 
         if (FoundInDraft(item, prefix, draftText))

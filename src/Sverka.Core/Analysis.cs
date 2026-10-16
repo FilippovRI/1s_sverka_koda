@@ -116,7 +116,9 @@ public static class Analysis
         // Если есть отметки «Готово» — инкремент только по ним; иначе полный авто-черновик.
         IReadOnlySet<string>? onlyKeys = doneKeys.Count > 0 ? doneKeys : null;
         ExtensionDraftWriter.Write(extensionDir, plan, onlyKeys, merge: true);
-        var coverage = CoverageChecker.Analyze(plan, extensionDir, activeSession);
+        var formsDir = Path.Combine(directory, "forms");
+        FormProgrammaticWriter.Write(formsDir, plan, onlyKeys);
+        var coverage = CoverageChecker.Analyze(plan, extensionDir, activeSession, formsDir);
         CoverageChecker.WriteReports(directory, coverage);
     }
 

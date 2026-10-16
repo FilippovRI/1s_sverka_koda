@@ -259,9 +259,23 @@ public static class CustomizationFinder
                 null, null, false, null);
         }
 
-        // Формы (в т.ч. форма списка) в реестр не кладём — засоряют просмотр.
-        if (change.MemberDelta != MemberDelta.None && IsFormRelated(change.MemberKind))
-            return null;
+        // Части формы УП → скелет программного создания (не XML и не модуль формы целиком).
+        if (change.MemberDelta != MemberDelta.None && IsFormPartKind(change.MemberKind))
+            return ClassifyFormPart(change, objectType, typicalObject, customizedObject);
+
+        // Сама форма как целое — только подсветка (без генерации).
+        if (change.MemberDelta != MemberDelta.None
+            && change.MemberKind != null
+            && change.MemberKind.Equals("Form", StringComparison.OrdinalIgnoreCase))
+        {
+            return Item(
+                change,
+                objectType,
+                TransferDecision.Highlight,
+                ProposedHook.None,
+                "Форма целиком — только подсветка; смотрите реквизиты/элементы/команды отдельно",
+                null, null, false, null);
+        }
 
         if (change.MemberDelta != MemberDelta.None)
         {
@@ -520,10 +534,68 @@ public static class CustomizationFinder
         return $"{kind} {method.Name}()";
     }
 
-    private static bool IsFormRelated(string? memberKind) =>
-        !string.IsNullOrEmpty(memberKind)
-        && (memberKind.Equals("Form", StringComparison.OrdinalIgnoreCase)
-            || ConfigComparer.IsFormPart(memberKind));
+    private static bool IsFormPartKind(string? memberKind) =>
+        !string.IsNullOrEmpty(memberKind) && ConfigComparer.IsFormPart(memberKind);
+
+    private static TransferItem? ClassifyFormPart(
+        ConfigChange change,
+        string objectType,
+        MetadataObject? typicalObject,
+        MetadataObject? customizedObject)
+    {
+        if (change.MemberDelta == MemberDelta.Removed)
+            return null; // удаление элемента формы программно не генерируем
+
+        // Формы списка засоряют реестр — программный скелет только для обычных форм.
+        var formName = FormProgrammaticWriter.FormNameOf(change.MemberName);
+        if (IsListFormName(formName))
+            return null;
+
+        if (change.MemberDelta == MemberDelta.Modified && change.MemberName != null)
+        {
+            var beforeMember = FindMember(typicalObject, change.MemberKind, change.MemberName);
+            var afterMember = FindMember(customizedObject, change.MemberKind, change.MemberName);
+            if (beforeMember != null && afterMember != null
+                && string.Equals(beforeMember.EssentialFingerprint, afterMember.EssentialFingerprint, StringComparison.Ordinal))
+            {
+                // Заголовок/подсказка без смены сути — не засоряем реестр.
+                return null;
+            }
+        }
+
+        var kindLabel = change.MemberKind switch
+        {
+            "FormAttribute" => "реквизит формы",
+            "FormCommand" => "команда формы",
+            "FormItem" => "элемент формы",
+            _ => "часть формы",
+        };
+
+        var action = change.MemberDelta == MemberDelta.Added ? "добавлен" : "изменён";
+        var draftItem = new TransferItem(
+            change.ObjectName,
+            change.ObjectUuid,
+            objectType,
+            change.Module,
+            change.MemberName,
+            change.MemberKind,
+            change.Kind,
+            TransferDecision.FormProgrammatic,
+            $"{kindLabel} {action} — скелет программного создания (не XML формы)",
+            ProposedHook.None,
+            null,
+            null,
+            false,
+            null);
+        // Префикс подставит UI/writer; здесь — нейтральный для превью в реестре.
+        var skeleton = FormProgrammaticWriter.PreviewFragment("Дораб_", draftItem);
+        return draftItem with { HookBody = skeleton };
+    }
+
+    private static bool IsListFormName(string formName) =>
+        formName.Contains("Список", StringComparison.OrdinalIgnoreCase)
+        || formName.Contains("List", StringComparison.OrdinalIgnoreCase)
+        || formName.Equals("ФормаСписка", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsFormModule(string? modulePath) =>
         !string.IsNullOrEmpty(modulePath)

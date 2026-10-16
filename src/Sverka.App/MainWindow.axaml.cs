@@ -921,9 +921,13 @@ public partial class MainWindow : Window
         TransferAfterText.Text = after;
 
         var prefix = TransferPrefixBox.Text?.Trim() ?? _transfer.Prefix;
-        TransferExtensionText.Text = row.Item.Decision == TransferDecision.Auto
-            ? ExtensionDraftWriter.PreviewMethod(prefix, row.Item)
-            : "(в черновик расширения автоматически не уходит — смотрите решение в реестре)";
+        TransferExtensionText.Text = row.Item.Decision switch
+        {
+            TransferDecision.Auto => ExtensionDraftWriter.PreviewMethod(prefix, row.Item),
+            TransferDecision.FormProgrammatic => FormProgrammaticWriter.PreviewFragment(prefix, row.Item),
+            TransferDecision.DataMigration => "(см. migration/ПереносДанных.bsl)",
+            _ => "(в черновик расширения автоматически не уходит — смотрите решение в реестре)",
+        };
 
         RenderDiffPanel(before, after, TransferExtensionText.Text);
     }
@@ -1116,7 +1120,8 @@ public partial class MainWindow : Window
             2 => rows.Where(row => row.Item.Decision == TransferDecision.Highlight),
             3 => rows.Where(row => row.Item.Decision == TransferDecision.Manual),
             4 => rows.Where(row => row.Item.Decision == TransferDecision.DataMigration),
-            5 => rows.Where(row => row.Item.Decision == TransferDecision.Skip),
+            5 => rows.Where(row => row.Item.Decision == TransferDecision.FormProgrammatic),
+            6 => rows.Where(row => row.Item.Decision == TransferDecision.Skip),
             _ => rows,
         };
 
@@ -1209,6 +1214,7 @@ public partial class MainWindow : Window
         TransferDecision.Highlight => Color.Parse("#BBDEFB"),
         TransferDecision.Skip => Color.Parse("#EEEEEE"),
         TransferDecision.DataMigration => Color.Parse("#E1BEE7"),
+        TransferDecision.FormProgrammatic => Color.Parse("#B2EBF2"),
         _ => Colors.Transparent,
     };
 
@@ -1218,6 +1224,7 @@ public partial class MainWindow : Window
         var manual = plan.Items.Count(item => item.Decision == TransferDecision.Manual);
         var highlight = plan.Items.Count(item => item.Decision == TransferDecision.Highlight);
         var data = plan.Items.Count(item => item.Decision == TransferDecision.DataMigration);
+        var forms = plan.Items.Count(item => item.Decision == TransferDecision.FormProgrammatic);
         var skip = plan.Items.Count(item => item.Decision == TransferDecision.Skip);
         var manualObjects = plan.Items
             .Where(item => item.Decision == TransferDecision.Manual)
@@ -1230,7 +1237,7 @@ public partial class MainWindow : Window
         var manualPart = manual == 0
             ? "вручную 0"
             : $"вручную {manual} ({manualObjects} объ.)";
-        return $"Доработок: {plan.Items.Count} ({scope}). Авто {auto}, {manualPart}, подсветка {highlight}, данные {data}, пропуск {skip}.";
+        return $"Доработок: {plan.Items.Count} ({scope}). Авто {auto}, {manualPart}, подсветка {highlight}, данные {data}, формы {forms}, пропуск {skip}.";
     }
 
     private static string DescribeHistory(IReadOnlyList<RunDelta> deltas)

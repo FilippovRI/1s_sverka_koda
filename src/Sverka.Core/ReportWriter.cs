@@ -103,6 +103,7 @@ public static class ReportWriter
                 manual = plan.Items.Count(item => item.Decision == TransferDecision.Manual),
                 highlight = plan.Items.Count(item => item.Decision == TransferDecision.Highlight),
                 dataMigration = plan.Items.Count(item => item.Decision == TransferDecision.DataMigration),
+                formProgrammatic = plan.Items.Count(item => item.Decision == TransferDecision.FormProgrammatic),
                 skip = plan.Items.Count(item => item.Decision == TransferDecision.Skip),
             },
         };
@@ -318,6 +319,7 @@ public static class ReportWriter
         TransferDecision.Manual => "Вручную",
         TransferDecision.Highlight => "Подсветка",
         TransferDecision.DataMigration => "Данные",
+        TransferDecision.FormProgrammatic => "Форма",
         TransferDecision.Skip => "Пропуск",
         _ => decision.ToString(),
     };

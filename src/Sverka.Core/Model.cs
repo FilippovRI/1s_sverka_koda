@@ -139,6 +139,8 @@ public enum TransferDecision
     /// <summary>Только подсветка в реестре: не генерируем файлы расширения.</summary>
     Highlight,
     DataMigration,
+    /// <summary>Доработка формы УП → скелет программного создания (не XML формы).</summary>
+    FormProgrammatic,
     Skip,
 }
 
