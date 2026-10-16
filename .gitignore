@@ -6,3 +6,5 @@ TestResults/
 sverka-out/
 publish/
 publish-v*/
+
+tmp-transfer-*.txt
