@@ -78,6 +78,36 @@ public class TransferTests
     }
 
     [Fact]
+    public void LineReplacementBecomesChangeAndControlWithDelete()
+    {
+        using var typical = Dump.Create();
+        using var customized = Dump.Create();
+        typical.CommonModule("Расчеты", ModuleId, """
+            Процедура НекотораяПроцедура(Документ)
+            	Статус = 1;
+            	Итог = 2;
+            	Финиш = 3;
+            КонецПроцедуры
+            """);
+        customized.CommonModule("Расчеты", ModuleId, """
+            Процедура НекотораяПроцедура(Документ)
+            	Статус = 1;
+            	Итог = 99;
+            	Финиш = 3;
+            КонецПроцедуры
+            """);
+
+        var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
+        var item = Assert.Single(plan.Items);
+        Assert.Equal(TransferDecision.Auto, item.Decision);
+        Assert.Equal(ProposedHook.ChangeAndControl, item.ProposedHook);
+        Assert.Contains("#Удаление", item.HookBody, StringComparison.Ordinal);
+        Assert.Contains("#Вставка", item.HookBody, StringComparison.Ordinal);
+        Assert.Contains("Итог = 2", item.HookBody, StringComparison.Ordinal);
+        Assert.Contains("Итог = 99", item.HookBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AddedMethodIsAutoWithPrefixInDraft()
     {
         using var typical = Dump.Create();

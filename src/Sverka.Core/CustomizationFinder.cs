@@ -103,6 +103,9 @@ public static class CustomizationFinder
 
         if (change.Kind == ChangeKind.Added && change.Method != null && change.Module != null)
         {
+            if (IsFormModule(change.Module))
+                return null;
+
             var module = FindModule(customizedObject, change.Module);
             var method = module?.Methods.FirstOrDefault(item =>
                 item.Name.Equals(change.Method, StringComparison.OrdinalIgnoreCase));
@@ -183,6 +186,10 @@ public static class CustomizationFinder
 
         if (change.MemberDelta == MemberDelta.Modified && change.MemberName != null)
         {
+            // Макеты и права в реестре переноса не нужны — только шум.
+            if (IsNoisyMember(change.MemberKind))
+                return null;
+
             var beforeMember = FindMember(typicalObject, change.MemberKind, change.MemberName);
             var afterMember = FindMember(customizedObject, change.MemberKind, change.MemberName);
             if (beforeMember != null && afterMember != null
@@ -203,6 +210,10 @@ public static class CustomizationFinder
 
         if (change.Kind == ChangeKind.Module && change.Method != null && change.Module != null)
         {
+            // Модули форм в реестр не кладём — плохо читаются и требуют заимствования формы.
+            if (IsFormModule(change.Module))
+                return null;
+
             if (change.ModulePart is ModuleChangePart.Signature or ModuleChangePart.Both)
             {
                 return Item(
@@ -388,6 +399,17 @@ public static class CustomizationFinder
         !string.IsNullOrEmpty(memberKind)
         && (memberKind.Equals("Form", StringComparison.OrdinalIgnoreCase)
             || ConfigComparer.IsFormPart(memberKind));
+
+    private static bool IsFormModule(string? modulePath) =>
+        !string.IsNullOrEmpty(modulePath)
+        && (modulePath.Contains("Forms/", StringComparison.OrdinalIgnoreCase)
+            || modulePath.Contains(@"Forms\", StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsNoisyMember(string? memberKind) =>
+        !string.IsNullOrEmpty(memberKind)
+        && (memberKind.Equals("Template", StringComparison.OrdinalIgnoreCase)
+            || memberKind.Equals("Rights", StringComparison.OrdinalIgnoreCase)
+            || memberKind.Equals("Command", StringComparison.OrdinalIgnoreCase));
 
     private static bool IsDataMember(string? memberKind) =>
         !string.IsNullOrEmpty(memberKind)

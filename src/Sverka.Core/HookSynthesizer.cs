@@ -13,8 +13,10 @@ public static class HookSynthesizer
 
     public static Proposal ForBodyChange(BslMethod typical, BslMethod customized)
     {
-        var typicalLines = MeaningfulLines(typical.BodyText);
-        var customLines = MeaningfulLines(customized.BodyText);
+        var typicalPairs = MeaningfulPairs(typical.BodyText);
+        var customPairs = MeaningfulPairs(customized.BodyText);
+        var typicalLines = typicalPairs.Select(item => item.Norm).ToList();
+        var customLines = customPairs.Select(item => item.Norm).ToList();
 
         if (typicalLines.Count == 0 && customLines.Count == 0)
             return new Proposal(TransferDecision.Skip, ProposedHook.None, "Тело пустое с обеих сторон", null);
@@ -50,7 +52,7 @@ public static class HookSynthesizer
         if (insertAnalysis.Kind is InsertKind.Single or InsertKind.Multiple
             && insertAnalysis.Gaps.Count > 0)
         {
-            var annotated = BuildAnnotatedBody(customized.BodyText, insertAnalysis.Gaps);
+            var annotated = BuildInsertAnnotatedBody(customized.BodyText, insertAnalysis.Gaps);
             if (!string.IsNullOrWhiteSpace(annotated))
             {
                 var reason = insertAnalysis.Gaps.Count == 1
@@ -74,6 +76,11 @@ public static class HookSynthesizer
                 StripProceedCalls(customized.BodyText));
         }
 
+        // Замены/удаления строк при сохранении общего каркаса → #Вставка/#Удаление.
+        var lcs = TryLcsChangeAndControl(typicalPairs, customPairs);
+        if (lcs != null)
+            return lcs;
+
         return new Proposal(
             TransferDecision.Manual,
             ProposedHook.None,
@@ -88,12 +95,168 @@ public static class HookSynthesizer
         Multiple,
     }
 
+    private enum LineOpKind
+    {
+        Equal,
+        Delete,
+        Insert,
+    }
+
     private sealed record InsertAnalysis(InsertKind Kind, IReadOnlyList<(int From, int To)> Gaps);
 
+    private sealed record LinePair(string Norm, string Original);
+
+    private sealed record LineOp(LineOpKind Kind, string? TypicalOriginal, string? CustomOriginal);
+
     /// <summary>
-    /// Все типовые строки должны сохраниться по порядку в доработанном теле.
-    /// Промежутки без типовых строк — вставки.
+    /// LCS типового и доработанного тел: общие строки + #Удаление/#Вставка.
     /// </summary>
+    private static Proposal? TryLcsChangeAndControl(
+        IReadOnlyList<LinePair> typical,
+        IReadOnlyList<LinePair> custom)
+    {
+        if (typical.Count == 0 || custom.Count == 0)
+            return null;
+
+        var ops = DiffLines(typical, custom);
+        var equal = 0;
+        var deletes = 0;
+        var inserts = 0;
+        foreach (var op in ops)
+        {
+            switch (op.Kind)
+            {
+                case LineOpKind.Equal:
+                    equal++;
+                    break;
+                case LineOpKind.Delete:
+                    deletes++;
+                    break;
+                case LineOpKind.Insert:
+                    inserts++;
+                    break;
+            }
+        }
+
+        if (equal == 0)
+            return null;
+
+        // Слишком мало общего с типовым — это переписка, не контролируемая правка.
+        var shared = (double)equal / typical.Count;
+        if (shared < 0.25 && equal < 4)
+            return null;
+        if (deletes == 0 && inserts == 0)
+            return null;
+
+        var annotated = RenderLcsBody(ops);
+        if (string.IsNullOrWhiteSpace(annotated))
+            return null;
+
+        return new Proposal(
+            TransferDecision.Auto,
+            ProposedHook.ChangeAndControl,
+            $"Доработка — правки внутри типового тела (#Вставка/#Удаление), общих строк {equal}/{typical.Count}",
+            annotated);
+    }
+
+    private static List<LineOp> DiffLines(IReadOnlyList<LinePair> a, IReadOnlyList<LinePair> b)
+    {
+        var n = a.Count;
+        var m = b.Count;
+        var lcs = new int[n + 1, m + 1];
+        for (var i = n - 1; i >= 0; i--)
+        {
+            for (var j = m - 1; j >= 0; j--)
+            {
+                if (string.Equals(a[i].Norm, b[j].Norm, StringComparison.Ordinal))
+                    lcs[i, j] = lcs[i + 1, j + 1] + 1;
+                else
+                    lcs[i, j] = Math.Max(lcs[i + 1, j], lcs[i, j + 1]);
+            }
+        }
+
+        var ops = new List<LineOp>();
+        var x = 0;
+        var y = 0;
+        while (x < n && y < m)
+        {
+            if (string.Equals(a[x].Norm, b[y].Norm, StringComparison.Ordinal))
+            {
+                ops.Add(new LineOp(LineOpKind.Equal, a[x].Original, b[y].Original));
+                x++;
+                y++;
+            }
+            else if (lcs[x + 1, y] >= lcs[x, y + 1])
+            {
+                ops.Add(new LineOp(LineOpKind.Delete, a[x].Original, null));
+                x++;
+            }
+            else
+            {
+                ops.Add(new LineOp(LineOpKind.Insert, null, b[y].Original));
+                y++;
+            }
+        }
+
+        while (x < n)
+        {
+            ops.Add(new LineOp(LineOpKind.Delete, a[x].Original, null));
+            x++;
+        }
+
+        while (y < m)
+        {
+            ops.Add(new LineOp(LineOpKind.Insert, null, b[y].Original));
+            y++;
+        }
+
+        return ops;
+    }
+
+    private static string RenderLcsBody(IReadOnlyList<LineOp> ops)
+    {
+        var result = new List<string>();
+        var i = 0;
+        while (i < ops.Count)
+        {
+            var kind = ops[i].Kind;
+            if (kind == LineOpKind.Equal)
+            {
+                result.Add(ops[i].CustomOriginal ?? ops[i].TypicalOriginal ?? "");
+                i++;
+                continue;
+            }
+
+            var block = new List<string>();
+            while (i < ops.Count && ops[i].Kind == kind)
+            {
+                block.Add(kind == LineOpKind.Delete
+                    ? ops[i].TypicalOriginal ?? ""
+                    : ops[i].CustomOriginal ?? "");
+                i++;
+            }
+
+            if (kind == LineOpKind.Delete)
+            {
+                result.Add("#Удаление");
+                result.AddRange(block);
+                result.Add("#КонецУдаления");
+            }
+            else
+            {
+                result.Add("#Вставка");
+                result.AddRange(block);
+                result.Add("#КонецВставки");
+            }
+        }
+
+        while (result.Count > 0 && string.IsNullOrWhiteSpace(result[0]))
+            result.RemoveAt(0);
+        while (result.Count > 0 && string.IsNullOrWhiteSpace(result[^1]))
+            result.RemoveAt(result.Count - 1);
+        return string.Join("\n", result);
+    }
+
     private static InsertAnalysis AnalyzeInserts(
         IReadOnlyList<string> typical,
         IReadOnlyList<string> custom)
@@ -133,10 +296,7 @@ public static class HookSynthesizer
         return new InsertAnalysis(gaps.Count == 1 ? InsertKind.Single : InsertKind.Multiple, gaps);
     }
 
-    /// <summary>
-    /// Полное доработанное тело с маркерами #Вставка вокруг каждого фрагмента вставки.
-    /// </summary>
-    private static string BuildAnnotatedBody(
+    private static string BuildInsertAnnotatedBody(
         string customBodyText,
         IReadOnlyList<(int From, int To)> gaps)
     {
@@ -236,23 +396,19 @@ public static class HookSynthesizer
         return true;
     }
 
-    private static List<string> MeaningfulLines(string body)
+    private static List<LinePair> MeaningfulPairs(string body)
     {
-        var result = new List<string>();
+        var result = new List<LinePair>();
         foreach (var raw in BslText.Lines(body))
         {
             var normalized = BslText.Normalize(raw);
             if (normalized.Length > 0)
-                result.Add(normalized);
+                result.Add(new LinePair(normalized, raw));
         }
 
         return result;
     }
 
-    /// <summary>
-    /// Берёт исходные строки доработанного тела, соответствующие хвосту или голове
-    /// по числу значащих строк.
-    /// </summary>
     private static string SliceOriginal(string bodyText, int meaningfulCount, bool keepTail)
     {
         var raw = BslText.Lines(bodyText);
