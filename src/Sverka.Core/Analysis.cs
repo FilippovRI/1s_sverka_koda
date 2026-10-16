@@ -83,16 +83,35 @@ public static class Analysis
         return new TransferScope(names, objects, includeDescendants, extras);
     }
 
-    public static void WriteTransferReports(string directory, TransferPlan plan, bool writeDraft)
+    public static void WriteTransferReports(
+        string directory,
+        TransferPlan plan,
+        bool writeDraft,
+        TransferSession? session = null)
     {
         Directory.CreateDirectory(directory);
         ReportWriter.WriteTransfer(Path.Combine(directory, "transfer.json"), plan);
         ReportWriter.WriteTransferHtml(Path.Combine(directory, "transfer.html"), plan);
         SubsystemCatalog.SaveSelection(Path.Combine(directory, "subsystems.json"), plan.Scope);
         DataMigrationWriter.Write(Path.Combine(directory, "migration"), plan);
+
+        var activeSession = session ?? new TransferSession
+        {
+            ExtensionName = plan.ExtensionName,
+            Prefix = plan.Prefix,
+        };
+        activeSession.ExtensionName = plan.ExtensionName;
+        activeSession.Prefix = plan.Prefix;
+        activeSession.LastDraftPath = directory;
+        TransferSessionStore.Save(Path.Combine(directory, "transfer-session.json"), activeSession);
+
         if (!writeDraft)
             return;
-        ExtensionDraftWriter.Write(Path.Combine(directory, "extension"), plan);
+
+        var extensionDir = Path.Combine(directory, "extension");
+        ExtensionDraftWriter.Write(extensionDir, plan);
+        var coverage = CoverageChecker.Analyze(plan, extensionDir, activeSession);
+        CoverageChecker.WriteReports(directory, coverage);
     }
 
     public static void WriteTransferScope(string path, TransferScope scope) =>

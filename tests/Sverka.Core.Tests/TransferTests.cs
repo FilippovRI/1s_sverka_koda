@@ -88,6 +88,61 @@ public class TransferTests
     }
 
     [Fact]
+    public void CoverageMarksAutoAsCoveredAfterDraftWrite()
+    {
+        using var typical = Dump.Create();
+        using var customized = Dump.Create();
+        typical.CommonModule("Расчеты", ModuleId, """
+            Процедура НекотораяПроцедура(Документ)
+            	Статус = 1;
+            КонецПроцедуры
+            """);
+        customized.CommonModule("Расчеты", ModuleId, """
+            Процедура НекотораяПроцедура(Документ)
+            	Статус = 1;
+            	Доработка = Истина;
+            КонецПроцедуры
+            """);
+
+        var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
+        var dir = Path.Combine(Path.GetTempPath(), "sverka-cov-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Analysis.WriteTransferReports(dir, plan, writeDraft: true);
+            var report = CoverageChecker.Analyze(plan, Path.Combine(dir, "extension"));
+            Assert.True(report.Covered >= 1);
+            Assert.Equal(0, report.Missing);
+            Assert.True(File.Exists(Path.Combine(dir, "coverage.html")));
+            Assert.True(File.Exists(Path.Combine(dir, "transfer-session.json")));
+        }
+        finally
+        {
+            if (Directory.Exists(dir))
+                Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TransferSessionRoundTripsWorkStatus()
+    {
+        var session = new TransferSession { ExtensionName = "Доработки", Prefix = "Дораб_" };
+        session.SetStatus("CommonModule.А|Ext/Module.bsl|М|", TransferWorkStatus.Done);
+        var path = Path.Combine(Path.GetTempPath(), "sverka-session-" + Guid.NewGuid().ToString("N") + ".json");
+        try
+        {
+            TransferSessionStore.Save(path, session);
+            var loaded = TransferSessionStore.TryLoad(path);
+            Assert.NotNull(loaded);
+            Assert.Equal(TransferWorkStatus.Done, loaded!.GetStatus("CommonModule.А|Ext/Module.bsl|М|"));
+        }
+        finally
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void LineReplacementBecomesChangeAndControlWithDelete()
     {
         using var typical = Dump.Create();

@@ -208,31 +208,49 @@
               <GridSplitter Grid.Column="1" Width="6" ResizeDirection="Columns" />
 
               <DockPanel Grid.Column="2">
-                <StackPanel DockPanel.Dock="Top" Spacing="6">
-                  <TextBlock FontWeight="SemiBold" FontSize="15" Text="К переносу в расширение" />
-                  <Grid ColumnDefinitions="130,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
-                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="У поставщика" />
-                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="TypicalBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка типовой" />
-                    <Button Grid.Row="0" Grid.Column="2" Margin="0,0,8,6" Content="Обзор…" Click="OnBrowseTypical" />
-                    <Button Grid.Row="0" Grid.Column="3" Margin="0,0,0,6" Content="Очистить" Click="OnClearTypical" />
+                <StackPanel DockPanel.Dock="Top" Spacing="4">
+                  <Expander x:Name="TransferSettingsExpander" IsExpanded="False" Margin="0,0,0,4">
+                    <Expander.Header>
+                      <TextBlock FontWeight="SemiBold" FontSize="14"
+                                 Text="К переносу в расширение (пути, кнопки) — разверните при необходимости" />
+                    </Expander.Header>
+                    <StackPanel Spacing="6" Margin="0,8,0,0">
+                      <Grid ColumnDefinitions="130,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="У поставщика" />
+                        <TextBox Grid.Row="0" Grid.Column="1" x:Name="TypicalBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка типовой" />
+                        <Button Grid.Row="0" Grid.Column="2" Margin="0,0,8,6" Content="Обзор…" Click="OnBrowseTypical" />
+                        <Button Grid.Row="0" Grid.Column="3" Margin="0,0,0,6" Content="Очистить" Click="OnClearTypical" />
 
-                    <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="В доработанной" />
-                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="CustomizedBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка доработанной" />
-                    <Button Grid.Row="1" Grid.Column="2" Margin="0,0,8,6" Content="Обзор…" Click="OnBrowseCustomized" />
-                    <Button Grid.Row="1" Grid.Column="3" Margin="0,0,0,6" Content="Очистить" Click="OnClearCustomized" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="В доработанной" />
+                        <TextBox Grid.Row="1" Grid.Column="1" x:Name="CustomizedBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка доработанной" />
+                        <Button Grid.Row="1" Grid.Column="2" Margin="0,0,8,6" Content="Обзор…" Click="OnBrowseCustomized" />
+                        <Button Grid.Row="1" Grid.Column="3" Margin="0,0,0,6" Content="Очистить" Click="OnClearCustomized" />
 
-                    <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Имя расширения" />
-                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="TransferNameBox" Margin="0,0,8,6" Watermark="Доработки" Text="Доработки" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Имя расширения" />
+                        <TextBox Grid.Row="2" Grid.Column="1" x:Name="TransferNameBox" Margin="0,0,8,6" Watermark="Доработки" Text="Доработки" />
 
-                    <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Префикс" />
-                    <TextBox Grid.Row="3" Grid.Column="1" x:Name="TransferPrefixBox" Margin="0,0,8,0" Watermark="Дораб_" Text="Дораб_" />
-                  </Grid>
-                  <CheckBox x:Name="ShowRemovedMetadataBox" IsChecked="False" Content="Показывать удалённые метаданные" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Префикс" />
+                        <TextBox Grid.Row="3" Grid.Column="1" x:Name="TransferPrefixBox" Margin="0,0,8,0" Watermark="Дораб_" Text="Дораб_" />
+                      </Grid>
+                      <CheckBox x:Name="ShowRemovedMetadataBox" IsChecked="False" Content="Показывать удалённые метаданные" />
+                      <WrapPanel Orientation="Horizontal">
+                        <Button x:Name="TransferFindButton" Margin="0,0,8,6" Content="Найти доработки" MinWidth="140" Click="OnFindTransfer" />
+                        <Button x:Name="TransferSaveButton" Margin="0,0,8,6" Content="Сохранить черновик" IsEnabled="False" Click="OnSaveTransfer" />
+                        <Button Margin="0,0,8,6" Content="Сохранить область" Click="OnSaveScope" />
+                        <Button Margin="0,0,8,6" Content="Сохранить сессию" Click="OnSaveSession" />
+                        <Button Margin="0,0,8,6" Content="Загрузить сессию…" Click="OnLoadSession" />
+                        <Button x:Name="TransferCoverageButton" Margin="0,0,8,6" Content="Контроль черновика…" IsEnabled="False" Click="OnCheckCoverage" />
+                      </WrapPanel>
+                    </StackPanel>
+                  </Expander>
+
                   <WrapPanel Orientation="Horizontal">
-                    <Button x:Name="TransferFindButton" Margin="0,0,8,6" Content="Найти доработки" MinWidth="140" Click="OnFindTransfer" />
-                    <Button x:Name="TransferSaveButton" Margin="0,0,8,6" Content="Сохранить черновик" IsEnabled="False" Click="OnSaveTransfer" />
-                    <Button Margin="0,0,8,6" Content="Сохранить область" Click="OnSaveScope" />
-                    <ComboBox x:Name="TransferDecisionFilter" Margin="0,0,8,6" Width="120" SelectedIndex="0" SelectionChanged="OnTransferDecisionFilterChanged">
+                    <Button Margin="0,0,8,4" Content="Найти" MinWidth="72" Click="OnFindTransfer" />
+                    <Button x:Name="TransferSaveButtonCompact" Margin="0,0,8,4" Content="Черновик" IsEnabled="False" Click="OnSaveTransfer" />
+                    <Button Margin="0,0,8,4" Content="Готово" Click="OnMarkDone" />
+                    <Button Margin="0,0,8,4" Content="Пропуск" Click="OnMarkSkipped" />
+                    <Button Margin="0,0,8,4" Content="В работу" Click="OnMarkTodo" />
+                    <ComboBox x:Name="TransferDecisionFilter" Margin="0,0,8,4" Width="110" SelectedIndex="0" SelectionChanged="OnTransferDecisionFilterChanged">
                       <ComboBoxItem Content="Все решения" />
                       <ComboBoxItem Content="Авто" />
                       <ComboBoxItem Content="Подсветка" />
@@ -240,12 +258,19 @@
                       <ComboBoxItem Content="Данные" />
                       <ComboBoxItem Content="Пропуск" />
                     </ComboBox>
-                    <TextBox x:Name="TransferFilterBox" Margin="0,0,8,6" Width="180" Watermark="Фильтр" TextChanged="OnTransferFilterChanged" />
+                    <ComboBox x:Name="TransferWorkFilter" Margin="0,0,8,4" Width="110" SelectedIndex="0" SelectionChanged="OnTransferWorkFilterChanged">
+                      <ComboBoxItem Content="Весь прогресс" />
+                      <ComboBoxItem Content="В работе" />
+                      <ComboBoxItem Content="Готово" />
+                      <ComboBoxItem Content="Пропуск" />
+                      <ComboBoxItem Content="Блок" />
+                    </ComboBox>
+                    <TextBox x:Name="TransferFilterBox" Margin="0,0,8,4" Width="160" Watermark="Фильтр" TextChanged="OnTransferFilterChanged" />
                   </WrapPanel>
-                  <TextBlock x:Name="TransferStatusText" TextWrapping="Wrap" Text="Доработки ещё не искали." />
+                  <TextBlock x:Name="TransferStatusText" TextWrapping="Wrap" FontSize="12" Text="Доработки ещё не искали. Разверните блок выше, чтобы указать пути." />
                 </StackPanel>
 
-                <Grid RowDefinitions="*,6,220,6,*" Margin="0,8,0,0">
+                <Grid RowDefinitions="*,6,180,6,*" Margin="0,4,0,0">
                   <DataGrid x:Name="TransferGrid"
                             IsReadOnly="True"
                             AutoGenerateColumns="False"
@@ -256,6 +281,7 @@
                             SelectionChanged="OnTransferSelected"
                             LoadingRow="OnTransferLoadingRow">
                     <DataGrid.Columns>
+                      <DataGridTextColumn Header="Прогресс" Binding="{Binding WorkStatus}" Width="90" MinWidth="70" />
                       <DataGridTextColumn Header="Объект" Binding="{Binding ObjectName}" Width="3*" MinWidth="160" />
                       <DataGridTextColumn Header="Метод" Binding="{Binding Method}" Width="2*" MinWidth="100" />
                       <DataGridTextColumn Header="Вид" Binding="{Binding Kind}" Width="100" MinWidth="70" />

@@ -15,6 +15,8 @@ public partial class MainWindow : Window
 {
     private AnalysisResult? _result;
     private TransferPlan? _transfer;
+    private TransferSession _session = new();
+    private string? _lastDraftFolder;
     private List<ChangeRow> _changes = [];
     private List<FindingRow> _findings = [];
     private List<SummaryRow> _summaries = [];
@@ -254,18 +256,21 @@ public partial class MainWindow : Window
         var prefix = TransferPrefixBox.Text?.Trim();
         if (string.IsNullOrWhiteSpace(typical) || string.IsNullOrWhiteSpace(customized))
         {
-            SetTransferStatus("Нужны обе выгрузки: типовая и доработанная.");
+            TransferSettingsExpander.IsExpanded = true;
+            SetTransferStatus("Нужны обе выгрузки: типовая и доработанная — разверните блок выше.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(prefix))
         {
-            SetTransferStatus("Укажите имя расширения и префикс.");
+            TransferSettingsExpander.IsExpanded = true;
+            SetTransferStatus("Укажите имя расширения и префикс — разверните блок выше.");
             return;
         }
 
-        TransferFindButton.IsEnabled = false;
-        TransferSaveButton.IsEnabled = false;
+        if (TransferFindButton != null)
+            TransferFindButton.IsEnabled = false;
+        SetTransferSaveEnabled(false);
         SetTransferStatus("Ищу доработки…");
         try
         {
@@ -285,14 +290,25 @@ public partial class MainWindow : Window
             var plan = await Task.Run(() =>
                 Analysis.RunTransfer(typical, customized, name, prefix, scope, includeRemoved));
             _transfer = plan;
+            _session.ExtensionName = name!;
+            _session.Prefix = prefix!;
+            _session.TypicalPath = typical;
+            _session.CustomizedPath = customized;
             _transfers = plan.Items
                 .OrderBy(item => item.ObjectName, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(item => item.Method ?? "", StringComparer.OrdinalIgnoreCase)
-                .Select(item => new TransferRow(item))
+                .Select(item =>
+                {
+                    var row = new TransferRow(item);
+                    row.SetWorkStatus(_session.GetStatus(row.ItemKey), notify: false);
+                    return row;
+                })
                 .ToList();
             ApplyTransferFilter();
-            TransferSaveButton.IsEnabled = true;
-            SetTransferStatus(DescribeTransfer(plan));
+            SetTransferSaveEnabled(true);
+            if (TransferCoverageButton != null)
+                TransferCoverageButton.IsEnabled = !string.IsNullOrEmpty(_lastDraftFolder);
+            SetTransferStatus(DescribeTransfer(plan) + " " + DescribeSessionProgress());
             if (scope.HasFilter)
                 SubsystemStatusText.Text =
                     $"Область: {scope.SelectedSubsystemNames.Count} подсистем, объектов {scope.ObjectNames.Count}.";
@@ -306,7 +322,8 @@ public partial class MainWindow : Window
         }
         finally
         {
-            TransferFindButton.IsEnabled = true;
+            if (TransferFindButton != null)
+                TransferFindButton.IsEnabled = true;
         }
     }
 
@@ -499,14 +516,171 @@ public partial class MainWindow : Window
 
         try
         {
-            Analysis.WriteTransferReports(folder, _transfer, writeDraft: true);
+            SyncSessionFromRows();
+            _session.TypicalPath = TypicalBox.Text?.Trim();
+            _session.CustomizedPath = CustomizedBox.Text?.Trim();
+            Analysis.WriteTransferReports(folder, _transfer, writeDraft: true, _session);
+            _lastDraftFolder = folder;
+            if (TransferCoverageButton != null)
+                TransferCoverageButton.IsEnabled = true;
+            var coverage = CoverageChecker.Analyze(_transfer, Path.Combine(folder, "extension"), _session);
             SetTransferStatus(
-                $"Черновик записан в {folder} (extension/, migration/, transfer.html/json, subsystems.json)");
+                $"Черновик: {folder}. Контроль — покрыто {coverage.Covered}, не найдено {coverage.Missing}, " +
+                $"принято {coverage.Accepted}. Файлы: extension/, coverage.html, transfer-session.json");
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             SetTransferStatus(exception.Message);
         }
+    }
+
+    private async void OnSaveSession(object? sender, RoutedEventArgs e)
+    {
+        if (_transfer == null && _transfers.Count == 0)
+        {
+            SetTransferStatus("Сначала найдите доработки.");
+            return;
+        }
+
+        var path = await PickSaveJsonFile("Куда сохранить transfer-session.json");
+        if (path == null)
+            return;
+
+        try
+        {
+            SyncSessionFromRows();
+            _session.ExtensionName = TransferNameBox.Text?.Trim() ?? _session.ExtensionName;
+            _session.Prefix = TransferPrefixBox.Text?.Trim() ?? _session.Prefix;
+            _session.TypicalPath = TypicalBox.Text?.Trim();
+            _session.CustomizedPath = CustomizedBox.Text?.Trim();
+            _session.LastDraftPath = _lastDraftFolder;
+            TransferSessionStore.Save(path, _session);
+            SetTransferStatus($"Сессия сохранена: {path}. {DescribeSessionProgress()}");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            SetTransferStatus(exception.Message);
+        }
+    }
+
+    private async void OnLoadSession(object? sender, RoutedEventArgs e)
+    {
+        var path = await PickJsonFile("Открыть transfer-session.json");
+        if (path == null)
+            return;
+
+        try
+        {
+            var loaded = TransferSessionStore.TryLoad(path);
+            if (loaded == null)
+            {
+                SetTransferStatus("Не удалось прочитать сессию.");
+                return;
+            }
+
+            _session = loaded;
+            if (!string.IsNullOrWhiteSpace(loaded.TypicalPath))
+                TypicalBox.Text = loaded.TypicalPath;
+            if (!string.IsNullOrWhiteSpace(loaded.CustomizedPath))
+                CustomizedBox.Text = loaded.CustomizedPath;
+            if (!string.IsNullOrWhiteSpace(loaded.ExtensionName))
+                TransferNameBox.Text = loaded.ExtensionName;
+            if (!string.IsNullOrWhiteSpace(loaded.Prefix))
+                TransferPrefixBox.Text = loaded.Prefix;
+            _lastDraftFolder = loaded.LastDraftPath;
+            if (TransferCoverageButton != null)
+                TransferCoverageButton.IsEnabled = !string.IsNullOrEmpty(_lastDraftFolder);
+
+            foreach (var row in _transfers)
+                row.SetWorkStatus(_session.GetStatus(row.ItemKey));
+
+            ApplyTransferFilter();
+            SetTransferStatus($"Сессия загружена ({loaded.Items.Count} отметок). {DescribeSessionProgress()}");
+            TransferSettingsExpander.IsExpanded = true;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            SetTransferStatus(exception.Message);
+        }
+    }
+
+    private async void OnCheckCoverage(object? sender, RoutedEventArgs e)
+    {
+        if (_transfer == null)
+        {
+            SetTransferStatus("Сначала найдите доработки.");
+            return;
+        }
+
+        var folder = _lastDraftFolder;
+        if (string.IsNullOrEmpty(folder) || !Directory.Exists(Path.Combine(folder, "extension")))
+            folder = await PickFolder("Папка с черновиком (содержит extension/)");
+        if (folder == null)
+            return;
+
+        try
+        {
+            SyncSessionFromRows();
+            var extensionDir = Directory.Exists(Path.Combine(folder, "extension"))
+                ? Path.Combine(folder, "extension")
+                : folder;
+            var reportDir = Directory.Exists(Path.Combine(folder, "extension"))
+                ? folder
+                : Path.GetDirectoryName(folder) ?? folder;
+            var coverage = CoverageChecker.Analyze(_transfer, extensionDir, _session);
+            CoverageChecker.WriteReports(reportDir, coverage);
+            _lastDraftFolder = reportDir;
+            SetTransferStatus(
+                $"Контроль: покрыто {coverage.Covered}, не найдено {coverage.Missing}, " +
+                $"не требуется {coverage.NotRequired}, принято {coverage.Accepted}. Отчёт: {Path.Combine(reportDir, "coverage.html")}");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            SetTransferStatus(exception.Message);
+        }
+    }
+
+    private void OnMarkDone(object? sender, RoutedEventArgs e) => MarkSelectedWork(TransferWorkStatus.Done);
+
+    private void OnMarkSkipped(object? sender, RoutedEventArgs e) => MarkSelectedWork(TransferWorkStatus.Skipped);
+
+    private void OnMarkTodo(object? sender, RoutedEventArgs e) => MarkSelectedWork(TransferWorkStatus.Todo);
+
+    private void MarkSelectedWork(TransferWorkStatus status)
+    {
+        if (TransferGrid.SelectedItem is not TransferRow row)
+        {
+            SetTransferStatus("Выберите строку в таблице.");
+            return;
+        }
+
+        row.SetWorkStatus(status);
+        _session.SetStatus(row.ItemKey, status);
+        ApplyTransferFilter();
+        SetTransferStatus($"{row.ObjectName} {row.Method}: {TransferSession.WorkStatusName(status)}. {DescribeSessionProgress()}");
+    }
+
+    private void SyncSessionFromRows()
+    {
+        foreach (var row in _transfers)
+            _session.SetStatus(row.ItemKey, row.WorkStatusValue);
+    }
+
+    private void SetTransferSaveEnabled(bool enabled)
+    {
+        if (TransferSaveButton != null)
+            TransferSaveButton.IsEnabled = enabled;
+        if (TransferSaveButtonCompact != null)
+            TransferSaveButtonCompact.IsEnabled = enabled;
+    }
+
+    private string DescribeSessionProgress()
+    {
+        var todo = _transfers.Count(row => row.WorkStatusValue == TransferWorkStatus.Todo);
+        var done = _transfers.Count(row => row.WorkStatusValue == TransferWorkStatus.Done);
+        var skipped = _transfers.Count(row => row.WorkStatusValue == TransferWorkStatus.Skipped);
+        var blocked = _transfers.Count(row => row.WorkStatusValue == TransferWorkStatus.Blocked);
+        return $"Прогресс: в работе {todo}, готово {done}, пропуск {skipped}, блок {blocked}.";
     }
 
     private async void OnSaveScope(object? sender, RoutedEventArgs e)
@@ -536,6 +710,8 @@ public partial class MainWindow : Window
     private void OnTransferFilterChanged(object? sender, TextChangedEventArgs e) => ApplyTransferFilter();
 
     private void OnTransferDecisionFilterChanged(object? sender, SelectionChangedEventArgs e) => ApplyTransferFilter();
+
+    private void OnTransferWorkFilterChanged(object? sender, SelectionChangedEventArgs e) => ApplyTransferFilter();
 
     private void OnTransferSelected(object? sender, SelectionChangedEventArgs e)
     {
@@ -753,11 +929,21 @@ public partial class MainWindow : Window
             _ => rows,
         };
 
+        var workFilter = TransferWorkFilter?.SelectedIndex ?? 0;
+        rows = workFilter switch
+        {
+            1 => rows.Where(row => row.WorkStatusValue == TransferWorkStatus.Todo),
+            2 => rows.Where(row => row.WorkStatusValue == TransferWorkStatus.Done),
+            3 => rows.Where(row => row.WorkStatusValue == TransferWorkStatus.Skipped),
+            4 => rows.Where(row => row.WorkStatusValue == TransferWorkStatus.Blocked),
+            _ => rows,
+        };
+
         var filter = TransferFilterBox?.Text?.Trim();
         TransferGrid.ItemsSource = FilterRows(
             rows,
             filter,
-            row => $"{row.ObjectName} {row.Method} {row.Kind} {row.Decision} {row.Hook} {row.Reason}").ToList();
+            row => $"{row.WorkStatus} {row.ObjectName} {row.Method} {row.Kind} {row.Decision} {row.Hook} {row.Reason}").ToList();
     }
 
     private static IEnumerable<T> FilterRows<T>(IEnumerable<T> rows, string? filter, Func<T, string> text)
@@ -961,15 +1147,31 @@ public sealed class SummaryRow(ExtensionSummary summary)
     public int Total => summary.Total;
 }
 
-public sealed class TransferRow(TransferItem item)
+public sealed class TransferRow(TransferItem item) : INotifyPropertyChanged
 {
+    private TransferWorkStatus _workStatus = TransferWorkStatus.Todo;
+
     public TransferItem Item => item;
+    public string ItemKey => TransferSession.ItemKey(item);
     public string ObjectName => item.ObjectName;
     public string Method => item.Method ?? "";
     public string Kind => ReportWriter.KindName(item.ChangeKind);
     public string Decision => ReportWriter.TransferDecisionName(item.Decision);
     public string Hook => ReportWriter.ProposedHookName(item.ProposedHook);
     public string Reason => item.Reason;
+    public string WorkStatus => TransferSession.WorkStatusName(_workStatus);
+    public TransferWorkStatus WorkStatusValue => _workStatus;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public void SetWorkStatus(TransferWorkStatus status, bool notify = true)
+    {
+        if (_workStatus == status)
+            return;
+        _workStatus = status;
+        if (notify)
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(WorkStatus)));
+    }
 }
 
 /// <summary>
