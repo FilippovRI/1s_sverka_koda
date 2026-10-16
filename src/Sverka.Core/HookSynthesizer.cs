@@ -81,6 +81,16 @@ public static class HookSynthesizer
         if (lcs != null)
             return lcs;
 
+        // Нет устойчивого каркаса — полная замена через &Вместо (как Diff&Merge / ручной перенос).
+        if (customPairs.Count > 0)
+        {
+            return new Proposal(
+                TransferDecision.Auto,
+                ProposedHook.Instead,
+                "Тело переписано без общего каркаса — хук &Вместо с телом доработанной",
+                customized.BodyText.TrimEnd());
+        }
+
         return new Proposal(
             TransferDecision.Manual,
             ProposedHook.None,
@@ -141,9 +151,9 @@ public static class HookSynthesizer
         if (equal == 0)
             return null;
 
-        // Слишком мало общего с типовым — это переписка, не контролируемая правка.
+        // Слишком мало общего с типовым — лучше &Вместо, не ломаный #Вставка/#Удаление.
         var shared = (double)equal / typical.Count;
-        if (shared < 0.25 && equal < 4)
+        if (shared < 0.12 && equal < 2)
             return null;
         if (deletes == 0 && inserts == 0)
             return null;

@@ -151,19 +151,15 @@ public static class CustomizationFinder
         if (change.MemberDelta != MemberDelta.None && IsFormRelated(change.MemberKind))
             return null;
 
+        if (change.MemberDelta != MemberDelta.None)
+        {
+            // Макеты, реквизиты, ТЧ, измерения, ресурсы — не для сравнения переноса модулей.
+            if (IsNoisyMember(change.MemberKind) || IsStructuralDataMember(change.MemberKind))
+                return null;
+        }
+
         if (change.MemberDelta == MemberDelta.Added)
         {
-            if (IsDataMember(change.MemberKind))
-            {
-                return Item(
-                    change,
-                    objectType,
-                    TransferDecision.DataMigration,
-                    ProposedHook.None,
-                    "Добавленный реквизит/ТЧ — в черновик миграции данных, XML расширения не пишем",
-                    null, null, false, null);
-            }
-
             return Item(
                 change,
                 objectType,
@@ -186,10 +182,6 @@ public static class CustomizationFinder
 
         if (change.MemberDelta == MemberDelta.Modified && change.MemberName != null)
         {
-            // Макеты и права в реестре переноса не нужны — только шум.
-            if (IsNoisyMember(change.MemberKind))
-                return null;
-
             var beforeMember = FindMember(typicalObject, change.MemberKind, change.MemberName);
             var afterMember = FindMember(customizedObject, change.MemberKind, change.MemberName);
             if (beforeMember != null && afterMember != null
@@ -214,17 +206,6 @@ public static class CustomizationFinder
             if (IsFormModule(change.Module))
                 return null;
 
-            if (change.ModulePart is ModuleChangePart.Signature or ModuleChangePart.Both)
-            {
-                return Item(
-                    change,
-                    objectType,
-                    TransferDecision.Manual,
-                    ProposedHook.None,
-                    "Изменилась сигнатура — хук без ручной проверки небезопасен",
-                    null, null, false, null);
-            }
-
             var customModule = FindModule(customizedObject, change.Module);
             var typicalMethod = FindMethod(typicalObject, change.Module, change.Method);
             var customMethod = customModule?.Methods.FirstOrDefault(item =>
@@ -240,16 +221,31 @@ public static class CustomizationFinder
                     null, null, false, null);
             }
 
+            var signatureChanged = change.ModulePart is ModuleChangePart.Signature or ModuleChangePart.Both;
             var proposal = HookSynthesizer.ForBodyChange(typicalMethod, customMethod);
             if (proposal.Decision == TransferDecision.Skip)
-                return null;
+            {
+                if (!signatureChanged)
+                    return null;
+                return Item(
+                    change,
+                    objectType,
+                    TransferDecision.Manual,
+                    ProposedHook.None,
+                    "Изменилась только сигнатура — проверьте параметры вручную",
+                    null, null, false, null);
+            }
+
+            var reason = signatureChanged
+                ? proposal.Reason + " (сигнатура тоже изменилась — проверьте параметры)"
+                : proposal.Reason;
 
             return Item(
                 change,
                 objectType,
                 proposal.Decision,
                 proposal.Hook,
-                proposal.Reason,
+                reason,
                 proposal.HookBody,
                 ExtractHeader(customModule.Source, customMethod.Name) ?? HeaderOf(customMethod),
                 customMethod.IsFunction,
@@ -411,7 +407,8 @@ public static class CustomizationFinder
             || memberKind.Equals("Rights", StringComparison.OrdinalIgnoreCase)
             || memberKind.Equals("Command", StringComparison.OrdinalIgnoreCase));
 
-    private static bool IsDataMember(string? memberKind) =>
+    /// <summary>Реквизиты, ТЧ, измерения, ресурсы — не показываем в реестре переноса.</summary>
+    private static bool IsStructuralDataMember(string? memberKind) =>
         !string.IsNullOrEmpty(memberKind)
         && (memberKind.Equals("Attribute", StringComparison.OrdinalIgnoreCase)
             || memberKind.Equals("TabularSection", StringComparison.OrdinalIgnoreCase)

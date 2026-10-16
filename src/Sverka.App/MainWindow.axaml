@@ -148,38 +148,62 @@
       <TabItem Header="К типовой / История">
         <TabControl x:Name="TransferPages" Margin="0,8,0,0">
           <TabItem Header="К типовой">
-            <Grid ColumnDefinitions="260,6,*" Margin="0,8,0,0">
-              <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Spacing="6">
-                  <TextBlock FontWeight="SemiBold" Text="Область" />
-                  <WrapPanel Orientation="Horizontal">
-                    <Button Margin="0,0,6,6" Content="Загрузить" Click="OnLoadSubsystems" />
-                    <Button Margin="0,0,6,6" Content="Из файла…" Click="OnLoadScopeFile" />
-                    <Button Margin="0,0,6,6" Content="Все" Click="OnSelectAllSubsystems" />
-                    <Button Margin="0,0,6,6" Content="Снять" Click="OnClearSubsystems" />
-                  </WrapPanel>
-                  <CheckBox x:Name="IncludeDescendantsBox" IsChecked="True" Content="Включать вложенные" />
-                  <TextBlock x:Name="SubsystemStatusText" TextWrapping="Wrap" FontSize="12" Text="Подсистемы не загружены — вся конфигурация." />
-                </StackPanel>
-                <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0" MaxHeight="140">
-                  <TextBlock DockPanel.Dock="Top" FontWeight="SemiBold" Margin="0,0,0,4" Text="Доп. объекты" />
-                  <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
-                    <TextBox x:Name="ExtraObjectBox" Width="160" Watermark="CommonModule.Имя" />
-                    <Button Content="+" MinWidth="28" Click="OnAddExtraObject" />
-                    <Button Content="−" MinWidth="28" Click="OnRemoveExtraObject" />
+            <Grid ColumnDefinitions="300,6,*" Margin="0,8,0,0">
+              <Grid RowDefinitions="*,6,*">
+                <DockPanel>
+                  <StackPanel DockPanel.Dock="Top" Spacing="6">
+                    <TextBlock FontWeight="SemiBold" Text="1. Подсистемы" />
+                    <WrapPanel Orientation="Horizontal">
+                      <Button Margin="0,0,6,6" Content="Загрузить" Click="OnLoadSubsystems" />
+                      <Button Margin="0,0,6,6" Content="Из файла…" Click="OnLoadScopeFile" />
+                      <Button Margin="0,0,6,6" Content="Все" Click="OnSelectAllSubsystems" />
+                      <Button Margin="0,0,6,6" Content="Снять" Click="OnClearSubsystems" />
+                    </WrapPanel>
+                    <CheckBox x:Name="IncludeDescendantsBox" IsChecked="True" Content="Включать вложенные"
+                              IsCheckedChanged="OnIncludeDescendantsChanged" />
+                    <TextBlock x:Name="SubsystemStatusText" TextWrapping="Wrap" FontSize="12" Text="Подсистемы не загружены." />
                   </StackPanel>
-                  <ListBox x:Name="ExtraObjectsList" SelectionMode="Single" />
+                  <TreeView x:Name="SubsystemTree" Margin="0,8,0,0">
+                    <TreeView.ItemTemplate>
+                      <TreeDataTemplate ItemsSource="{Binding Children}">
+                        <CheckBox Content="{Binding Title}"
+                                  IsThreeState="True"
+                                  IsChecked="{Binding IsChecked, Mode=TwoWay}" />
+                      </TreeDataTemplate>
+                    </TreeView.ItemTemplate>
+                  </TreeView>
                 </DockPanel>
-                <TreeView x:Name="SubsystemTree" Margin="0,8,0,0">
-                  <TreeView.ItemTemplate>
-                    <TreeDataTemplate ItemsSource="{Binding Children}">
-                      <CheckBox Content="{Binding Title}"
-                                IsThreeState="True"
-                                IsChecked="{Binding IsChecked, Mode=TwoWay}" />
-                    </TreeDataTemplate>
-                  </TreeView.ItemTemplate>
-                </TreeView>
-              </DockPanel>
+
+                <GridSplitter Grid.Row="1" Height="6" ResizeDirection="Rows" />
+
+                <DockPanel Grid.Row="2">
+                  <StackPanel DockPanel.Dock="Top" Spacing="6">
+                    <TextBlock FontWeight="SemiBold" Text="2. Объекты области" />
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Opacity="0.85"
+                               Text="Общие модули, константы, документы, отчёты, обработки, РС — по выбранным подсистемам." />
+                    <WrapPanel Orientation="Horizontal">
+                      <Button Margin="0,0,6,6" Content="Обновить" Click="OnRebuildObjectFilter" />
+                      <Button Margin="0,0,6,6" Content="Все" Click="OnSelectAllObjects" />
+                      <Button Margin="0,0,6,6" Content="Снять" Click="OnClearObjects" />
+                    </WrapPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBox x:Name="ExtraObjectBox" Width="170" Watermark="CommonModule.Имя" />
+                      <Button Content="+" MinWidth="28" Click="OnAddExtraObject" />
+                      <Button Content="−" MinWidth="28" Click="OnRemoveExtraObject" />
+                    </StackPanel>
+                    <ListBox x:Name="ExtraObjectsList" MaxHeight="56" SelectionMode="Single" />
+                  </StackPanel>
+                  <TreeView x:Name="ObjectFilterTree" Margin="0,8,0,0">
+                    <TreeView.ItemTemplate>
+                      <TreeDataTemplate ItemsSource="{Binding Children}">
+                        <CheckBox Content="{Binding Title}"
+                                  IsThreeState="True"
+                                  IsChecked="{Binding IsChecked, Mode=TwoWay}" />
+                      </TreeDataTemplate>
+                    </TreeView.ItemTemplate>
+                  </TreeView>
+                </DockPanel>
+              </Grid>
 
               <GridSplitter Grid.Column="1" Width="6" ResizeDirection="Columns" />
 
@@ -187,13 +211,13 @@
                 <StackPanel DockPanel.Dock="Top" Spacing="6">
                   <TextBlock FontWeight="SemiBold" FontSize="15" Text="К переносу в расширение" />
                   <Grid ColumnDefinitions="130,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
-                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="В типовой" />
-                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="TypicalBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка типовой конфигурации" />
+                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="У поставщика" />
+                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="TypicalBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка типовой" />
                     <Button Grid.Row="0" Grid.Column="2" Margin="0,0,8,6" Content="Обзор…" Click="OnBrowseTypical" />
                     <Button Grid.Row="0" Grid.Column="3" Margin="0,0,0,6" Content="Очистить" Click="OnClearTypical" />
 
                     <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="В доработанной" />
-                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="CustomizedBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка доработанной конфигурации" />
+                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="CustomizedBox" Margin="0,0,8,6" IsReadOnly="True" Watermark="Выгрузка доработанной" />
                     <Button Grid.Row="1" Grid.Column="2" Margin="0,0,8,6" Content="Обзор…" Click="OnBrowseCustomized" />
                     <Button Grid.Row="1" Grid.Column="3" Margin="0,0,0,6" Content="Очистить" Click="OnClearCustomized" />
 
@@ -203,14 +227,12 @@
                     <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Префикс" />
                     <TextBox Grid.Row="3" Grid.Column="1" x:Name="TransferPrefixBox" Margin="0,0,8,0" Watermark="Дораб_" Text="Дораб_" />
                   </Grid>
-                  <CheckBox x:Name="ShowRemovedMetadataBox"
-                            IsChecked="False"
-                            Content="Показывать удалённые метаданные" />
+                  <CheckBox x:Name="ShowRemovedMetadataBox" IsChecked="False" Content="Показывать удалённые метаданные" />
                   <WrapPanel Orientation="Horizontal">
                     <Button x:Name="TransferFindButton" Margin="0,0,8,6" Content="Найти доработки" MinWidth="140" Click="OnFindTransfer" />
                     <Button x:Name="TransferSaveButton" Margin="0,0,8,6" Content="Сохранить черновик" IsEnabled="False" Click="OnSaveTransfer" />
                     <Button Margin="0,0,8,6" Content="Сохранить область" Click="OnSaveScope" />
-                    <ComboBox x:Name="TransferDecisionFilter" Margin="0,0,8,6" Width="130" SelectedIndex="0" SelectionChanged="OnTransferDecisionFilterChanged">
+                    <ComboBox x:Name="TransferDecisionFilter" Margin="0,0,8,6" Width="120" SelectedIndex="0" SelectionChanged="OnTransferDecisionFilterChanged">
                       <ComboBoxItem Content="Все решения" />
                       <ComboBoxItem Content="Авто" />
                       <ComboBoxItem Content="Подсветка" />
@@ -218,12 +240,12 @@
                       <ComboBoxItem Content="Данные" />
                       <ComboBoxItem Content="Пропуск" />
                     </ComboBox>
-                    <TextBox x:Name="TransferFilterBox" Margin="0,0,8,6" Width="220" Watermark="Фильтр" TextChanged="OnTransferFilterChanged" />
+                    <TextBox x:Name="TransferFilterBox" Margin="0,0,8,6" Width="180" Watermark="Фильтр" TextChanged="OnTransferFilterChanged" />
                   </WrapPanel>
                   <TextBlock x:Name="TransferStatusText" TextWrapping="Wrap" Text="Доработки ещё не искали." />
                 </StackPanel>
 
-                <Grid RowDefinitions="*,160" Margin="0,8,0,0">
+                <Grid RowDefinitions="*,6,220,6,*" Margin="0,8,0,0">
                   <DataGrid x:Name="TransferGrid"
                             IsReadOnly="True"
                             AutoGenerateColumns="False"
@@ -234,24 +256,44 @@
                             SelectionChanged="OnTransferSelected"
                             LoadingRow="OnTransferLoadingRow">
                     <DataGrid.Columns>
-                      <DataGridTextColumn Header="Объект" Binding="{Binding ObjectName}" Width="3*" MinWidth="180" />
-                      <DataGridTextColumn Header="Метод" Binding="{Binding Method}" Width="2*" MinWidth="120" />
-                      <DataGridTextColumn Header="Вид" Binding="{Binding Kind}" Width="110" MinWidth="80" />
-                      <DataGridTextColumn Header="Решение" Binding="{Binding Decision}" Width="110" MinWidth="80" />
-                      <DataGridTextColumn Header="Хук" Binding="{Binding Hook}" Width="140" MinWidth="100" />
-                      <DataGridTextColumn Header="Причина" Binding="{Binding Reason}" Width="4*" MinWidth="200" />
+                      <DataGridTextColumn Header="Объект" Binding="{Binding ObjectName}" Width="3*" MinWidth="160" />
+                      <DataGridTextColumn Header="Метод" Binding="{Binding Method}" Width="2*" MinWidth="100" />
+                      <DataGridTextColumn Header="Вид" Binding="{Binding Kind}" Width="100" MinWidth="70" />
+                      <DataGridTextColumn Header="Решение" Binding="{Binding Decision}" Width="100" MinWidth="70" />
+                      <DataGridTextColumn Header="Хук" Binding="{Binding Hook}" Width="130" MinWidth="90" />
+                      <DataGridTextColumn Header="Причина" Binding="{Binding Reason}" Width="3*" MinWidth="160" />
                     </DataGrid.Columns>
                   </DataGrid>
-                  <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0">
-                    <DockPanel Margin="0,0,8,0">
-                      <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="В типовой  − удалено" />
-                      <TextBox x:Name="TransferBeforeText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono,Consolas,monospace" />
+
+                  <GridSplitter Grid.Row="1" Height="6" ResizeDirection="Rows" />
+
+                  <Grid Grid.Row="2" ColumnDefinitions="*,*,*">
+                    <DockPanel Margin="0,0,6,0">
+                      <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" FontWeight="SemiBold" Text="У поставщика" />
+                      <TextBox x:Name="TransferBeforeText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+                               FontFamily="Cascadia Mono,Consolas,monospace" FontSize="12" />
                     </DockPanel>
-                    <DockPanel Grid.Column="1">
-                      <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" Text="В доработанной  + добавлено" />
-                      <TextBox x:Name="TransferAfterText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono,Consolas,monospace" />
+                    <DockPanel Grid.Column="1" Margin="0,0,6,0">
+                      <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" FontWeight="SemiBold" Text="В доработанной" />
+                      <TextBox x:Name="TransferAfterText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+                               FontFamily="Cascadia Mono,Consolas,monospace" FontSize="12" />
+                    </DockPanel>
+                    <DockPanel Grid.Column="2">
+                      <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" FontWeight="SemiBold" Text="В расширение" />
+                      <TextBox x:Name="TransferExtensionText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+                               FontFamily="Cascadia Mono,Consolas,monospace" FontSize="12" />
                     </DockPanel>
                   </Grid>
+
+                  <GridSplitter Grid.Row="3" Height="6" ResizeDirection="Rows" />
+
+                  <DockPanel Grid.Row="4">
+                    <TextBlock DockPanel.Dock="Top" Margin="0,0,0,4" FontWeight="SemiBold"
+                               Text="Что изменилось  (− удалено, + добавлено, #Вставка/#Удаление)" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                      <StackPanel x:Name="TransferDiffPanel" Spacing="0" />
+                    </ScrollViewer>
+                  </DockPanel>
                 </Grid>
               </DockPanel>
             </Grid>

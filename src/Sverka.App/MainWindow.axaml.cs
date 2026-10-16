@@ -2,9 +2,11 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Media;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Sverka;
 
 namespace Sverka.App;
@@ -19,8 +21,11 @@ public partial class MainWindow : Window
     private List<HistoryRow> _history = [];
     private List<TransferRow> _transfers = [];
     private ObservableCollection<SubsystemTreeNode> _subsystemRoots = [];
+    private ObservableCollection<SubsystemTreeNode> _objectFilterRoots = [];
     private readonly ObservableCollection<string> _extraObjects = [];
     private IReadOnlyList<SubsystemInfo> _subsystemTree = [];
+    private CancellationTokenSource? _objectFilterRebuildCts;
+    private bool _suppressObjectFilterRebuild;
 
     public MainWindow()
     {
@@ -108,7 +113,7 @@ public partial class MainWindow : Window
     }
 
     private async void OnBrowseTypical(object? sender, RoutedEventArgs e) =>
-        TypicalBox.Text = await PickFolder("В типовой") ?? TypicalBox.Text;
+        TypicalBox.Text = await PickFolder("У поставщика") ?? TypicalBox.Text;
 
     private async void OnBrowseCustomized(object? sender, RoutedEventArgs e) =>
         CustomizedBox.Text = await PickFolder("В доработанной") ?? CustomizedBox.Text;
@@ -173,7 +178,7 @@ public partial class MainWindow : Window
             _extraObjects.Clear();
             foreach (var name in saved.ExtraObjectNames)
                 _extraObjects.Add(name);
-
+            RebuildObjectFilterTree();
             SubsystemStatusText.Text =
                 $"Восстановлено: {saved.SelectedSubsystemNames.Count} подсистем, {_extraObjects.Count} доп. объектов.";
         }
@@ -185,14 +190,34 @@ public partial class MainWindow : Window
 
     private void OnSelectAllSubsystems(object? sender, RoutedEventArgs e)
     {
-        foreach (var root in _subsystemRoots)
-            root.IsChecked = true;
+        _suppressObjectFilterRebuild = true;
+        try
+        {
+            foreach (var root in _subsystemRoots)
+                root.IsChecked = true;
+        }
+        finally
+        {
+            _suppressObjectFilterRebuild = false;
+        }
+
+        RebuildObjectFilterTree();
     }
 
     private void OnClearSubsystems(object? sender, RoutedEventArgs e)
     {
-        foreach (var root in _subsystemRoots)
-            root.IsChecked = false;
+        _suppressObjectFilterRebuild = true;
+        try
+        {
+            foreach (var root in _subsystemRoots)
+                root.IsChecked = false;
+        }
+        finally
+        {
+            _suppressObjectFilterRebuild = false;
+        }
+
+        RebuildObjectFilterTree();
     }
 
     private void OnAddExtraObject(object? sender, RoutedEventArgs e)
@@ -203,7 +228,7 @@ public partial class MainWindow : Window
         if (!_extraObjects.Contains(name, StringComparer.OrdinalIgnoreCase))
             _extraObjects.Add(name);
         ExtraObjectBox.Text = "";
-        SubsystemStatusText.Text = $"Доп. объектов: {_extraObjects.Count}.";
+        RebuildObjectFilterTree();
     }
 
     private void OnRemoveExtraObject(object? sender, RoutedEventArgs e)
@@ -217,6 +242,8 @@ public partial class MainWindow : Window
             if (match != null)
                 _extraObjects.Remove(match);
         }
+
+        RebuildObjectFilterTree();
     }
 
     private async void OnFindTransfer(object? sender, RoutedEventArgs e)
@@ -249,21 +276,26 @@ public partial class MainWindow : Window
                     BindSubsystemTree(_subsystemTree, selected: null);
             }
 
-            var includeDescendants = IncludeDescendantsBox.IsChecked != false;
+            if (_objectFilterRoots.Count == 0)
+                RebuildObjectFilterTree();
+
             var includeRemoved = ShowRemovedMetadataBox.IsChecked == true;
-            var selected = CollectSelectedSubsystemNames();
-            var scope = Analysis.BuildScope(_subsystemTree, selected, includeDescendants, _extraObjects);
+            var scope = BuildCurrentScope();
 
             var plan = await Task.Run(() =>
                 Analysis.RunTransfer(typical, customized, name, prefix, scope, includeRemoved));
             _transfer = plan;
-            _transfers = plan.Items.Select(item => new TransferRow(item)).ToList();
+            _transfers = plan.Items
+                .OrderBy(item => item.ObjectName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => item.Method ?? "", StringComparer.OrdinalIgnoreCase)
+                .Select(item => new TransferRow(item))
+                .ToList();
             ApplyTransferFilter();
             TransferSaveButton.IsEnabled = true;
             SetTransferStatus(DescribeTransfer(plan));
             if (scope.HasFilter)
                 SubsystemStatusText.Text =
-                    $"В области: {selected.Count} подсистем, {_extraObjects.Count} доп., итого {scope.ObjectNames.Count} объектов.";
+                    $"Область: {scope.SelectedSubsystemNames.Count} подсистем, объектов {scope.ObjectNames.Count}.";
         }
         catch (Exception exception) when (exception is FileNotFoundException or InvalidDataException or DirectoryNotFoundException or ArgumentException)
         {
@@ -281,24 +313,76 @@ public partial class MainWindow : Window
     private void BindSubsystemTree(IReadOnlyList<SubsystemInfo> tree, HashSet<string>? selected)
     {
         _subsystemTree = tree;
+        DetachSubsystemCheckHandlers(_subsystemRoots);
         _subsystemRoots = new ObservableCollection<SubsystemTreeNode>(
             tree.Select(SubsystemTreeNode.FromInfo));
         SubsystemTree.ItemsSource = _subsystemRoots;
+        AttachSubsystemCheckHandlers(_subsystemRoots);
         if (selected != null && selected.Count > 0)
             ApplySubsystemSelection(selected);
+        RebuildObjectFilterTree();
+    }
+
+    private void AttachSubsystemCheckHandlers(IEnumerable<SubsystemTreeNode> roots)
+    {
+        foreach (var node in SubsystemTreeNode.Flatten(roots))
+            node.PropertyChanged += OnSubsystemNodePropertyChanged;
+    }
+
+    private void DetachSubsystemCheckHandlers(IEnumerable<SubsystemTreeNode> roots)
+    {
+        foreach (var node in SubsystemTreeNode.Flatten(roots))
+            node.PropertyChanged -= OnSubsystemNodePropertyChanged;
+    }
+
+    private void OnSubsystemNodePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(SubsystemTreeNode.IsChecked) || _suppressObjectFilterRebuild)
+            return;
+        ScheduleObjectFilterRebuild();
+    }
+
+    private void ScheduleObjectFilterRebuild()
+    {
+        _objectFilterRebuildCts?.Cancel();
+        _objectFilterRebuildCts = new CancellationTokenSource();
+        var token = _objectFilterRebuildCts.Token;
+        Dispatcher.UIThread.Post(async () =>
+        {
+            try
+            {
+                await Task.Delay(180, token);
+                if (!token.IsCancellationRequested)
+                    RebuildObjectFilterTree();
+            }
+            catch (TaskCanceledException)
+            {
+                // debounce
+            }
+        });
     }
 
     private void ApplySubsystemSelection(IEnumerable<string> selectedNames)
     {
-        foreach (var node in SubsystemTreeNode.Flatten(_subsystemRoots))
-            node.SetCheckedSilent(false);
-
-        var selected = selectedNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var node in SubsystemTreeNode.Flatten(_subsystemRoots))
+        _suppressObjectFilterRebuild = true;
+        try
         {
-            if (selected.Contains(node.FullName))
-                node.IsChecked = true; // каскад на детей
+            foreach (var node in SubsystemTreeNode.Flatten(_subsystemRoots))
+                node.SetCheckedSilent(false);
+
+            var selected = selectedNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var node in SubsystemTreeNode.Flatten(_subsystemRoots))
+            {
+                if (selected.Contains(node.FullName))
+                    node.IsChecked = true; // каскад на детей
+            }
         }
+        finally
+        {
+            _suppressObjectFilterRebuild = false;
+        }
+
+        RebuildObjectFilterTree();
     }
 
     private List<string> CollectSelectedSubsystemNames() =>
@@ -306,6 +390,103 @@ public partial class MainWindow : Window
             .Where(node => node.IsChecked == true)
             .Select(node => node.FullName)
             .ToList();
+
+    private void OnRebuildObjectFilter(object? sender, RoutedEventArgs e) => RebuildObjectFilterTree();
+
+    private void OnIncludeDescendantsChanged(object? sender, RoutedEventArgs e) => RebuildObjectFilterTree();
+
+    private void OnSelectAllObjects(object? sender, RoutedEventArgs e)
+    {
+        foreach (var root in _objectFilterRoots)
+            root.IsChecked = true;
+    }
+
+    private void OnClearObjects(object? sender, RoutedEventArgs e)
+    {
+        foreach (var root in _objectFilterRoots)
+            root.IsChecked = false;
+    }
+
+    private void RebuildObjectFilterTree()
+    {
+        if (ObjectFilterTree == null)
+            return;
+
+        var includeDescendants = IncludeDescendantsBox.IsChecked != false;
+        var selectedSubs = CollectSelectedSubsystemNames();
+        var baseScope = Analysis.BuildScope(_subsystemTree, selectedSubs, includeDescendants, _extraObjects);
+        var sourceNames = baseScope.HasFilter
+            ? baseScope.ObjectNames
+            : (IReadOnlySet<string>)SubsystemCatalog.Flatten(_subsystemTree)
+                .SelectMany(node => node.Content)
+                .Concat(_extraObjects)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var previously = CollectSelectedObjectNames().ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var groups = ObjectTypeFilter.Build(sourceNames);
+        _objectFilterRoots = [];
+        foreach (var group in groups)
+        {
+            var typeNode = SubsystemTreeNode.Create(group.TypeKey, $"{group.Title} ({group.ObjectNames.Count})");
+            foreach (var objectName in group.ObjectNames)
+            {
+                var shortName = objectName.Contains('.') ? objectName[(objectName.IndexOf('.') + 1)..] : objectName;
+                var child = SubsystemTreeNode.Create(objectName, shortName);
+                typeNode.AddChild(child);
+            }
+
+            _objectFilterRoots.Add(typeNode);
+        }
+
+        ObjectFilterTree.ItemsSource = _objectFilterRoots;
+        if (previously.Count == 0)
+        {
+            foreach (var root in _objectFilterRoots)
+                root.IsChecked = true;
+        }
+        else
+        {
+            foreach (var node in SubsystemTreeNode.Flatten(_objectFilterRoots))
+            {
+                if (previously.Contains(node.FullName))
+                    node.IsChecked = true;
+            }
+        }
+
+        if (SubsystemStatusText != null)
+        {
+            SubsystemStatusText.Text = groups.Count == 0
+                ? "В выбранных подсистемах нет объектов нужных типов (модули, документы, обработки…)."
+                : $"Объектов в фильтре: {groups.Sum(group => group.ObjectNames.Count)}.";
+        }
+    }
+
+    private List<string> CollectSelectedObjectNames() =>
+        SubsystemTreeNode.Flatten(_objectFilterRoots)
+            .Where(node => node.IsChecked == true && node.FullName.Contains('.'))
+            .Select(node => node.FullName)
+            .ToList();
+
+    private TransferScope BuildCurrentScope()
+    {
+        var includeDescendants = IncludeDescendantsBox.IsChecked != false;
+        var selectedSubs = CollectSelectedSubsystemNames();
+        var baseScope = Analysis.BuildScope(_subsystemTree, selectedSubs, includeDescendants, _extraObjects);
+        var selectedObjects = CollectSelectedObjectNames();
+        if (selectedObjects.Count == 0 && _objectFilterRoots.Count > 0)
+        {
+            // Дерево объектов есть, но всё снято — пустая область.
+            return new TransferScope(selectedSubs, new HashSet<string>(StringComparer.OrdinalIgnoreCase), includeDescendants, _extraObjects.ToList());
+        }
+
+        if (selectedObjects.Count == 0)
+            return baseScope;
+
+        var set = selectedObjects.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var extra in _extraObjects)
+            set.Add(extra);
+        return new TransferScope(selectedSubs, set, includeDescendants, _extraObjects.ToList());
+    }
 
     private async void OnSaveTransfer(object? sender, RoutedEventArgs e)
     {
@@ -330,12 +511,10 @@ public partial class MainWindow : Window
 
     private async void OnSaveScope(object? sender, RoutedEventArgs e)
     {
-        var includeDescendants = IncludeDescendantsBox.IsChecked != false;
-        var selected = CollectSelectedSubsystemNames();
-        var scope = Analysis.BuildScope(_subsystemTree, selected, includeDescendants, _extraObjects);
+        var scope = BuildCurrentScope();
         if (!scope.HasFilter)
         {
-            SubsystemStatusText.Text = "Отметьте подсистемы или добавьте объекты, затем сохраните область.";
+            SubsystemStatusText.Text = "Отметьте подсистемы/объекты, затем сохраните область.";
             return;
         }
 
@@ -364,14 +543,107 @@ public partial class MainWindow : Window
         {
             TransferBeforeText.Text = "";
             TransferAfterText.Text = "";
+            TransferExtensionText.Text = "";
+            TransferDiffPanel.Children.Clear();
             return;
         }
 
         var before = MethodText(_transfer.Typical, row.Item);
         var after = MethodText(_transfer.Customized, row.Item);
+        TransferBeforeText.Text = before;
+        TransferAfterText.Text = after;
+
+        var prefix = TransferPrefixBox.Text?.Trim() ?? _transfer.Prefix;
+        TransferExtensionText.Text = row.Item.Decision == TransferDecision.Auto
+            ? ExtensionDraftWriter.PreviewMethod(prefix, row.Item)
+            : "(в черновик расширения автоматически не уходит — смотрите решение в реестре)";
+
+        RenderDiffPanel(before, after, TransferExtensionText.Text);
+    }
+
+    private void RenderDiffPanel(string before, string after, string extensionPreview)
+    {
+        TransferDiffPanel.Children.Clear();
         var marked = TextDiff.MarkSides(before, after);
-        TransferBeforeText.Text = marked.Left;
-        TransferAfterText.Text = marked.Right;
+        var left = BslText.Lines(marked.Left);
+        var right = BslText.Lines(marked.Right);
+        var count = Math.Max(left.Count, right.Count);
+
+        for (var i = 0; i < count; i++)
+        {
+            var leftLine = i < left.Count ? left[i] : "";
+            var rightLine = i < right.Count ? right[i] : "";
+            if (leftLine.StartsWith("- ", StringComparison.Ordinal))
+                TransferDiffPanel.Children.Add(CreateHighlightedLine(leftLine, DiffLineTone.Delete));
+            else if (rightLine.StartsWith("+ ", StringComparison.Ordinal))
+                TransferDiffPanel.Children.Add(CreateHighlightedLine(rightLine, DiffLineTone.Insert));
+            else
+                TransferDiffPanel.Children.Add(
+                    CreateHighlightedLine(rightLine.Length > 0 ? rightLine : leftLine, DiffLineTone.Normal));
+        }
+
+        if (!string.IsNullOrWhiteSpace(extensionPreview) && !extensionPreview.StartsWith('('))
+        {
+            TransferDiffPanel.Children.Add(CreateHighlightedLine("", DiffLineTone.Normal));
+            TransferDiffPanel.Children.Add(
+                CreateHighlightedLine("// ——— фрагмент для расширения ———", DiffLineTone.Marker));
+            foreach (var line in BslText.Lines(extensionPreview))
+            {
+                var tone = line.StartsWith('#') || line.StartsWith('&')
+                    ? DiffLineTone.Marker
+                    : DiffLineTone.Normal;
+                TransferDiffPanel.Children.Add(CreateHighlightedLine(line, tone));
+            }
+        }
+    }
+
+    private enum DiffLineTone
+    {
+        Normal,
+        Delete,
+        Insert,
+        Marker,
+    }
+
+    private static TextBlock CreateHighlightedLine(string line, DiffLineTone tone)
+    {
+        var block = new TextBlock
+        {
+            FontFamily = new FontFamily("Cascadia Mono,Consolas,monospace"),
+            FontSize = 13,
+        };
+
+        var inlines = block.Inlines ?? [];
+        foreach (var token in BslHighlighter.Tokenize(line))
+        {
+            inlines.Add(new Run(token.Text)
+            {
+                Foreground = TokenBrush(token.Kind, tone),
+            });
+        }
+
+        return block;
+    }
+
+    private static IBrush TokenBrush(BslHighlighter.TokenKind kind, DiffLineTone tone)
+    {
+        if (tone == DiffLineTone.Delete)
+            return new SolidColorBrush(Color.Parse("#C62828"));
+        if (tone == DiffLineTone.Insert)
+            return new SolidColorBrush(Color.Parse("#2E7D32"));
+        if (tone == DiffLineTone.Marker)
+            return new SolidColorBrush(Color.Parse("#1565C0"));
+
+        return kind switch
+        {
+            BslHighlighter.TokenKind.Keyword => new SolidColorBrush(Color.Parse("#0D47A1")),
+            BslHighlighter.TokenKind.Directive => new SolidColorBrush(Color.Parse("#6A1B9A")),
+            BslHighlighter.TokenKind.Comment => new SolidColorBrush(Color.Parse("#2E7D32")),
+            BslHighlighter.TokenKind.String => new SolidColorBrush(Color.Parse("#AD1457")),
+            BslHighlighter.TokenKind.Number => new SolidColorBrush(Color.Parse("#E65100")),
+            BslHighlighter.TokenKind.DiffMarker => new SolidColorBrush(Color.Parse("#455A64")),
+            _ => new SolidColorBrush(Color.Parse("#212121")),
+        };
     }
 
     private void OnTransferLoadingRow(object? sender, DataGridRowEventArgs e)
@@ -570,10 +842,18 @@ public partial class MainWindow : Window
         var highlight = plan.Items.Count(item => item.Decision == TransferDecision.Highlight);
         var data = plan.Items.Count(item => item.Decision == TransferDecision.DataMigration);
         var skip = plan.Items.Count(item => item.Decision == TransferDecision.Skip);
+        var manualObjects = plan.Items
+            .Where(item => item.Decision == TransferDecision.Manual)
+            .Select(item => item.ObjectName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
         var scope = !plan.Scope.HasFilter
             ? "вся конфигурация"
             : $"{plan.Scope.SelectedSubsystemNames.Count} подсистем + {plan.Scope.ExtraObjectNames.Count} доп. / {plan.Scope.ObjectNames.Count} объектов";
-        return $"Доработок: {plan.Items.Count} ({scope}). Авто {auto}, вручную {manual}, подсветка {highlight}, данные {data}, пропуск {skip}.";
+        var manualPart = manual == 0
+            ? "вручную 0"
+            : $"вручную {manual} ({manualObjects} объ.)";
+        return $"Доработок: {plan.Items.Count} ({scope}). Авто {auto}, {manualPart}, подсветка {highlight}, данные {data}, пропуск {skip}.";
     }
 
     private static string DescribeHistory(IReadOnlyList<RunDelta> deltas)
@@ -693,7 +973,7 @@ public sealed class TransferRow(TransferItem item)
 }
 
 /// <summary>
-/// Узел дерева подсистем с каскадными галочками (родитель ↔ дети).
+/// Узел дерева с каскадными галочками (подсистемы или объекты области).
 /// </summary>
 public sealed class SubsystemTreeNode : INotifyPropertyChanged
 {
@@ -706,6 +986,14 @@ public sealed class SubsystemTreeNode : INotifyPropertyChanged
         Title = title;
         _isChecked = false;
         Children = [];
+    }
+
+    public static SubsystemTreeNode Create(string fullName, string title) => new(fullName, title);
+
+    public void AddChild(SubsystemTreeNode child)
+    {
+        child.Parent = this;
+        Children.Add(child);
     }
 
     public string FullName { get; }

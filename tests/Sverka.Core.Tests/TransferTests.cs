@@ -55,7 +55,7 @@ public class TransferTests
     }
 
     [Fact]
-    public void UnrelatedBodyChangeIsManual()
+    public void UnrelatedBodyChangeBecomesInstead()
     {
         using var typical = Dump.Create();
         using var customized = Dump.Create();
@@ -73,8 +73,18 @@ public class TransferTests
 
         var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
         var item = Assert.Single(plan.Items);
-        Assert.Equal(TransferDecision.Manual, item.Decision);
-        Assert.Equal(ProposedHook.None, item.ProposedHook);
+        Assert.Equal(TransferDecision.Auto, item.Decision);
+        Assert.Equal(ProposedHook.Instead, item.ProposedHook);
+        Assert.Contains("СовсемДругое = 9", item.HookBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BslHighlighterMarksKeywordsAndDirectives()
+    {
+        var tokens = BslHighlighter.Tokenize("+ Процедура Тест() // коммент");
+        Assert.Contains(tokens, token => token.Kind == BslHighlighter.TokenKind.DiffMarker);
+        Assert.Contains(tokens, token => token.Kind == BslHighlighter.TokenKind.Keyword && token.Text == "Процедура");
+        Assert.Contains(tokens, token => token.Kind == BslHighlighter.TokenKind.Comment);
     }
 
     [Fact]
@@ -189,7 +199,7 @@ public class TransferTests
     }
 
     [Fact]
-    public void AddedAttributeIsDataMigrationWithBslStub()
+    public void AddedAttributeIsExcludedFromTransferRegistry()
     {
         using var typical = Dump.Create();
         using var customized = Dump.Create();
@@ -198,28 +208,56 @@ public class TransferTests
         customized.Catalog("Товары", catalogId, [("Артикул", "10"), ("СайтИд", "50")]);
 
         var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
-        var item = Assert.Single(plan.Items);
-        Assert.Equal(TransferDecision.DataMigration, item.Decision);
-        Assert.Equal("СайтИд", item.Method);
+        Assert.DoesNotContain(plan.Items, item => item.Method == "СайтИд");
+    }
 
-        var directory = Path.Combine(Path.GetTempPath(), "sverka-transfer-" + Guid.NewGuid().ToString("N"));
-        try
-        {
-            ExtensionDraftWriter.Write(directory, plan);
-            Assert.True(File.Exists(Path.Combine(directory, "Configuration.xml")));
-            Assert.False(Directory.Exists(Path.Combine(directory, "Catalogs")));
+    [Fact]
+    public void AddedTemplateIsExcludedFromTransferRegistry()
+    {
+        using var typical = Dump.Create();
+        using var customized = Dump.Create();
+        const string catalogId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+        typical.Catalog("Товары", catalogId, [("Артикул", "10")]);
+        customized.Write("Catalogs/Товары.xml", """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <MetaDataObject>
+              <Catalog uuid="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa">
+                <Properties>
+                  <Name>Товары</Name>
+                </Properties>
+                <ChildObjects>
+                  <Attribute uuid="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb0">
+                    <Properties>
+                      <Name>Артикул</Name>
+                      <Type>
+                        <Length>10</Length>
+                      </Type>
+                    </Properties>
+                  </Attribute>
+                  <Template>ПечатнаяФорма</Template>
+                </ChildObjects>
+              </Catalog>
+            </MetaDataObject>
+            """);
 
-            var migrationDir = Path.Combine(directory, "migration");
-            DataMigrationWriter.Write(migrationDir, plan);
-            var bsl = File.ReadAllText(Path.Combine(migrationDir, "ПереносДанных.bsl"), Encoding.UTF8);
-            Assert.Contains("СайтИд", bsl, StringComparison.Ordinal);
-            Assert.Contains("ВыполнитьПеренос", bsl, StringComparison.Ordinal);
-        }
-        finally
-        {
-            if (Directory.Exists(directory))
-                Directory.Delete(directory, true);
-        }
+        var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
+        Assert.DoesNotContain(plan.Items, item => item.Method == "ПечатнаяФорма");
+    }
+
+    [Fact]
+    public void ObjectTypeFilterGroupsKnownTypes()
+    {
+        var groups = ObjectTypeFilter.Build([
+            "CommonModule.А",
+            "Document.Б",
+            "Catalog.В",
+            "DataProcessor.Г",
+            "InformationRegister.Д",
+        ]);
+        Assert.Contains(groups, group => group.TypeKey == "CommonModule" && group.ObjectNames.Contains("CommonModule.А"));
+        Assert.Contains(groups, group => group.TypeKey == "Document");
+        Assert.Contains(groups, group => group.TypeKey == "DataProcessor");
+        Assert.DoesNotContain(groups, group => group.TypeKey == "Catalog");
     }
 
     [Fact]

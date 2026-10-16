@@ -118,6 +118,9 @@ public static class ExtensionDraftWriter
         File.WriteAllText(modulePath, builder.ToString().TrimEnd() + "\n", Utf8NoBom());
     }
 
+    /// <summary>Текст метода как в черновике расширения — для панели «В расширение».</summary>
+    public static string PreviewMethod(string prefix, TransferItem item) => RenderMethod(prefix, item);
+
     private static string RenderMethod(string prefix, TransferItem item)
     {
         if (!string.IsNullOrEmpty(item.AddedMethodSource))
