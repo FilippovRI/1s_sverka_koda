@@ -1,0 +1,27 @@
+manual_body=3522
+Catalog.Банки | ДобавитьБанкиИзКлассификатора | Ext/ManagerModule.bsl
+Catalog.Банки | ПолучитьРезультатЗапросаПоКлассификатору | Ext/ManagerModule.bsl
+Catalog.Банки | ПолучитьТаблицуБанковПоРеквизитам | Ext/ManagerModule.bsl
+Catalog.Банки | ОбработкаПроверкиЗаполнения | Ext/ObjectModule.bsl
+Catalog.Банки | ВопросЗавершение | Forms/ФормаВыбора/Ext/Form/Module.bsl
+Catalog.Банки | ПодобратьИзКлассификатора | Forms/ФормаВыбора/Ext/Form/Module.bsl
+Catalog.Банки | ПриСозданииНаСервере | Forms/ФормаВыбора/Ext/Form/Module.bsl
+Catalog.Банки | ЗаполнитьФормуПоОбъекту | Forms/ФормаГруппы/Ext/Form/Module.bsl
+Catalog.Банки | ОбновитьНаСервере | Forms/ФормаГруппы/Ext/Form/Module.bsl
+Catalog.Банки | ВопросЗавершение | Forms/ФормаСписка/Ext/Form/Module.bsl
+Catalog.Банки | ОбновитьИзКлассификатора | Forms/ФормаСписка/Ext/Form/Module.bsl
+Catalog.Банки | ПодобратьИзКлассификатора | Forms/ФормаСписка/Ext/Form/Module.bsl
+Catalog.Банки | ПриСозданииНаСервере | Forms/ФормаСписка/Ext/Form/Module.bsl
+Catalog.Банки | ЗаполнитьФормуПоОбъекту | Forms/ФормаЭлемента/Ext/Form/Module.bsl
+Catalog.Банки | ИзменитьРеквизитыЗависимыеОтСтраны | Forms/ФормаЭлемента/Ext/Form/Module.bsl
+highlight_generic_meta=2005
+memberKind	1694	Template
+memberKind	114	Attribute
+memberKind	94	Rights
+memberKind	39	TabularSection
+memberKind	22	Dimension
+memberKind	13	EnumValue
+memberKind	12	Column
+memberKind	9	Resource
+memberKind	4	Subsystem
+memberKind	4	Command

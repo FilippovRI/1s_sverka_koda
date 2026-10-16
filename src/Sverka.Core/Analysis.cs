@@ -109,7 +109,13 @@ public static class Analysis
             return;
 
         var extensionDir = Path.Combine(directory, "extension");
-        ExtensionDraftWriter.Write(extensionDir, plan);
+        var doneKeys = activeSession.Items
+            .Where(entry => entry.Status == TransferWorkStatus.Done)
+            .Select(entry => entry.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        // Если есть отметки «Готово» — инкремент только по ним; иначе полный авто-черновик.
+        IReadOnlySet<string>? onlyKeys = doneKeys.Count > 0 ? doneKeys : null;
+        ExtensionDraftWriter.Write(extensionDir, plan, onlyKeys, merge: true);
         var coverage = CoverageChecker.Analyze(plan, extensionDir, activeSession);
         CoverageChecker.WriteReports(directory, coverage);
     }

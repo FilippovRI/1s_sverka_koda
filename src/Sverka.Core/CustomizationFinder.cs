@@ -37,6 +37,8 @@ public static class CustomizationFinder
                 items.Add(item);
         }
 
+        AppendSignatureCallRewrites(items, typical, customized, effectiveScope, prefix.Trim());
+
         items = items
             .OrderBy(item => item.Decision)
             .ThenBy(item => item.ObjectName, StringComparer.OrdinalIgnoreCase)
@@ -54,6 +56,116 @@ public static class CustomizationFinder
             items,
             effectiveScope,
             tree);
+    }
+
+    /// <summary>
+    /// Для методов с доп. параметрами: уже есть префиксный метод в реестре;
+    /// добавляем пункты подмены вызовов с числом аргументов &gt; типового.
+    /// </summary>
+    private static void AppendSignatureCallRewrites(
+        List<TransferItem> items,
+        ConfigurationDump typical,
+        ConfigurationDump customized,
+        TransferScope scope,
+        string prefix)
+    {
+        var expansions = items
+            .Where(item =>
+                item.Decision == TransferDecision.Auto
+                && !string.IsNullOrEmpty(item.AddedMethodSource)
+                && !string.IsNullOrEmpty(item.Method)
+                && item.Reason.StartsWith("Сигнатура расширена", StringComparison.Ordinal))
+            .ToList();
+
+        foreach (var expansion in expansions)
+        {
+            var typicalMethod = FindMethod(
+                typical.Objects.FirstOrDefault(obj =>
+                    obj.FullName.Equals(expansion.ObjectName, StringComparison.OrdinalIgnoreCase)
+                    || (!string.IsNullOrEmpty(expansion.ObjectUuid)
+                        && obj.Uuid.Equals(expansion.ObjectUuid, StringComparison.OrdinalIgnoreCase))),
+                expansion.Module ?? "",
+                expansion.Method!);
+            var typicalParams = typicalMethod == null
+                ? 0
+                : BslSignature.ParameterCount(typicalMethod.SignatureNormalized);
+
+            var hits = CallRewrite.FindExtraArgCallSites(
+                customized,
+                scope,
+                expansion.ObjectName,
+                expansion.Method!,
+                typicalParams,
+                prefix);
+
+            foreach (var hit in hits)
+            {
+                // Заменяем уже найденное изменение тела caller — иначе ключ совпадёт и подмена потеряется.
+                items.RemoveAll(item =>
+                    item.ObjectName.Equals(hit.ObjectName, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(item.Module, hit.Module, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(item.Method, hit.CallerMethod, StringComparison.OrdinalIgnoreCase)
+                    && item.ChangeKind == ChangeKind.Module
+                    && string.IsNullOrEmpty(item.AddedMethodSource));
+
+                var typicalCaller = FindMethod(
+                    typical.Objects.FirstOrDefault(obj =>
+                        obj.FullName.Equals(hit.ObjectName, StringComparison.OrdinalIgnoreCase)),
+                    hit.Module,
+                    hit.CallerMethod);
+
+                if (typicalCaller != null)
+                {
+                    var fakeCustom = new BslMethod(
+                        typicalCaller.Name,
+                        typicalCaller.IsFunction,
+                        typicalCaller.SignatureNormalized,
+                        BslText.Normalize(hit.RewrittenBody),
+                        typicalCaller.Hooks,
+                        false,
+                        false,
+                        false,
+                        hit.RewrittenBody);
+                    var proposal = HookSynthesizer.ForBodyChange(typicalCaller, fakeCustom);
+                    if (proposal.Decision == TransferDecision.Skip)
+                        continue;
+
+                    items.Add(new TransferItem(
+                        hit.ObjectName,
+                        hit.ObjectUuid,
+                        hit.ObjectType,
+                        hit.Module,
+                        hit.CallerMethod,
+                        null,
+                        ChangeKind.Module,
+                        proposal.Decision,
+                        $"Вызов {expansion.Method} с доп. параметрами → {prefix}{expansion.Method} ({hit.ReplacementCount} мест)",
+                        proposal.Hook,
+                        proposal.HookBody,
+                        hit.CallerHeader,
+                        hit.CallerIsFunction,
+                        null));
+                }
+                else
+                {
+                    items.Add(new TransferItem(
+                        hit.ObjectName,
+                        hit.ObjectUuid,
+                        hit.ObjectType,
+                        hit.Module,
+                        hit.CallerMethod,
+                        null,
+                        ChangeKind.Module,
+                        TransferDecision.Auto,
+                        $"Вызов {expansion.Method} с доп. параметрами → {prefix}{expansion.Method} ({hit.ReplacementCount} мест; caller только в доработанной)",
+                        ProposedHook.ChangeAndControl,
+                        hit.RewrittenBody,
+                        hit.CallerHeader,
+                        hit.CallerIsFunction,
+                        null));
+                }
+            }
+        }
     }
 
     private static IReadOnlyList<ConfigChange> FilterByScope(
@@ -222,6 +334,23 @@ public static class CustomizationFinder
             }
 
             var signatureChanged = change.ModulePart is ModuleChangePart.Signature or ModuleChangePart.Both;
+            if (signatureChanged && BslSignature.HasExtraParameters(typicalMethod, customMethod))
+            {
+                var source = ExtractMethodSource(customModule.Source, customMethod.Name, customMethod.IsFunction);
+                var from = BslSignature.ParameterCount(typicalMethod.SignatureNormalized);
+                var to = BslSignature.ParameterCount(customMethod.SignatureNormalized);
+                return Item(
+                    change,
+                    objectType,
+                    TransferDecision.Auto,
+                    ProposedHook.None,
+                    $"Сигнатура расширена ({from}→{to} парам.) — метод с префиксом; вызовы с доп. аргументами будут подменены",
+                    null,
+                    ExtractHeader(customModule.Source, customMethod.Name) ?? HeaderOf(customMethod),
+                    customMethod.IsFunction,
+                    source);
+            }
+
             var proposal = HookSynthesizer.ForBodyChange(typicalMethod, customMethod);
             if (proposal.Decision == TransferDecision.Skip)
             {

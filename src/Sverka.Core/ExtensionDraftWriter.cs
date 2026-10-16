@@ -23,12 +23,21 @@ public static class ExtensionDraftWriter
         ["Report"] = "Reports",
     };
 
-    public static void Write(string directory, TransferPlan plan)
+    /// <param name="onlyItemKeys">Если задано — пишем только эти пункты (инкремент по «Готово»).</param>
+    /// <param name="merge">Не затирать уже существующие методы в .bsl, а дополнять/заменять по имени.</param>
+    public static void Write(
+        string directory,
+        TransferPlan plan,
+        IReadOnlySet<string>? onlyItemKeys = null,
+        bool merge = true)
     {
         Directory.CreateDirectory(directory);
         WriteConfiguration(directory, plan);
 
-        var autoItems = plan.Items.Where(item => item.Decision == TransferDecision.Auto).ToList();
+        var autoItems = plan.Items
+            .Where(item => item.Decision == TransferDecision.Auto)
+            .Where(item => onlyItemKeys == null || onlyItemKeys.Contains(TransferSession.ItemKey(item)))
+            .ToList();
         var byModule = autoItems
             .Where(item => !string.IsNullOrEmpty(item.Module))
             .GroupBy(item => (
@@ -40,7 +49,7 @@ public static class ExtensionDraftWriter
             .ThenBy(group => group.Key.Module, StringComparer.OrdinalIgnoreCase);
 
         foreach (var group in byModule)
-            WriteBorrowedModule(directory, plan, group.First(), group.ToList());
+            WriteBorrowedModule(directory, plan, group.First(), group.ToList(), merge);
     }
 
     private static void WriteConfiguration(string directory, TransferPlan plan)
@@ -70,7 +79,8 @@ public static class ExtensionDraftWriter
         string directory,
         TransferPlan plan,
         TransferItem sample,
-        IReadOnlyList<TransferItem> items)
+        IReadOnlyList<TransferItem> items,
+        bool merge)
     {
         var shortName = ShortName(sample.ObjectName);
         var folder = FolderByType.GetValueOrDefault(sample.ObjectType, sample.ObjectType + "s");
@@ -104,18 +114,167 @@ public static class ExtensionDraftWriter
         var modulePath = Path.Combine(objectDir, moduleRelative);
         Directory.CreateDirectory(Path.GetDirectoryName(modulePath)!);
 
-        var builder = new StringBuilder();
-        builder.AppendLine("// Черновик расширения, сформированный Сверкой.");
-        builder.AppendLine("// Проверьте хуки в Конфигураторе перед загрузкой в рабочую базу.");
-        builder.AppendLine();
+        var incoming = items
+            .OrderBy(entry => entry.Method, StringComparer.OrdinalIgnoreCase)
+            .Select(item => (Name: MethodNameInDraft(plan.Prefix, item), Text: RenderMethod(plan.Prefix, item)))
+            .ToList();
 
-        foreach (var item in items.OrderBy(entry => entry.Method, StringComparer.OrdinalIgnoreCase))
+        string content;
+        if (merge && File.Exists(modulePath))
         {
-            builder.AppendLine(RenderMethod(plan.Prefix, item));
+            content = MergeModuleFile(File.ReadAllText(modulePath), incoming);
+        }
+        else
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("// Черновик расширения, сформированный Сверкой.");
+            builder.AppendLine("// Проверьте хуки в Конфигураторе перед загрузкой в рабочую базу.");
             builder.AppendLine();
+            foreach (var (_, text) in incoming)
+            {
+                builder.AppendLine(text);
+                builder.AppendLine();
+            }
+
+            content = builder.ToString().TrimEnd() + "\n";
         }
 
-        File.WriteAllText(modulePath, builder.ToString().TrimEnd() + "\n", Utf8NoBom());
+        File.WriteAllText(modulePath, content, Utf8NoBom());
+    }
+
+    private static string MethodNameInDraft(string prefix, TransferItem item)
+    {
+        var target = item.Method ?? "Метод";
+        if (!string.IsNullOrEmpty(item.AddedMethodSource))
+            return prefix + target;
+        return prefix + target;
+    }
+
+    /// <summary>Заменяет методы с тем же именем, остальные блоки из файла сохраняет.</summary>
+    private static string MergeModuleFile(
+        string existing,
+        IReadOnlyList<(string Name, string Text)> incoming)
+    {
+        var byName = incoming.ToDictionary(item => item.Name, item => item.Text, StringComparer.OrdinalIgnoreCase);
+        var replaced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var blocks = SplitMethodBlocks(existing);
+        var output = new List<string>();
+
+        foreach (var block in blocks)
+        {
+            var name = DetectMethodName(block);
+            if (name != null && byName.TryGetValue(name, out var replacement))
+            {
+                output.Add(replacement.TrimEnd());
+                replaced.Add(name);
+            }
+            else if (!string.IsNullOrWhiteSpace(block))
+            {
+                output.Add(block.TrimEnd());
+            }
+        }
+
+        foreach (var (name, text) in incoming)
+        {
+            if (replaced.Contains(name))
+                continue;
+            output.Add(text.TrimEnd());
+        }
+
+        if (output.Count == 0 || !output[0].Contains("Черновик расширения", StringComparison.Ordinal))
+        {
+            output.Insert(0, "// Черновик расширения, сформированный Сверкой.\n// Проверьте хуки в Конфигураторе перед загрузкой в рабочую базу.");
+        }
+
+        return string.Join("\n\n", output).TrimEnd() + "\n";
+    }
+
+    private static List<string> SplitMethodBlocks(string source)
+    {
+        var lines = BslText.Lines(source);
+        var blocks = new List<string>();
+        var current = new List<string>();
+        foreach (var line in lines)
+        {
+            var trimmed = line.TrimStart();
+            var startsMethod =
+                (trimmed.StartsWith("Процедура ", StringComparison.OrdinalIgnoreCase)
+                 || trimmed.StartsWith("Функция ", StringComparison.OrdinalIgnoreCase)
+                 || trimmed.StartsWith("Procedure ", StringComparison.OrdinalIgnoreCase)
+                 || trimmed.StartsWith("Function ", StringComparison.OrdinalIgnoreCase)
+                 || trimmed.StartsWith('&'))
+                && current.Count > 0
+                && current.Any(entry =>
+                {
+                    var t = entry.TrimStart();
+                    return t.StartsWith("КонецПроцедуры", StringComparison.OrdinalIgnoreCase)
+                           || t.StartsWith("КонецФункции", StringComparison.OrdinalIgnoreCase)
+                           || t.StartsWith("EndProcedure", StringComparison.OrdinalIgnoreCase)
+                           || t.StartsWith("EndFunction", StringComparison.OrdinalIgnoreCase);
+                });
+
+            // Новый метод после закрытия предыдущего — или директива перед процедурой.
+            if (trimmed.StartsWith('&') || trimmed.StartsWith("Процедура ", StringComparison.OrdinalIgnoreCase)
+                || trimmed.StartsWith("Функция ", StringComparison.OrdinalIgnoreCase)
+                || trimmed.StartsWith("Procedure ", StringComparison.OrdinalIgnoreCase)
+                || trimmed.StartsWith("Function ", StringComparison.OrdinalIgnoreCase))
+            {
+                var prevClosed = current.Count == 0 || current.Any(entry =>
+                {
+                    var t = entry.TrimStart();
+                    return t.StartsWith("КонецПроцедуры", StringComparison.OrdinalIgnoreCase)
+                           || t.StartsWith("КонецФункции", StringComparison.OrdinalIgnoreCase)
+                           || t.StartsWith("EndProcedure", StringComparison.OrdinalIgnoreCase)
+                           || t.StartsWith("EndFunction", StringComparison.OrdinalIgnoreCase)
+                           || t.StartsWith("//", StringComparison.Ordinal);
+                });
+                // Если текущий блок — только комментарии/пусто, продолжаем копить.
+                var onlyPreamble = current.All(entry =>
+                    string.IsNullOrWhiteSpace(entry) || entry.TrimStart().StartsWith("//", StringComparison.Ordinal));
+                if (!onlyPreamble && current.Count > 0 && prevClosed
+                    && current.Any(entry =>
+                    {
+                        var t = entry.TrimStart();
+                        return t.StartsWith("КонецПроцедуры", StringComparison.OrdinalIgnoreCase)
+                               || t.StartsWith("КонецФункции", StringComparison.OrdinalIgnoreCase)
+                               || t.StartsWith("EndProcedure", StringComparison.OrdinalIgnoreCase)
+                               || t.StartsWith("EndFunction", StringComparison.OrdinalIgnoreCase);
+                    }))
+                {
+                    blocks.Add(string.Join("\n", current));
+                    current = [];
+                }
+            }
+
+            current.Add(line);
+            _ = startsMethod;
+        }
+
+        if (current.Count > 0)
+            blocks.Add(string.Join("\n", current));
+        return blocks;
+    }
+
+    private static string? DetectMethodName(string block)
+    {
+        foreach (var line in BslText.Lines(block))
+        {
+            var trimmed = line.TrimStart();
+            if (trimmed.StartsWith('&') || trimmed.StartsWith("//", StringComparison.Ordinal))
+                continue;
+            foreach (var kind in new[] { "Процедура ", "Функция ", "Procedure ", "Function " })
+            {
+                if (!trimmed.StartsWith(kind, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                var rest = trimmed[kind.Length..].TrimStart();
+                var paren = rest.IndexOf('(');
+                if (paren <= 0)
+                    return rest.Trim();
+                return rest[..paren].Trim();
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Текст метода как в черновике расширения — для панели «В расширение».</summary>

@@ -27,7 +27,10 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<string> _extraObjects = [];
     private IReadOnlyList<SubsystemInfo> _subsystemTree = [];
     private CancellationTokenSource? _objectFilterRebuildCts;
+    private CancellationTokenSource? _transferRescanCts;
     private bool _suppressObjectFilterRebuild;
+    private bool _suppressSubsystemSync;
+    private bool _transferScanRunning;
 
     public MainWindow()
     {
@@ -204,6 +207,7 @@ public partial class MainWindow : Window
         }
 
         RebuildObjectFilterTree();
+        ScheduleTransferRescan();
     }
 
     private void OnClearSubsystems(object? sender, RoutedEventArgs e)
@@ -220,6 +224,7 @@ public partial class MainWindow : Window
         }
 
         RebuildObjectFilterTree();
+        ScheduleTransferRescan();
     }
 
     private void OnAddExtraObject(object? sender, RoutedEventArgs e)
@@ -248,7 +253,10 @@ public partial class MainWindow : Window
         RebuildObjectFilterTree();
     }
 
-    private async void OnFindTransfer(object? sender, RoutedEventArgs e)
+    private async void OnFindTransfer(object? sender, RoutedEventArgs e) =>
+        await RunTransferScanAsync(showBusyInStatus: true);
+
+    private async Task RunTransferScanAsync(bool showBusyInStatus)
     {
         var typical = TypicalBox.Text?.Trim();
         var customized = CustomizedBox.Text?.Trim();
@@ -256,22 +264,34 @@ public partial class MainWindow : Window
         var prefix = TransferPrefixBox.Text?.Trim();
         if (string.IsNullOrWhiteSpace(typical) || string.IsNullOrWhiteSpace(customized))
         {
-            TransferSettingsExpander.IsExpanded = true;
-            SetTransferStatus("Нужны обе выгрузки: типовая и доработанная — разверните блок выше.");
+            if (showBusyInStatus)
+            {
+                TransferSettingsExpander.IsExpanded = true;
+                SetTransferStatus("Нужны обе выгрузки: типовая и доработанная — разверните блок выше.");
+            }
+
             return;
         }
 
         if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(prefix))
         {
-            TransferSettingsExpander.IsExpanded = true;
-            SetTransferStatus("Укажите имя расширения и префикс — разверните блок выше.");
+            if (showBusyInStatus)
+            {
+                TransferSettingsExpander.IsExpanded = true;
+                SetTransferStatus("Укажите имя расширения и префикс — разверните блок выше.");
+            }
+
             return;
         }
 
+        if (_transferScanRunning)
+            return;
+        _transferScanRunning = true;
         if (TransferFindButton != null)
             TransferFindButton.IsEnabled = false;
         SetTransferSaveEnabled(false);
-        SetTransferStatus("Ищу доработки…");
+        if (showBusyInStatus)
+            SetTransferStatus("Ищу доработки…");
         try
         {
             if (_subsystemTree.Count == 0 && Directory.Exists(Path.Combine(typical, "Subsystems")))
@@ -309,7 +329,7 @@ public partial class MainWindow : Window
             if (TransferCoverageButton != null)
                 TransferCoverageButton.IsEnabled = !string.IsNullOrEmpty(_lastDraftFolder);
             SetTransferStatus(DescribeTransfer(plan) + " " + DescribeSessionProgress());
-            if (scope.HasFilter)
+            if (scope.HasFilter && SubsystemStatusText != null)
                 SubsystemStatusText.Text =
                     $"Область: {scope.SelectedSubsystemNames.Count} подсистем, объектов {scope.ObjectNames.Count}.";
         }
@@ -322,6 +342,7 @@ public partial class MainWindow : Window
         }
         finally
         {
+            _transferScanRunning = false;
             if (TransferFindButton != null)
                 TransferFindButton.IsEnabled = true;
         }
@@ -359,6 +380,13 @@ public partial class MainWindow : Window
         ScheduleObjectFilterRebuild();
     }
 
+    private void OnObjectFilterNodePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(SubsystemTreeNode.IsChecked) || _suppressSubsystemSync)
+            return;
+        ScheduleSubsystemSyncFromObjects();
+    }
+
     private void ScheduleObjectFilterRebuild()
     {
         _objectFilterRebuildCts?.Cancel();
@@ -369,8 +397,121 @@ public partial class MainWindow : Window
             try
             {
                 await Task.Delay(180, token);
-                if (!token.IsCancellationRequested)
-                    RebuildObjectFilterTree();
+                if (token.IsCancellationRequested)
+                    return;
+                RebuildObjectFilterTree();
+                ScheduleTransferRescan();
+            }
+            catch (TaskCanceledException)
+            {
+                // debounce
+            }
+        });
+    }
+
+    private void ScheduleSubsystemSyncFromObjects()
+    {
+        _objectFilterRebuildCts?.Cancel();
+        _objectFilterRebuildCts = new CancellationTokenSource();
+        var token = _objectFilterRebuildCts.Token;
+        Dispatcher.UIThread.Post(async () =>
+        {
+            try
+            {
+                await Task.Delay(180, token);
+                if (token.IsCancellationRequested)
+                    return;
+                SyncSubsystemsFromSelectedObjects();
+                ScheduleTransferRescan();
+            }
+            catch (TaskCanceledException)
+            {
+                // debounce
+            }
+        });
+    }
+
+    /// <summary>
+    /// Подсистемы отражают выбранные объекты: отмечена, если выбраны все её объекты из фильтра;
+    /// частично — если часть; снята — если ни одного.
+    /// </summary>
+    private void SyncSubsystemsFromSelectedObjects()
+    {
+        if (_subsystemRoots.Count == 0 || _objectFilterRoots.Count == 0)
+            return;
+
+        var selectedObjects = CollectSelectedObjectNames().ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var includeDescendants = IncludeDescendantsBox.IsChecked != false;
+        _suppressObjectFilterRebuild = true;
+        try
+        {
+            foreach (var node in SubsystemTreeNode.Flatten(_subsystemRoots))
+            {
+                var content = ObjectsOfSubsystem(node.FullName, includeDescendants)
+                    .Where(ObjectTypeFilter.IsKnownType)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                if (content.Count == 0)
+                {
+                    node.SetCheckedSilent(false);
+                    continue;
+                }
+
+                var selectedCount = content.Count(selectedObjects.Contains);
+                if (selectedCount == 0)
+                    node.SetCheckedSilent(false);
+                else if (selectedCount == content.Count)
+                    node.SetCheckedSilent(true);
+                else
+                    node.SetCheckedSilent(null);
+            }
+        }
+        finally
+        {
+            _suppressObjectFilterRebuild = false;
+        }
+    }
+
+    private IEnumerable<string> ObjectsOfSubsystem(string subsystemFullName, bool includeDescendants)
+    {
+        foreach (var node in SubsystemCatalog.Flatten(_subsystemTree))
+        {
+            if (!node.FullName.Equals(subsystemFullName, StringComparison.OrdinalIgnoreCase))
+                continue;
+            foreach (var item in node.Content)
+                yield return item;
+            if (!includeDescendants)
+                yield break;
+            foreach (var child in SubsystemCatalog.Flatten(node.Children))
+            {
+                foreach (var item in child.Content)
+                    yield return item;
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>После смены области — тихо пересчитать реестр, если пути уже заданы.</summary>
+    private void ScheduleTransferRescan()
+    {
+        var typical = TypicalBox.Text?.Trim();
+        var customized = CustomizedBox.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(typical) || string.IsNullOrWhiteSpace(customized))
+            return;
+        if (string.IsNullOrWhiteSpace(TransferNameBox.Text) || string.IsNullOrWhiteSpace(TransferPrefixBox.Text))
+            return;
+
+        _transferRescanCts?.Cancel();
+        _transferRescanCts = new CancellationTokenSource();
+        var token = _transferRescanCts.Token;
+        Dispatcher.UIThread.Post(async () =>
+        {
+            try
+            {
+                await Task.Delay(450, token);
+                if (token.IsCancellationRequested || _transferScanRunning)
+                    return;
+                await RunTransferScanAsync(showBusyInStatus: true);
             }
             catch (TaskCanceledException)
             {
@@ -410,24 +551,52 @@ public partial class MainWindow : Window
 
     private void OnRebuildObjectFilter(object? sender, RoutedEventArgs e) => RebuildObjectFilterTree();
 
-    private void OnIncludeDescendantsChanged(object? sender, RoutedEventArgs e) => RebuildObjectFilterTree();
+    private void OnIncludeDescendantsChanged(object? sender, RoutedEventArgs e)
+    {
+        RebuildObjectFilterTree();
+        ScheduleTransferRescan();
+    }
 
     private void OnSelectAllObjects(object? sender, RoutedEventArgs e)
     {
-        foreach (var root in _objectFilterRoots)
-            root.IsChecked = true;
+        _suppressSubsystemSync = true;
+        try
+        {
+            foreach (var root in _objectFilterRoots)
+                root.IsChecked = true;
+        }
+        finally
+        {
+            _suppressSubsystemSync = false;
+        }
+
+        SyncSubsystemsFromSelectedObjects();
+        ScheduleTransferRescan();
     }
 
     private void OnClearObjects(object? sender, RoutedEventArgs e)
     {
-        foreach (var root in _objectFilterRoots)
-            root.IsChecked = false;
+        _suppressSubsystemSync = true;
+        try
+        {
+            foreach (var root in _objectFilterRoots)
+                root.IsChecked = false;
+        }
+        finally
+        {
+            _suppressSubsystemSync = false;
+        }
+
+        SyncSubsystemsFromSelectedObjects();
+        ScheduleTransferRescan();
     }
 
     private void RebuildObjectFilterTree()
     {
         if (ObjectFilterTree == null)
             return;
+
+        DetachObjectFilterHandlers(_objectFilterRoots);
 
         var includeDescendants = IncludeDescendantsBox.IsChecked != false;
         var selectedSubs = CollectSelectedSubsystemNames();
@@ -442,33 +611,43 @@ public partial class MainWindow : Window
         var previously = CollectSelectedObjectNames().ToHashSet(StringComparer.OrdinalIgnoreCase);
         var groups = ObjectTypeFilter.Build(sourceNames);
         _objectFilterRoots = [];
-        foreach (var group in groups)
+        _suppressSubsystemSync = true;
+        try
         {
-            var typeNode = SubsystemTreeNode.Create(group.TypeKey, $"{group.Title} ({group.ObjectNames.Count})");
-            foreach (var objectName in group.ObjectNames)
+            foreach (var group in groups)
             {
-                var shortName = objectName.Contains('.') ? objectName[(objectName.IndexOf('.') + 1)..] : objectName;
-                var child = SubsystemTreeNode.Create(objectName, shortName);
-                typeNode.AddChild(child);
+                var typeNode = SubsystemTreeNode.Create(group.TypeKey, $"{group.Title} ({group.ObjectNames.Count})");
+                foreach (var objectName in group.ObjectNames)
+                {
+                    var shortName = objectName.Contains('.') ? objectName[(objectName.IndexOf('.') + 1)..] : objectName;
+                    var child = SubsystemTreeNode.Create(objectName, shortName);
+                    typeNode.AddChild(child);
+                }
+
+                _objectFilterRoots.Add(typeNode);
             }
 
-            _objectFilterRoots.Add(typeNode);
-        }
-
-        ObjectFilterTree.ItemsSource = _objectFilterRoots;
-        if (previously.Count == 0)
-        {
-            foreach (var root in _objectFilterRoots)
-                root.IsChecked = true;
-        }
-        else
-        {
-            foreach (var node in SubsystemTreeNode.Flatten(_objectFilterRoots))
+            ObjectFilterTree.ItemsSource = _objectFilterRoots;
+            if (previously.Count == 0)
             {
-                if (previously.Contains(node.FullName))
-                    node.IsChecked = true;
+                foreach (var root in _objectFilterRoots)
+                    root.IsChecked = true;
+            }
+            else
+            {
+                foreach (var node in SubsystemTreeNode.Flatten(_objectFilterRoots))
+                {
+                    if (previously.Contains(node.FullName))
+                        node.IsChecked = true;
+                }
             }
         }
+        finally
+        {
+            _suppressSubsystemSync = false;
+        }
+
+        AttachObjectFilterHandlers(_objectFilterRoots);
 
         if (SubsystemStatusText != null)
         {
@@ -476,6 +655,18 @@ public partial class MainWindow : Window
                 ? "В выбранных подсистемах нет объектов нужных типов (модули, документы, обработки…)."
                 : $"Объектов в фильтре: {groups.Sum(group => group.ObjectNames.Count)}.";
         }
+    }
+
+    private void AttachObjectFilterHandlers(IEnumerable<SubsystemTreeNode> roots)
+    {
+        foreach (var node in SubsystemTreeNode.Flatten(roots))
+            node.PropertyChanged += OnObjectFilterNodePropertyChanged;
+    }
+
+    private void DetachObjectFilterHandlers(IEnumerable<SubsystemTreeNode> roots)
+    {
+        foreach (var node in SubsystemTreeNode.Flatten(roots))
+            node.PropertyChanged -= OnObjectFilterNodePropertyChanged;
     }
 
     private List<string> CollectSelectedObjectNames() =>

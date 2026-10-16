@@ -123,6 +123,118 @@ public class TransferTests
     }
 
     [Fact]
+    public void ExpandedSignatureBecomesPrefixedMethodAndCallRewrite()
+    {
+        using var typical = Dump.Create();
+        using var customized = Dump.Create();
+        const string calcId = "11111111-1111-1111-1111-111111111111";
+        typical.CommonModule("Расчеты", calcId, """
+            Процедура Посчитать(Документ)
+            	Статус = 1;
+            КонецПроцедуры
+            """);
+        typical.Write("Documents/Заказ.xml", """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <MetaDataObject>
+              <Document uuid="22222222-2222-2222-2222-222222222222">
+                <Properties><Name>Заказ</Name></Properties>
+                <ChildObjects/>
+              </Document>
+            </MetaDataObject>
+            """);
+        typical.Write("Documents/Заказ/Ext/ObjectModule.bsl", """
+            Процедура ПередЗаписью()
+            	Расчеты.Посчитать(ЭтотОбъект);
+            КонецПроцедуры
+            """);
+
+        customized.CommonModule("Расчеты", calcId, """
+            Процедура Посчитать(Документ, ДопПараметр)
+            	Статус = 1;
+            	Значение = ДопПараметр;
+            КонецПроцедуры
+            """);
+        customized.Write("Documents/Заказ.xml", """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <MetaDataObject>
+              <Document uuid="22222222-2222-2222-2222-222222222222">
+                <Properties><Name>Заказ</Name></Properties>
+                <ChildObjects/>
+              </Document>
+            </MetaDataObject>
+            """);
+        customized.Write("Documents/Заказ/Ext/ObjectModule.bsl", """
+            Процедура ПередЗаписью()
+            	Расчеты.Посчитать(ЭтотОбъект, Истина);
+            КонецПроцедуры
+            """);
+
+        var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
+        Assert.Contains(plan.Items, item =>
+            item.Method == "Посчитать"
+            && item.Decision == TransferDecision.Auto
+            && item.AddedMethodSource != null
+            && item.Reason.StartsWith("Сигнатура расширена", StringComparison.Ordinal));
+        Assert.Contains(plan.Items, item =>
+            item.Method == "ПередЗаписью"
+            && item.Decision == TransferDecision.Auto
+            && item.Reason.Contains("Дораб_Посчитать", StringComparison.Ordinal)
+            && item.HookBody != null
+            && item.HookBody.Contains("Дораб_Посчитать", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void IncrementalDraftMergesWithoutWipingOtherMethods()
+    {
+        using var typical = Dump.Create();
+        using var customized = Dump.Create();
+        typical.CommonModule("Расчеты", ModuleId, """
+            Процедура А()
+            	Х = 1;
+            КонецПроцедуры
+
+            Процедура Б()
+            	Х = 2;
+            КонецПроцедуры
+            """);
+        customized.CommonModule("Расчеты", ModuleId, """
+            Процедура А()
+            	Х = 1;
+            	Доработка = Истина;
+            КонецПроцедуры
+
+            Процедура Б()
+            	Х = 2;
+            	Ещё = Истина;
+            КонецПроцедуры
+            """);
+
+        var plan = CustomizationFinder.Find(typical.Read(), customized.Read(), "Доработки", "Дораб_");
+        var dir = Path.Combine(Path.GetTempPath(), "sverka-incr-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var first = plan.Items.Where(item => item.Method == "А").ToList();
+            var keyA = TransferSession.ItemKey(Assert.Single(first));
+            ExtensionDraftWriter.Write(Path.Combine(dir, "extension"), plan, new HashSet<string>(StringComparer.OrdinalIgnoreCase) { keyA }, merge: true);
+            var path = Directory.EnumerateFiles(Path.Combine(dir, "extension"), "Module.bsl", SearchOption.AllDirectories).Single();
+            var text1 = File.ReadAllText(path);
+            Assert.Contains("Дораб_А", text1, StringComparison.Ordinal);
+            Assert.DoesNotContain("Дораб_Б", text1, StringComparison.Ordinal);
+
+            var keyB = TransferSession.ItemKey(Assert.Single(plan.Items.Where(item => item.Method == "Б")));
+            ExtensionDraftWriter.Write(Path.Combine(dir, "extension"), plan, new HashSet<string>(StringComparer.OrdinalIgnoreCase) { keyB }, merge: true);
+            var text2 = File.ReadAllText(path);
+            Assert.Contains("Дораб_А", text2, StringComparison.Ordinal);
+            Assert.Contains("Дораб_Б", text2, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (Directory.Exists(dir))
+                Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void TransferSessionRoundTripsWorkStatus()
     {
         var session = new TransferSession { ExtensionName = "Доработки", Prefix = "Дораб_" };
