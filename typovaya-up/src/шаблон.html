@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"><title>Разбор модулей</title>
+<style>
+body{margin:0;font:13px Segoe UI,Arial,sans-serif;display:flex;flex-direction:column;height:100vh}
+header{padding:6px 10px;background:#24364b;color:#fff;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+header button{padding:3px 8px;cursor:pointer}
+#main{flex:1;display:flex;min-height:0}
+#tree{width:360px;overflow:auto;border-right:1px solid #ccc;padding:6px}
+#view{flex:1;overflow:auto;padding:8px}
+details{margin-left:6px}summary{cursor:pointer;font-weight:600}
+.mod{cursor:pointer;padding:1px 4px;margin-left:14px;white-space:nowrap}
+.mod.sel,.proc.sel{background:#cfe3ff}
+.proc{cursor:pointer;margin-left:30px;font-size:12px;white-space:nowrap}
+.st-changed{color:#b35c00}.st-added{color:#1a7f37}.st-removed{color:#c62828}.st-same{color:#888}
+.hint{background:#fff8e1;border:1px solid #f0d27a;padding:6px 10px;margin:6px 0;border-radius:4px}
+.hook{display:inline-block;background:#e3f2fd;border:1px solid #90caf9;color:#0d47a1;padding:1px 6px;border-radius:3px;font:12px Consolas,monospace;margin-right:4px}
+.hookbody{background:#f7f9fc;border:1px solid #cfd8dc;padding:8px;margin:6px 0;border-radius:4px}
+.cols{display:flex;gap:6px}.cols>div{flex:1;min-width:0}
+pre{margin:0;font:12px Consolas,monospace;white-space:pre-wrap;word-break:break-all}
+table.d{border-collapse:collapse;width:100%;font:12px Consolas,monospace;table-layout:fixed}
+table.d td{vertical-align:top;padding:0 4px;white-space:pre-wrap;word-break:break-all}
+td.del{background:#ffe6e6}td.ins{background:#e6ffec}td.n{color:#999;width:40px;text-align:right}
+h3{margin:6px 0}
+</style></head><body>
+<header>
+<b>Разбор модулей</b><span id="meta"></span>
+<button onclick="goMod(-1)">◀ Предыдущий раздел</button><button onclick="goMod(1)">Следующий раздел ▶</button>
+<button onclick="goProc(-1)">▲ Предыдущая процедура</button><button onclick="goProc(1)">Следующая процедура ▼</button>
+<label><input type="checkbox" id="showSame" onchange="render()"> показывать совпадающие процедуры</label>
+</header>
+<div id="main"><div id="tree"></div><div id="view"></div></div>
+<script>
+const DATA=/*__DATA__*/null;
+const BN={manual:"Ручной разбор",auto:"Автоунос (хуки / новые методы)",cosmetic:"Отличие без доработки",only_source:"Только в исходной",only_vendor:"Только у поставщика"};
+const ORDER=["manual","auto","cosmetic","only_source","only_vendor"];
+const HK={before:"&Перед",after:"&После",changeAndControl:"&ИзменениеИКонтроль",instead:"&Вместо",newMethod:"новый метод",none:""};
+const mods=[];ORDER.forEach(b=>DATA.modules.filter(m=>m.bucket==b).forEach(m=>mods.push(m)));
+let cur=0,curP=-1;
+const esc=s=>(s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const hkLabel=h=>HK[h]||"";
+document.getElementById("meta").textContent=" исходная: "+DATA.meta.sourceName+" · поставщик: "+DATA.meta.vendorName+" · "+DATA.meta.generated+" · одинаковых модулей скрыто: "+DATA.counts.identical;
+function procs(m){return (m.methods||[]).filter(p=>p.status!="same"||document.getElementById("showSame").checked)}
+function buildTree(){let h="";ORDER.forEach(b=>{const ms=mods.filter(m=>m.bucket==b);if(!ms.length)return;
+ h+=`<details open><summary>${BN[b]} (${ms.length})</summary>`;const types={};ms.forEach(m=>(types[m.type]=types[m.type]||[]).push(m));
+ Object.keys(types).sort().forEach(t=>{h+=`<details${b=="manual"?" open":""}><summary>${esc(t)} (${types[t].length})</summary>`;
+  types[t].forEach(m=>{const i=mods.indexOf(m);h+=`<div class="mod" id="m${i}" onclick="sel(${i},-1)">${esc(m.path.split("\\").slice(1).join("\\")||m.path)}</div><div id="pl${i}"></div>`});h+="</details>"});h+="</details>"});
+ document.getElementById("tree").innerHTML=h||"Отличий нет."}
+function sel(i,p){cur=i;curP=p;render()}
+function goMod(d){if(!mods.length)return;cur=(cur+d+mods.length)%mods.length;curP=-1;render()}
+function goProc(d){const ps=procs(mods[cur]);if(!ps.length)return;curP=curP<0?(d>0?0:ps.length-1):(curP+d+ps.length)%ps.length;render()}
+function diff(a,b){a=(a||"").split("\n");b=(b||"").split("\n");const n=a.length,m=b.length;
+ if(n*m>4e6)return `<div class="cols"><div><pre>${esc(a.join("\n"))}</pre></div><div><pre>${esc(b.join("\n"))}</pre></div></div>`;
+ const L=Array.from({length:n+1},()=>new Uint32Array(m+1));for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)L[i][j]=a[i].trim()==b[j].trim()?L[i+1][j+1]+1:Math.max(L[i+1][j],L[i][j+1]);
+ let i=0,j=0,r="";const row=(x,cx,y,cy,ni,nj)=>`<tr><td class="n">${ni}</td><td class="${cx}">${esc(x)}</td><td class="n">${nj}</td><td class="${cy}">${esc(y)}</td></tr>`;
+ while(i<n||j<m){if(i<n&&j<m&&a[i].trim()==b[j].trim()){r+=row(a[i],"",b[j],"",i+1,j+1);i++;j++}
+  else if(j<m&&(i>=n||L[i][j+1]>=L[i+1][j])){r+=row("","",b[j],"ins","",j+1);j++}else{r+=row(a[i],"del","","",i+1,"");i++}}
+ return `<table class="d"><colgroup><col style="width:40px"><col><col style="width:40px"><col></colgroup><tr><th></th><th>Поставщик (БП)</th><th></th><th>Исходная (УП)</th></tr>${r}</table>`}
+const SN={changed:"изменён",added:"добавлен в УП",removed:"нет в УП",same:"совпадает"};
+function render(){buildTree();if(!mods.length){document.getElementById("view").innerHTML="Отличий в периметре нет.";return}
+ const m=mods[cur],ps=procs(m);document.getElementById("m"+cur).classList.add("sel");
+ let pl="";ps.forEach((p,k)=>{const hb=hkLabel(p.hook);pl+=`<div class="proc st-${p.status}${k==curP?" sel":""}" onclick="sel(${cur},${k})">${hb?`<span class="hook">${esc(hb)}</span>`:""}${esc(p.name)} — ${SN[p.status]}</div>`});document.getElementById("pl"+cur).innerHTML=pl;
+ let el=document.getElementById("m"+cur);while(el){if(el.tagName=="DETAILS")el.open=true;el=el.parentElement}document.getElementById("m"+cur).scrollIntoView({block:"nearest"});
+ const c=m.counts||{};let h=`<h3>${esc(m.path)}</h3><div>${esc(m.object)} · ${BN[m.bucket]} · раздел ${cur+1} из ${mods.length}</div>`;
+ h+=`<div class="hint"><b>Что смотреть.</b> ${esc(m.reason)}`;
+ if(m.bucket=="manual")h+=`<br>Процедур: изменено ${c.changed}, нет в УП ${c.removed}, добавлено ${c.added}, совпадает ${c.same}. Ручной разбор — изменённые без безопасного хука и удалённые; добавленные и безопасные хуки можно унести автоматически.<br>По каждому методу решите: <b>унести доработку в расширение</b> и вернуть типовой текст, <b>вернуть типовой</b> (если отличие — устаревший код), или оставить как есть. Удалённые методы <b>не откатывать вслепую</b>.`;
+ if(m.outsideDiffers)h+=`<br>Отличается код вне процедур — сравните шапку модуля ниже.`;h+="</div>";
+ if(curP>=0&&ps[curP]){const p=ps[curP];const hb=hkLabel(p.hook);h+=`<h3>${hb?`<span class="hook">${esc(hb)}</span> `:""}${p.kind} ${esc(p.name)} — ${SN[p.status]}</h3>`;if(p.explain)h+=`<div class="hint">${esc(p.explain)}</div>`;
+  if(p.hookBody)h+=`<div class="hookbody"><b>Предлагаемое тело хука</b><pre>${esc(p.hookBody)}</pre></div>`;
+  h+=p.status=="same"?"<div>Текст совпадает после нормализации.</div>":(m.bucket=="auto"&&p.hookBody?"":diff(p.vendorText,p.sourceText))}
+ else if(m.bucket=="only_source")h+=`<pre>${esc(m.sourceText)}</pre>`;else if(m.bucket=="only_vendor")h+=`<pre>${esc(m.vendorText)}</pre>`;
+ else if(m.vendorText||m.bucket=="cosmetic"){h+=`<div>Выберите процедуру слева или клавишами ↑/↓. Ниже — весь модуль.</div>`+diff(m.vendorText,m.sourceText)}
+ else h+=`<div>Выберите процедуру слева или клавишами ↑/↓.</div>`;
+ document.getElementById("view").innerHTML=h;document.getElementById("view").scrollTop=0}
+document.addEventListener("keydown",e=>{if(e.target.tagName=="INPUT")return;const k=e.key;
+ if(k=="ArrowRight"||k=="l"){goMod(1);e.preventDefault()}else if(k=="ArrowLeft"||k=="h"){goMod(-1);e.preventDefault()}
+ else if(k=="ArrowDown"||k=="j"){goProc(1);e.preventDefault()}else if(k=="ArrowUp"||k=="k"){goProc(-1);e.preventDefault()}});
+render();
+</script></body></html>

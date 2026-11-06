@@ -8,3 +8,10 @@ publish/
 publish-v*/
 
 tmp-transfer-*.txt
+
+# typovaya-up (OneScript): сгенерированные результаты прогона — см. typovaya-up/README.md
+typovaya-up/out/
+typovaya-up/razbor_moduley.html
+typovaya-up/extension/
+typovaya-up/restored/
+typovaya-up/logs/

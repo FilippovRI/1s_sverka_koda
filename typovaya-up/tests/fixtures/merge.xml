@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Settings xmlns="http://v8.1c.ru/8.3/config/merge/settings" version="1.2">
+	<MainConfiguration><Name>КонфигUP</Name><Version>1.0</Version></MainConfiguration>
+	<SecondConfiguration><Name>КонфигBP</Name><Version>1.0</Version></SecondConfiguration>
+	<Parameters><ConfigurationsRelation>ConfigurationsNotRelated</ConfigurationsRelation></Parameters>
+	<Objects>
+		<Configuration><Properties><Property name="Name"><MergeRule>DoNotMerge</MergeRule></Property></Properties></Configuration>
+		<Object fullName="CommonModule.Одинаковый"><Properties><Property name="Module"><MergeRule>DoNotMerge</MergeRule></Property></Properties></Object>
+		<Object fullName="CommonModule.Косметика"><Properties><Property name="Module"><MergeRule>DoNotMerge</MergeRule></Property></Properties></Object>
+		<Object fullName="CommonModule.Кодировка"><Properties><Property name="Module"><MergeRule>DoNotMerge</MergeRule></Property></Properties></Object>
+		<Object fullName="CommonModule.ТолькоУП"><Properties><Property name="Module"><MergeRule>DoNotMerge</MergeRule></Property></Properties></Object>
+		<Object fullName="CommonModule.ХукНабор"><Properties><Property name="Module"><MergeRule>DoNotMerge</MergeRule></Property></Properties></Object>
+		<Object fullName="Catalog.Банки"><Properties><Property name="ObjectModule"><MergeRule>DoNotMerge</MergeRule></Property><Property name="Synonym"><MergeRule>DoNotMerge</MergeRule></Property></Properties></Object>
+		<Object fullName="Document.Счет.Command.Печать"><Properties><Property name="CommandModule"><MergeRule>DoNotMerge</MergeRule></Property></Properties></Object>
+		<Object fullName="Document.Счет"><Properties><Property name="ObjectModule"><MergeRule>DoNotMerge</MergeRule></Property></Properties></Object>
+		<Object fullNameInSecondConfiguration="CommonModule.ТолькоБП"><MergeRule>DoNotMerge</MergeRule></Object>
+	</Objects>
+</Settings>
