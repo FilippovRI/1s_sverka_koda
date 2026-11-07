@@ -102,7 +102,12 @@ tests/measure_complexity.py src   # эвристика сложности (не 
 - **Есть:** черновик `extension/`, каталог `restored/`, синтез хуков в отчёте — см. раздел «Результат» выше.
 - **Нет / частично:** CallRewrite и доказанная подмена вызовов; Excel-периметр подсистем; полный цикл ibcmd import в CI.
 - **`--анализ-форм`:** только inventory реквизитов в `Form.xml` (файл `forms_analysis.json`); без `РеквизитФормы`, без правки выгрузок.
-- **GUI** (`launcher/`): сборка в репозитории; интерактивный runtime на Windows агентом не проверялся.
+- **GUI** (`launcher/`): Windows, `net8.0-windows`.
+  ```
+  dotnet build typovaya-up/launcher/TypovayaUp.Launcher/TypovayaUp.Launcher.csproj -c Release
+  dotnet test tests/TypovayaUp.Launcher.Tests/TypovayaUp.Launcher.Tests.csproj -c Release
+  ```
+  CI: WinForms + Core + `TypovayaUp.Launcher.Tests` (без установки 1С/UAC). Визуальный runtime не проверяется.
 - модулей объектов, которые в настройках есть только со стороны поставщика без свойств-модулей
   (например `fullNameInSecondConfiguration` без `<Property>`): в режиме с настройками они не попадают в периметр;
 - разбор методов строковый: объявления `Процедура/Функция Имя(` в начале строки, конец — `КонецПроцедуры/КонецФункции`;
