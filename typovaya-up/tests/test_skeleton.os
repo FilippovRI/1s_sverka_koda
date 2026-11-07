@@ -34,6 +34,13 @@ OUT = ОбъединитьПути(Корень, "tests", "_sk_out");
 В.ЗаписатьОтчетВалидации(Р, OUT);
 П((Новый Файл(ОбъединитьПути(OUT, "skeleton_validation.json"))).Существует(), "report json");
 
+Р6 = В.ПроверитьКаталогСкелета(ОбъединитьПути(Корень, "tests", "fixtures", "skeleton_outside_internal"));
+П(Не Р6.ОК, "outside internal");
+Р7 = В.ПроверитьКаталогСкелета(ОбъединитьПути(Корень, "tests", "fixtures", "skeleton_missing_pair"));
+П(Не Р7.ОК, "missing pair");
+Р8 = В.ПроверитьКаталогСкелета(ОбъединитьПути(Корень, "tests", "fixtures", "skeleton_bad_dump"));
+П(Не Р8.ОК, "bad dump");
+
 П(Х0 = ТекстФайла(ОбъединитьПути(ФСин, "Configuration.xml")), "read-only sources");
 УдалитьФайлы(OUT);
 
