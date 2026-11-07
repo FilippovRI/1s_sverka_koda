@@ -8,6 +8,20 @@ on:
     branches: [main, master]
 
 jobs:
+  typovaya-oscript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install OneScript 2.2
+        run: |
+          curl -fsSL -o /tmp/onescript.zip "https://github.com/EvilBeaver/OneScript/releases/download/v2.2.0/OneScript-2.2.0-linux-x64.zip"
+          sudo mkdir -p /opt/onescript
+          sudo unzip -oq /tmp/onescript.zip -d /opt/onescript
+          sudo chmod +x /opt/onescript/bin/oscript
+          echo "/opt/onescript/bin" >> "$GITHUB_PATH"
+      - name: typovaya-up tests
+        run: OSCRIPT=/opt/onescript/bin/oscript bash typovaya-up/tests/run_tests.sh
+
   test:
     runs-on: windows-latest
     steps:
@@ -15,7 +29,13 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: Test
+      - name: Build typovaya-up launcher (WinForms + Core)
+        run: |
+          dotnet build typovaya-up/launcher/TypovayaUp.Launcher/TypovayaUp.Launcher.csproj -c Release --nologo
+          dotnet build typovaya-up/launcher/TypovayaUp.Launcher.Core/TypovayaUp.Launcher.Core.csproj -c Release --nologo
+      - name: Test typovaya-up launcher
+        run: dotnet test tests/TypovayaUp.Launcher.Tests/TypovayaUp.Launcher.Tests.csproj -c Release --nologo
+      - name: Test solution (Sverka)
         run: dotnet test 1c-sverka.sln -c Release --nologo
 
   publish:
@@ -49,8 +69,3 @@ jobs:
           generate_release_notes: true
           body: |
             Самодостаточный `sverka.exe` (win-x64, single-file с нативными библиотеками Avalonia/Skia).
-
-            ## К типовой
-            - Формы с типами из XML; «Не доказано» для сомнительных вызовов
-            - Режим черновика, patience-diff, справочники в фильтре
-            - Сессия, coverage, сигнатуры + rewrite
