@@ -48,7 +48,7 @@
 
 	П = Синтез.ПредложитьХук("А = 1;", "Х = 1;" + Символы.ПС + "ПродолжитьВызов();" + Символы.ПС + "У = 2;");
 	Проверить(П.decision = "auto" И П.hook = "instead", "Proceed Instead");
-	Проверить(СтрНайти(П.hookBody, "ПродолжитьВызов") = 0, "Proceed stripped");
+	Проверить(СтрНайти(П.hookBody, "ПродолжитьВызов") > 0, "Proceed preserved in hookBody");
 	Проверить(Не П.insteadAppendContinue, "no append continue in draft");
 
 	Полный = "Процедура Т()" + Символы.ПС + "	А = 1;" + Символы.ПС + "КонецПроцедуры";

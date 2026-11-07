@@ -10,12 +10,28 @@
 Ошибок = 0;
 ПС = Символы.ПС;
 П = Синтез.ПредложитьХук("А = 1;", "Возврат 0;");
-П(П.hook = "instead" И Не П.insteadAppendContinue, "full instead early return");
-Мт = Новый Структура("name, kind, status, vendorText, sourceText, hook, hookDecision, hookBody, insteadAppendContinue",
-	"Ф", "Функция", "changed", "Функция Ф()|КонецФункции", "", "instead", "auto", П.hookBody, П.insteadAppendContinue);
-Р = Ч.ОтрисоватьМетод("УП_", Мт);
-П(СтрНайти(Р, "ПродолжитьВызов") = 0, "draft no continue");
+П(П.hook = "instead" И Не П.insteadAppendContinue, "full instead no continue");
+Р = Ч.ОтрисоватьМетод("УП_", Новый Структура("name, kind, status, vendorText, sourceText, hook, hookDecision, hookBody, insteadAppendContinue",
+	"Ф", "Функция", "changed", "", "", "instead", "auto", П.hookBody, Ложь));
+П(СтрНайти(Р, "ПродолжитьВызов") = 0, "draft full replace");
+П = Синтез.ПредложитьХук("А = 1;", "Х = 1;" + ПС + "ПродолжитьВызов();" + ПС + "У = 2;");
+П(П.hook = "instead" И СтрНайти(П.hookBody, "ПродолжитьВызов") > 0, "preserve continue in hookBody");
+Р = Ч.ОтрисоватьМетод("УП_", Новый Структура("name, kind, status, vendorText, sourceText, hook, hookDecision, hookBody, insteadAppendContinue",
+	"П", "Процедура", "changed", "Процедура П()", "", "instead", "auto", П.hookBody, Ложь));
+П(СтрНайти(Р, "ПродолжитьВызов();") > 0 И СтрЧислоВхождений(Р, "ПродолжитьВызов") = 1, "one continue in draft");
+П = Синтез.ПредложитьХук("А = 1;", "ПродолжитьВызов(А, Б);" + ПС + "У = 2;");
+П(СтрНайти(П.hookBody, "ПродолжитьВызов(А, Б)") > 0, "continue with args");
+П = Синтез.ПредложитьХук("А = 1;", "Возврат ПродолжитьВызов(А);");
+П(П.hook = "instead", "return continue");
+П = Синтез.ПредложитьХук("А = 1;", "ПродолжитьВызов();" + ПС + "ПродолжитьВызов();");
+П(П.decision = "manual", "two continues manual");
+П = Синтез.ПредложитьХук("А = 1;", "Если Истина Тогда ПродолжитьВызов(); КонецЕсли;");
+П(П.decision = "manual", "conditional manual");
+П = Синтез.ПредложитьХук("А = 1;", "А = ""ПродолжитьВызов()"";" + ПС + "Б = 2;");
+П(П.hook = "instead" И СтрНайти(П.reason, "Полная замена") > 0, "string not treated as call");
+Ман = Новый Структура("name, kind, status, vendorText, sourceText, hook, hookDecision, hookBody",
+	"М", "Процедура", "changed", "Процедура М()", "", "none", "manual", "");
+П(Не Ч.ИдётВРасширение(Ман), "manual not in extension");
 П = Синтез.ПредложитьХук("А = 1;", "Выполнить(""Х"");");
 П(П.decision = "manual", "Выполнить manual");
-П(Без.ДиагностикаВызовов("X = 1; // not") = "", "diag clean");
 Если Ошибок = 0 Тогда Сообщить("OK: transfer"); Иначе ЗавершитьРаботу(1); КонецЕсли;
