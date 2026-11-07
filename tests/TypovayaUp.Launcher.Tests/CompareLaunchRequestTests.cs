@@ -1,4 +1,5 @@
 using TypovayaUp.Launcher;
+using Xunit;
 
 namespace TypovayaUp.Launcher.Tests;
 

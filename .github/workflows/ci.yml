@@ -14,10 +14,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install OneScript 2.2
         run: |
-          curl -fsSL -o /tmp/onescript.deb "https://github.com/EvilBeaver/OneScript/releases/download/v2.2.0/onescript_2.2.0_all.deb"
-          sudo dpkg -i /tmp/onescript.deb || sudo apt-get install -f -y
+          curl -fsSL -o /tmp/onescript.zip "https://github.com/EvilBeaver/OneScript/releases/download/v2.2.0/OneScript-2.2.0-linux-x64.zip"
+          sudo mkdir -p /opt/onescript
+          sudo unzip -oq /tmp/onescript.zip -d /opt/onescript
+          sudo chmod +x /opt/onescript/bin/oscript
+          echo "/opt/onescript/bin" >> "$GITHUB_PATH"
       - name: typovaya-up tests
-        run: OSCRIPT=$(command -v oscript) bash typovaya-up/tests/run_tests.sh
+        run: OSCRIPT=/opt/onescript/bin/oscript bash typovaya-up/tests/run_tests.sh
 
   test:
     runs-on: windows-latest
