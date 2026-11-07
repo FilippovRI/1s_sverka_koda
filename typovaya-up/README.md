@@ -75,12 +75,25 @@ oscript src/Главный.os --исходная "D:\Выгрузка УП" --п
 
 Кодировка `.bsl`: UTF-8 (с BOM или без), при битых символах — windows-1251.
 
+## Документация для разработчиков
+
+- [docs/PLAN.md](docs/PLAN.md) — поэтапный план, статусы, риски.
+- [docs/FLOW.md](docs/FLOW.md) — поток CLI → отчёт → черновик.
+- [extension_meta/README.md](extension_meta/README.md) — подстановка `InternalInfo` для `Configuration.xml` из ibcmd.
+
 ## Тесты
 ```
 tests/run_tests.sh          # или OSCRIPT=/путь/oscript tests/run_tests.sh
+tests/measure_complexity.py src   # эвристика сложности (не Sonar)
 ```
 Фикстуры: `tests/fixtures/UP`, `tests/fixtures/BP`, `tests/fixtures/merge.xml`.
 Юнит-тесты синтеза: `tests/test_hooks.os`.
+
+## XML черновика (ibcmd 8.5+)
+
+- Заимствованные **Catalog/Document/…** получают `InternalInfo` из XML объекта в выгрузке УП; **CommonModule**, **Language**, **CommonCommand** — без `InternalInfo` и без пустых `ChildObjects`.
+- `Configuration.xml` подставляет `extension_meta/Configuration_InternalInfo.xml` (замените на фрагмент из экспорта вашего пустого расширения).
+- Формат выгрузки в черновике: `version="2.21"`, `xmlns:pal`.
 
 ## Чего нет
 - черновика расширения и отката — только анализ и предложение хуков;

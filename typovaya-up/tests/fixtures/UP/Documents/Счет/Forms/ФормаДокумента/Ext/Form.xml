@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Form>
+  <Attributes>
+    <Attribute name="Номер"><Name>Номер</Name></Attribute>
+    <Attribute name="УПДопПоле"><Name>УПДопПоле</Name></Attribute>
+  </Attributes>
+  <ChildItems/>
+</Form>
