@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:foo="http://v8.1c.ru/8.3/xcf/readable" version="2.21">
+	<Configuration uuid="aaaaaaaa-bbbb-bbbb-bbbb-bbbbbbbbbbbb">
+		<InternalInfo>
+			<foo:ContainedObject>
+				<foo:ClassId>9cd510cd-abfc-11d4-9434-004095e12fc7</foo:ClassId>
+				<foo:ObjectId>22222222-2222-2222-2222-222222222222</foo:ObjectId>
+			</foo:ContainedObject>
+		</InternalInfo>
+	</Configuration>
+</MetaDataObject>

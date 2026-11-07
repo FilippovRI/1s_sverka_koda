@@ -26,12 +26,13 @@
 	Для Каждого Пара Из СтрРазделить("--исходная:source,--source:source,-и:source,--поставщик:vendor,--vendor:vendor,-п:vendor,"
 		+ "--настройки:settings,--settings:settings,-н:settings,--выход:out,--out:out,-в:out,"
 		+ "--расширение:extension,--extension:extension,-р:extension,--префикс:prefix,--prefix:prefix,--анализ-форм:__flag_forms,--forms-analysis:__flag_forms,"
-		+ "--превью-форм:__flag_forms_preview,--forms-preview:__flag_forms_preview", ",") Цикл
+		+ "--превью-форм:__flag_forms_preview,--forms-preview:__flag_forms_preview,"
+		+ "--проверить-скелет:skeleton,--validate-skeleton:skeleton", ",") Цикл
 		КЗ = СтрРазделить(Пара, ":");
 		Синонимы.Вставить(КЗ[0], КЗ[1]);
 	КонецЦикла;
-	Результат = Новый Структура("source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, errors",
-		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Новый Массив);
+	Результат = Новый Структура("source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, skeleton, errors",
+		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, "", Новый Массив);
 	Й = 0;
 	Пока Й < Аргументы.Количество() Цикл
 		Ключ = Синонимы.Получить(НРег(Аргументы[Й]));
@@ -147,6 +148,12 @@
 	ИтогЧ = Черновик.Записать(Модули, Исходная.Корень, П.out, П.extension, П.prefix, Лог);
 	Лог.Добавить("Черновик расширения " + П.extension + " (префикс " + П.prefix + "): " + Отчет.ВJSON(ИтогЧ));
 	Лог.Добавить("Итог: " + Отчет.ВJSON(Сводка.counts));
+	Если П.skeleton <> "" Тогда
+		Ск = Загрузить("ПроверкаСкелетаРасширения");
+		Рск = Ск.ПроверитьКаталогСкелета(П.skeleton);
+		Ск.ЗаписатьОтчетВалидации(Рск, П.out);
+		Лог.Добавить("Скелет (validator-only): " + ?(Рск.ОК, "OK", "ОТКАЗ") + " — " + Рск.Причина);
+	КонецЕсли;
 	Лог.Добавить("Время, с: " + Формат((ТекущаяУниверсальнаяДатаВМиллисекундах() - Старт) / 1000, "ЧДЦ=1; ЧН=0"));
 	Отчет.ЗаписатьФайл(ОбъединитьПути(П.out, "log.txt"), СтрСоединить(Лог, Символы.ПС));
 	Сообщить(СтрСоединить(Лог, Символы.ПС));
