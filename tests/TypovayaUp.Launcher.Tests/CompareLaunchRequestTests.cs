@@ -18,7 +18,7 @@ public sealed class CompareLaunchRequestTests
     public void BuildArgumentList_QuotedPaths_SeparateArgv()
     {
         var req = Base();
-        var args = req.BuildArgumentList();
+        var args = req.BuildArgumentList().ToList();
         Assert.Contains("--исходная", args);
         var i = args.IndexOf("--исходная");
         Assert.Equal(@"D:\Выгрузки\Исходная УП", args[i + 1]);
@@ -28,7 +28,17 @@ public sealed class CompareLaunchRequestTests
     [Fact]
     public void BuildArgumentList_FormsPreview_OnlyPreviewFlag()
     {
-        var req = Base() with { FormsPreview = true, AnalyzeForms = false };
+        var b = Base();
+        var req = new CompareLaunchRequest
+        {
+            OscriptExecutable = b.OscriptExecutable,
+            MainScriptPath = b.MainScriptPath,
+            SourceDumpPath = b.SourceDumpPath,
+            VendorDumpPath = b.VendorDumpPath,
+            OutputDirectory = b.OutputDirectory,
+            FormsPreview = true,
+            AnalyzeForms = false,
+        };
         var args = req.BuildArgumentList();
         Assert.Contains("--превью-форм", args);
         Assert.DoesNotContain("--анализ-форм", args);
@@ -37,7 +47,17 @@ public sealed class CompareLaunchRequestTests
     [Fact]
     public void BuildArgumentList_AnalyzeForms_WhenNoPreview()
     {
-        var req = Base() with { AnalyzeForms = true, FormsPreview = false };
+        var b = Base();
+        var req = new CompareLaunchRequest
+        {
+            OscriptExecutable = b.OscriptExecutable,
+            MainScriptPath = b.MainScriptPath,
+            SourceDumpPath = b.SourceDumpPath,
+            VendorDumpPath = b.VendorDumpPath,
+            OutputDirectory = b.OutputDirectory,
+            AnalyzeForms = true,
+            FormsPreview = false,
+        };
         var args = req.BuildArgumentList();
         Assert.Contains("--анализ-форм", args);
     }
