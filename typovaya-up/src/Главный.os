@@ -25,16 +25,20 @@
 	Синонимы = Новый Соответствие;
 	Для Каждого Пара Из СтрРазделить("--исходная:source,--source:source,-и:source,--поставщик:vendor,--vendor:vendor,-п:vendor,"
 		+ "--настройки:settings,--settings:settings,-н:settings,--выход:out,--out:out,-в:out,"
-		+ "--расширение:extension,--extension:extension,-р:extension,--префикс:prefix,--prefix:prefix,--анализ-форм:__flag_forms,--forms-analysis:__flag_forms", ",") Цикл
+		+ "--расширение:extension,--extension:extension,-р:extension,--префикс:prefix,--prefix:prefix,"
+		+ "--анализ-форм:__flag_forms,--forms-analysis:__flag_forms,--программа-форм:__flag_forms_program", ",") Цикл
 		КЗ = СтрРазделить(Пара, ":");
 		Синонимы.Вставить(КЗ[0], КЗ[1]);
 	КонецЦикла;
-	Результат = Новый Структура("source, vendor, settings, out, extension, prefix, analyzeForms, errors", "", "", "", "out", "УП_Доработки", "УП_", Ложь, Новый Массив);
+	Результат = Новый Структура("source, vendor, settings, out, extension, prefix, analyzeForms, formsProgram, errors", "", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Новый Массив);
 	Й = 0;
 	Пока Й < Аргументы.Количество() Цикл
 		Ключ = Синонимы.Получить(НРег(Аргументы[Й]));
 		Если Ключ = "__flag_forms" Тогда
 			Результат.analyzeForms = Истина;
+		ИначеЕсли Ключ = "__flag_forms_program" Тогда
+			Результат.analyzeForms = Истина;
+			Результат.formsProgram = Истина;
 		ИначеЕсли Ключ = Неопределено Тогда
 			Результат.errors.Добавить("Неизвестный параметр: " + Аргументы[Й]);
 		ИначеЕсли Й + 1 >= Аргументы.Количество() Тогда
@@ -122,7 +126,8 @@
 		Если Не ФВыход.Существует() Тогда
 			СоздатьКаталог(П.out);
 		КонецЕсли;
-		АнализФорм.СравнитьФормы(Исходная.Корень, Поставщик.Корень, Периметр, П.out, Лог);
+		АнализФорм.СравнитьФормы(Исходная.Корень, Поставщик.Корень, Периметр, П.out, Лог,
+			Новый Структура("program", П.formsProgram));
 	КонецЕсли;
 
 	Мета = Новый Структура("source, vendor, sourceName, vendorName, settings, settingsInfo, generated",
