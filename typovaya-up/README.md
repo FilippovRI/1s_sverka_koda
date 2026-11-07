@@ -80,6 +80,7 @@ oscript src/Главный.os --исходная "D:\Выгрузка УП" --п
 - [docs/PLAN.md](docs/PLAN.md) — согласованные этапы и ограничения.
 - [docs/FLOW.md](docs/FLOW.md) — поток CLI → отчёт → черновик.
 - [docs/ONESCRIPT_SKILLS.md](docs/ONESCRIPT_SKILLS.md) — навыки/правила OneScript для агентов (MIT: skills-onescript).
+- [docs/API_REFERENCE.md](docs/API_REFERENCE.md) — контракты ключевых экспортных функций.
 - [extension_meta/README.md](extension_meta/README.md) — подстановка `InternalInfo` для `Configuration.xml` из ibcmd.
 
 ## Тесты
