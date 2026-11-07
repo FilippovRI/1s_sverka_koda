@@ -4,6 +4,7 @@ set -u; cd "$(dirname "$0")/.."; OS=${OSCRIPT:-oscript}; OUT=$(mktemp -d); fail=
 $OS src/Главный.os >/dev/null; [ $? -eq 1 ] || { echo "FAIL: без аргументов код должен быть 1"; fail=1; }
 $OS tests/test_hooks.os || { echo "FAIL: unit hooks"; fail=1; }
 $OS tests/test_draft.os || { echo "FAIL: unit draft"; fail=1; }
+$OS tests/test_xml.os || { echo "FAIL: unit xml"; fail=1; }
 H0=$(find tests/fixtures -type f -exec md5sum {} + | sort | md5sum)
 $OS src/Главный.os -и tests/fixtures/UP -п tests/fixtures/BP -н tests/fixtures/merge.xml -в "$OUT" || { echo "FAIL: main run"; fail=1; }
 exp='"counts":{"identical":2,"cosmetic":1,"auto":3,"manual":1,"only_source":1,"only_vendor":0}'
@@ -19,7 +20,13 @@ grep -q '"only_vendor":1' "$OUT/all/summary.json" || { echo "FAIL: режим б
 # Банки — только added → auto; Счет с removed → manual; ХукНабор — safe hooks → auto
 grep -q 'ХукНабор' "$OUT/summary.json" || { echo "FAIL: ХукНабор path"; fail=1; }
 E="$OUT/extension"
+grep -q 'version="2.21"' "$E/Configuration.xml" || { echo "FAIL: version 2.21"; fail=1; }
+grep -q 'xr:ContainedObject' "$E/Configuration.xml" || { echo "FAIL: Configuration InternalInfo"; fail=1; }
 grep -q '<NamePrefix>УП_</NamePrefix>' "$E/Configuration.xml" || { echo "FAIL: NamePrefix"; fail=1; }
+grep -q 'ChildObjects' "$E/CommonModules/ХукНабор.xml" && { echo "FAIL: CommonModule ChildObjects"; fail=1; }
+grep -q 'InternalInfo' "$E/CommonModules/ХукНабор.xml" && { echo "FAIL: CommonModule InternalInfo"; fail=1; }
+grep -q 'xr:GeneratedType' "$E/Catalogs/Банки.xml" || { echo "FAIL: Catalog InternalInfo"; fail=1; }
+grep -q 'ChildObjects' "$E/Catalogs/Банки.xml" && { echo "FAIL: Catalog без ChildObjects"; fail=1; }
 grep -q '<CommonModule>ХукНабор</CommonModule>' "$E/Configuration.xml" || { echo "FAIL: ChildObjects"; fail=1; }
 grep -q '11111111-1111-1111-1111-111111111111' "$E/Catalogs/Банки.xml" || { echo "FAIL: uuid из УП"; fail=1; }
 M="$E/CommonModules/ХукНабор/Ext/Module.bsl"

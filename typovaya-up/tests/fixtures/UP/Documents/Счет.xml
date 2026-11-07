@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" version="2.17">
+<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" version="2.21">
 	<Document uuid="33333333-3333-3333-3333-333333333333">
+		<InternalInfo>
+			<xr:GeneratedType name="DocumentObject.Счет" category="Object">
+				<xr:TypeId>d1000001-0000-4000-8000-000000000021</xr:TypeId>
+				<xr:ValueId>d1000001-0000-4000-8000-000000000022</xr:ValueId>
+			</xr:GeneratedType>
+		</InternalInfo>
 		<Properties><Name>Счет</Name></Properties>
 		<ChildObjects>
 			<Command uuid="44444444-4444-4444-4444-444444444444">
