@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Form>
   <Attributes>
-    <Attribute name="Номер"><Name>Номер</Name></Attribute>
-    <Attribute name="УПДопПоле"><Name>УПДопПоле</Name></Attribute>
+    <Attribute name="Номер"><Name>Номер</Name><Type><v8:Type>xs:string</v8:Type></Type></Attribute>
+    <Attribute name="УПДопПоле"><Name>УПДопПоле</Name><Type><v8:Type>xs:string</v8:Type></Type><DataPath>Объект.УПДопПоле</DataPath></Attribute>
   </Attributes>
   <ChildItems/>
 </Form>

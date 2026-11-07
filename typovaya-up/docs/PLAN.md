@@ -6,7 +6,12 @@
 
 - `БезопасностьПереноса.os`: &Вместо / Continue; диагностика динамических вызовов.
 - `КонтрактМетода.os`: сравнение сигнатур перед auto; `callRewritePreview` — не выполненный CallRewrite.
-- Полный CallRewrite вызовов — **долг**.
+- Полный CallRewrite вызовов — **долг** (`docs/CALLREWRITE_DEBT.md`).
+
+## Этап 5 (анализ форм, срез 1)
+
+- `АнализФорм.os`: имена + тип (`v8:Type`) + `DataPath`; `changed` для расхождений; `programGeneration=manual`.
+- Исходные `Form.xml` выгрузок не изменяются; runtime `РеквизитФормы` в Module.bsl — только пометка manual.
 
 ## Этап 3 (разбор строк)
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Form>
   <Attributes>
-    <Attribute name="Номер"><Name>Номер</Name></Attribute>
+    <Attribute name="Номер"><Name>Номер</Name><Type><v8:Type>xs:decimal</v8:Type></Type></Attribute>
   </Attributes>
   <ChildItems/>
 </Form>
