@@ -12,6 +12,7 @@ public sealed class CompareLaunchRequest
     public string ExtensionName { get; init; } = "УП_Доработки";
     public string NamePrefix { get; init; } = "УП_";
     public bool AnalyzeForms { get; init; }
+    public bool FormsPreview { get; init; }
     public string WorkingDirectory { get; init; } = "";
 
     /// <summary>Аргументы процесса: oscript.exe + script + флаги (каждое значение — отдельный argv).</summary>
@@ -27,7 +28,9 @@ public sealed class CompareLaunchRequest
             AddPair(args, "--расширение", ExtensionName);
         if (!string.IsNullOrWhiteSpace(NamePrefix))
             AddPair(args, "--префикс", NamePrefix);
-        if (AnalyzeForms)
+        if (FormsPreview)
+            args.Add("--превью-форм");
+        else if (AnalyzeForms)
             args.Add("--анализ-форм");
         return args;
     }

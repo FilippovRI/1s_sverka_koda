@@ -23,7 +23,8 @@
 |---------|------------|
 | `ПроверитьПередАвтоПереносом` | Вид, Экспорт, параметры (лексически); иначе `manual` |
 | `КартаРеквизитовFormXml` | Имя → type, dataPath (лексика Form.xml) |
-| `СравнитьФормы` | `forms_analysis.json`, `programGeneration=manual` |
+| `СравнитьФормы` | `forms_analysis.json`; опция превью → `forms_preview/` |
+| `ОценитьПревью` | `programGeneration` preview/manual + `previewCode` |
 | `ПревьюНовогоМетода` | Текст-preview для нового УП_-метода |
 
 ## БезопасностьПереноса.os

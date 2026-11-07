@@ -8,10 +8,11 @@
 - `КонтрактМетода.os`: сравнение сигнатур перед auto; `callRewritePreview` — не выполненный CallRewrite.
 - Полный CallRewrite вызовов — **долг** (`docs/CALLREWRITE_DEBT.md`).
 
-## Этап 5 (анализ форм, срез 1)
+## Этап 5 (анализ форм)
 
-- `АнализФорм.os`: имена + тип (`v8:Type`) + `DataPath`; `changed` для расхождений; `programGeneration=manual`.
-- Исходные `Form.xml` выгрузок не изменяются; runtime `РеквизитФормы` в Module.bsl — только пометка manual.
+- Срез 1 (master): имена + тип + `DataPath`; `programGeneration=manual`.
+- Срез 5b: `--превью-форм` → `forms_preview/`, `forms_preview.html`; одиночный added `xs:string`|`xs:boolean` без DataPath — код PREVIEW (не extension).
+- Полный перенос форм в расширение и runtime-эквивалентность — **не завершены**.
 
 ## Этап 3 (разбор строк)
 

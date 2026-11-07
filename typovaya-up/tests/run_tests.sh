@@ -9,6 +9,7 @@ $OS tests/test_contracts.os || { echo "FAIL: unit contracts"; fail=1; }
 $OS tests/test_draft.os || { echo "FAIL: unit draft"; fail=1; }
 $OS tests/test_xml.os || { echo "FAIL: unit xml"; fail=1; }
 $OS tests/test_forms.os || { echo "FAIL: unit forms"; fail=1; }
+$OS tests/test_forms_preview.os || { echo "FAIL: unit forms preview"; fail=1; }
 $OS tests/test_meta.os || { echo "FAIL: unit meta"; fail=1; }
 $OS tests/test_settings.os || { echo "FAIL: unit settings"; fail=1; }
 $OS tests/test_summary.os || { echo "FAIL: unit summary"; fail=1; }
