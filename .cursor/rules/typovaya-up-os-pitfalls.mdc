@@ -1,0 +1,16 @@
+---
+description: Грабли OneScript при правке typovaya-up
+globs: typovaya-up/**/*.os
+alwaysApply: false
+---
+
+# Грабли (typovaya-up)
+
+См. `.cursor/skills/onescript/pitfalls.md` и upstream [skills-onescript](https://github.com/yellow-hammer/skills-onescript) (MIT).
+
+Кратко при правках:
+
+- Не использовать зарезервированные имена (`И`, `Или`, `Строка`, …).
+- `Новый Структура("k1,k2", v1, v2)` — список ключей в первом аргументе.
+- Имена процедур не должны затенять встроенные/глобальные API OneScript.
+- `ЗагрузитьСценарий` — динамические связи; перед удалением файла проверь вызовы из `Главный.os` и тестов.

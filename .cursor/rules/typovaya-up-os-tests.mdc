@@ -1,0 +1,15 @@
+---
+description: Тесты typovaya-up (test_*.os, run_tests.sh)
+globs: typovaya-up/tests/**/*.os
+alwaysApply: false
+---
+
+# Тесты typovaya-up
+
+Адаптация [os-tests](https://github.com/yellow-hammer/skills-onescript) (MIT).
+
+- Прогон: `tests/run_tests.sh`; не ломать зелёный контур на фикстурах.
+- Новые проверки — в `test_*.os`, осмысленные assert'ы, без дублирования всего CLI.
+- OneUnit/1testrunner **не внедрять** в этом подпроекте без отдельной задачи.
+- Путь к фикстурам: `ОбъединитьПути(ТекущийСценарий().Каталог, "..", "fixtures", ...)`.
+- Тест, меняющий файлы, пишет в временный каталог под `tests/` или `/tmp`, не в fixtures.

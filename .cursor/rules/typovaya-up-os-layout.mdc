@@ -1,0 +1,18 @@
+---
+description: Layout утилиты typovaya-up (не opm-пакет)
+globs: typovaya-up/**/*
+alwaysApply: false
+---
+
+# Layout typovaya-up
+
+Не `packagedef` / opm. Структура:
+
+- `src/` — модули OneScript; вход `Главный.os`.
+- `tests/` — `run_tests.sh`, `test_*.os`, `fixtures/`, `measure_complexity.py`.
+- `docs/` — PLAN, FLOW, ONESCRIPT_SKILLS.
+- `launcher/` — WinForms-оболочка (C#); runtime на Windows в CI не проверяется.
+- `extension_meta/` — шаблон InternalInfo для черновика.
+- `distributions/1c/` — локальный дистрибутив платформы (пользователь кладёт сам).
+
+Зависимости рантайма: только стандартная библиотека OneScript.
