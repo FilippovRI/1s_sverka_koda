@@ -9,11 +9,17 @@ $OS tests/test_contracts.os || { echo "FAIL: unit contracts"; fail=1; }
 $OS tests/test_draft.os || { echo "FAIL: unit draft"; fail=1; }
 $OS tests/test_xml.os || { echo "FAIL: unit xml"; fail=1; }
 $OS tests/test_forms.os || { echo "FAIL: unit forms"; fail=1; }
+$OS tests/test_forms_preview.os || { echo "FAIL: unit forms preview"; fail=1; }
 $OS tests/test_meta.os || { echo "FAIL: unit meta"; fail=1; }
 $OS tests/test_settings.os || { echo "FAIL: unit settings"; fail=1; }
 $OS tests/test_summary.os || { echo "FAIL: unit summary"; fail=1; }
 H0=$(find tests/fixtures -type f -exec md5sum {} + | sort | md5sum)
 $OS src/Главный.os -и tests/fixtures/UP -п tests/fixtures/BP -н tests/fixtures/merge.xml -в "$OUT" || { echo "FAIL: main run"; fail=1; }
+OUTP=$(mktemp -d)
+$OS src/Главный.os -и tests/fixtures/UP -п tests/fixtures/BP -н tests/fixtures/merge.xml --превью-форм -в "$OUTP" || { echo "FAIL: main with preview"; fail=1; }
+diff -qr "$OUT/extension" "$OUTP/extension" >/dev/null || { echo "FAIL: preview changed extension"; fail=1; }
+diff -qr "$OUT/restored" "$OUTP/restored" >/dev/null || { echo "FAIL: preview changed restored"; fail=1; }
+rm -rf "$OUTP"
 exp='"counts":{"identical":2,"cosmetic":1,"auto":3,"manual":1,"only_source":1,"only_vendor":0}'
 grep -q "$exp" "$OUT/summary.json" || { echo "FAIL: корзины"; cat "$OUT/summary.json"; fail=1; }
 grep -q '"after":1' "$OUT/summary.json" || { echo "FAIL: hooks.after"; cat "$OUT/summary.json"; fail=1; }

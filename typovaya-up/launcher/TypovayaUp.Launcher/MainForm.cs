@@ -17,6 +17,7 @@ public sealed class MainForm : Form
     readonly Button _btnFolder = new() { Text = "Открыть папку результата", AutoSize = true, Enabled = false };
     readonly Button _btnDiag = new() { Text = "Диагностика", AutoSize = true };
     readonly CheckBox _chkForms = new() { Text = "Анализ форм (forms_analysis.json)", AutoSize = true };
+    readonly CheckBox _chkFormsPreview = new() { Text = "Превью реквизитов (forms_preview/, не extension)", AutoSize = true };
     readonly TextBox _txtDistro = new() { Width = 420 };
     readonly Button _btnScanDistro = new() { Text = "Проверить дистрибутив", AutoSize = true };
     readonly Button _btnInstallPlatform = new() { Text = "Установить CSServer (UAC)", AutoSize = true };
@@ -54,6 +55,9 @@ public sealed class MainForm : Form
         AddRow(top, "oscript.exe (пусто = PATH/OSCRIPT):", _txtOscript, BrowseFile(_txtOscript, "oscript|oscript.exe|*.exe"));
         top.Controls.Add(_chkForms, 1, top.RowCount);
         top.SetColumnSpan(_chkForms, 2);
+        top.RowCount++;
+        top.Controls.Add(_chkFormsPreview, 1, top.RowCount);
+        top.SetColumnSpan(_chkFormsPreview, 2);
         top.RowCount++;
 
         var plat = new GroupBox { Text = "Платформа 1С (опционально, не нужна для сравнения)", Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(8) };
@@ -230,7 +234,8 @@ public sealed class MainForm : Form
             OutputDirectory = output,
             ExtensionName = _txtExtension.Text.Trim(),
             NamePrefix = _txtPrefix.Text.Trim(),
-            AnalyzeForms = _chkForms.Checked,
+            AnalyzeForms = _chkForms.Checked || _chkFormsPreview.Checked,
+            FormsPreview = _chkFormsPreview.Checked,
             WorkingDirectory = _typovayaRoot,
         };
 
