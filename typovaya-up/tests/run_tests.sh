@@ -8,6 +8,7 @@ $OS tests/test_transfer.os || { echo "FAIL: unit transfer"; fail=1; }
 $OS tests/test_cac_multiline.os || { echo "FAIL: unit CAC multiline"; fail=1; }
 $OS tests/test_token_line.os || { echo "FAIL: unit token line"; fail=1; }
 $OS tests/test_cac_verbatim.os || { echo "FAIL: unit CAC verbatim"; fail=1; }
+$OS tests/test_ibcmd_extension.os || { echo "FAIL: unit ibcmd extension"; fail=1; }
 $OS tests/test_contracts.os || { echo "FAIL: unit contracts"; fail=1; }
 $OS tests/test_draft.os || { echo "FAIL: unit draft"; fail=1; }
 $OS tests/test_xml.os || { echo "FAIL: unit xml"; fail=1; }

@@ -1,0 +1,2 @@
+Information base is locked by another process
+Cannot obtain lock on the database file 1Cv8.1CD
