@@ -5,6 +5,7 @@ $OS src/Главный.os >/dev/null; [ $? -eq 1 ] || { echo "FAIL: без ар�
 $OS tests/test_hooks.os || { echo "FAIL: unit hooks"; fail=1; }
 $OS tests/test_parse.os || { echo "FAIL: unit parse"; fail=1; }
 $OS tests/test_transfer.os || { echo "FAIL: unit transfer"; fail=1; }
+$OS tests/test_cac_multiline.os || { echo "FAIL: unit CAC multiline"; fail=1; }
 $OS tests/test_contracts.os || { echo "FAIL: unit contracts"; fail=1; }
 $OS tests/test_draft.os || { echo "FAIL: unit draft"; fail=1; }
 $OS tests/test_xml.os || { echo "FAIL: unit xml"; fail=1; }
