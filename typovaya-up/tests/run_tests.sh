@@ -10,6 +10,8 @@ $OS tests/test_token_line.os || { echo "FAIL: unit token line"; fail=1; }
 $OS tests/test_cac_verbatim.os || { echo "FAIL: unit CAC verbatim"; fail=1; }
 $OS tests/test_ibcmd_extension.os || { echo "FAIL: unit ibcmd extension"; fail=1; }
 $OS tests/test_extension_helpers.os || { echo "FAIL: unit extension helpers"; fail=1; }
+$OS tests/test_restored_refs.os || { echo "FAIL: unit restored refs"; fail=1; }
+$OS tests/test_function_hooks.os || { echo "FAIL: unit function hooks"; fail=1; }
 $OS tests/test_contracts.os || { echo "FAIL: unit contracts"; fail=1; }
 $OS tests/test_draft.os || { echo "FAIL: unit draft"; fail=1; }
 $OS tests/test_xml.os || { echo "FAIL: unit xml"; fail=1; }
@@ -52,7 +54,7 @@ grep -q '<NamePrefix>УП_</NamePrefix>' "$E/Configuration.xml" || { echo "FAIL:
 grep -q 'ChildObjects' "$E/CommonModules/ХукНабор.xml" && { echo "FAIL: CommonModule ChildObjects"; fail=1; }
 grep -q 'InternalInfo' "$E/CommonModules/ХукНабор.xml" && { echo "FAIL: CommonModule InternalInfo"; fail=1; }
 grep -q 'xr:GeneratedType' "$E/Catalogs/Банки.xml" || { echo "FAIL: Catalog InternalInfo"; fail=1; }
-grep -q 'ChildObjects' "$E/Catalogs/Банки.xml" && { echo "FAIL: Catalog без ChildObjects"; fail=1; }
+grep -q '<ChildObjects>' "$E/Catalogs/Банки.xml" && grep -q '</ChildObjects>' "$E/Catalogs/Банки.xml" || { echo "FAIL: Catalog ChildObjects"; fail=1; }
 grep -q '<CommonModule>ХукНабор</CommonModule>' "$E/Configuration.xml" || { echo "FAIL: ChildObjects"; fail=1; }
 grep -q '11111111-1111-1111-1111-111111111111' "$E/Catalogs/Банки.xml" || { echo "FAIL: uuid из УП"; fail=1; }
 M="$E/CommonModules/ХукНабор/Ext/Module.bsl"
