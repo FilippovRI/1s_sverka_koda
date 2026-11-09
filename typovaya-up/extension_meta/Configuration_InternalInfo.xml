@@ -4,19 +4,19 @@
 				<xr:ObjectId>e1000001-0000-4000-8000-000000000001</xr:ObjectId>
 			</xr:ContainedObject>
 			<xr:ContainedObject>
-				<xr:ClassId>9fcd25a0-4822-11d4-9414-008048da11f3</xr:ClassId>
+				<xr:ClassId>9fcd25a0-4822-11d4-9414-008048da11f9</xr:ClassId>
 				<xr:ObjectId>e1000001-0000-4000-8000-000000000002</xr:ObjectId>
 			</xr:ContainedObject>
 			<xr:ContainedObject>
-				<xr:ClassId>e3687481-0a87-11d4-9434-004095e12fc7</xr:ClassId>
+				<xr:ClassId>e3687481-0a87-462c-a166-9f34594f9bba</xr:ClassId>
 				<xr:ObjectId>e1000001-0000-4000-8000-000000000003</xr:ObjectId>
 			</xr:ContainedObject>
 			<xr:ContainedObject>
-				<xr:ClassId>9de14907-ec23-11d4-b316-006097b59e11</xr:ClassId>
+				<xr:ClassId>9de14907-ec23-4a07-96f0-85521cb6b53b</xr:ClassId>
 				<xr:ObjectId>e1000001-0000-4000-8000-000000000004</xr:ObjectId>
 			</xr:ContainedObject>
 			<xr:ContainedObject>
-				<xr:ClassId>51f2d5d8-ea4d-4064-8892-82951764531c</xr:ClassId>
+				<xr:ClassId>51f2d5d8-ea4d-4064-8892-82951750031e</xr:ClassId>
 				<xr:ObjectId>e1000001-0000-4000-8000-000000000005</xr:ObjectId>
 			</xr:ContainedObject>
 			<xr:ContainedObject>
@@ -24,7 +24,7 @@
 				<xr:ObjectId>e1000001-0000-4000-8000-000000000006</xr:ObjectId>
 			</xr:ContainedObject>
 			<xr:ContainedObject>
-				<xr:ClassId>fb282519-d103-4dd3-bc12-cb271d631064</xr:ClassId>
+				<xr:ClassId>fb282519-d103-4dd3-bc12-cb271d631dfc</xr:ClassId>
 				<xr:ObjectId>e1000001-0000-4000-8000-000000000007</xr:ObjectId>
 			</xr:ContainedObject>
 			<xr:PropertyState>

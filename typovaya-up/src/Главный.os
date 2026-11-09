@@ -16,6 +16,8 @@
 	|  --выход, --out, -в           папка результата (по умолчанию out)
 	|  --расширение, --extension, -р  имя черновика расширения (по умолчанию УП_Доработки)
 	|  --префикс, --prefix          префикс имён расширения (по умолчанию УП_)
+	|  --без-синтаксиса             не проверять модули extension/restored через bsparser (self_check syntax_errors)
+	|  --синтаксис-лимит N          проверить не больше N модулей (0 — все; ~1–3 тыс. строк/с)
 	|  --ibcmd-загрузка             (opt-in) загрузить черновик в ИБ через ibcmd 8.5+
 	|  --ibcmd-план                только план команд (без ibcmd import/apply)
 	|  --ibcmd-путь                путь к ibcmd.exe (по умолчанию ibcmd в PATH)
@@ -35,6 +37,7 @@
 		+ "--расширение:extension,--extension:extension,-р:extension,--префикс:prefix,--prefix:prefix,--анализ-форм:__flag_forms,--forms-analysis:__flag_forms,"
 		+ "--превью-форм:__flag_forms_preview,--forms-preview:__flag_forms_preview,"
 		+ "--перенос-форм:__flag_forms_transfer,--forms-transfer:__flag_forms_transfer,"
+		+ "--без-синтаксиса:__flag_no_syntax,--no-syntax:__flag_no_syntax,--синтаксис-лимит:syntaxLimit,--syntax-limit:syntaxLimit,"
 		+ "--проверить-скелет:skeleton,--validate-skeleton:skeleton,"
 		+ "--ibcmd-загрузка:__flag_ibcmd,--ibcmd-load:__flag_ibcmd,"
 		+ "--ibcmd-план:__flag_ibcmd_plan,--ibcmd-plan:__flag_ibcmd_plan,"
@@ -46,8 +49,8 @@
 		Синонимы.Вставить(КЗ[0], КЗ[1]);
 	КонецЦикла;
 	Результат = Новый Структура(
-		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, errors",
-		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, "", Ложь, Ложь, "", "", "", "", "", "", "", "", Новый Массив);
+		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, noSyntax, syntaxLimit, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, errors",
+		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, Ложь, "0", "", Ложь, Ложь, "", "", "", "", "", "", "", "", Новый Массив);
 	Й = 0;
 	Пока Й < Аргументы.Количество() Цикл
 		Ключ = Синонимы.Получить(НРег(Аргументы[Й]));
@@ -59,6 +62,8 @@
 		ИначеЕсли Ключ = "__flag_forms_transfer" Тогда
 			Результат.formsTransfer = Истина;
 			Результат.analyzeForms = Истина;
+		ИначеЕсли Ключ = "__flag_no_syntax" Тогда
+			Результат.noSyntax = Истина;
 		ИначеЕсли Ключ = "__flag_ibcmd" Тогда
 			Результат.ibcmdLoad = Истина;
 		ИначеЕсли Ключ = "__flag_ibcmd_plan" Тогда
@@ -174,7 +179,8 @@
 	Доз.Инициализировать(Разбор);
 	Самопров = Загрузить("СамопроверкаВыхода");
 	Самопров.Инициализировать(Разбор, Доз, Синтез);
-	Рсп = Самопров.ПроверитьКаталогВыхода(П.out, Модули, Сводка);
+	ПарСинт = Новый Структура("enabled, limit", Не П.noSyntax, Число(П.syntaxLimit));
+	Рсп = Самопров.ПроверитьКаталогВыхода(П.out, Модули, Сводка, Исходная.Корень, ПарСинт);
 	Отчет.ЗаписатьФайл(ОбъединитьПути(П.out, "self_check.json"), Отчет.ВJSON(Рсп));
 	Лог.Добавить("Самопроверка: " + ?(Рсп.ok, "OK", "ЗАМЕЧАНИЯ") + " — " + Отчет.ВJSON(Рсп.categories));
 	Лог.Добавить("Итог: " + Отчет.ВJSON(Сводка.counts));
