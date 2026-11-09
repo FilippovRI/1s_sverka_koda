@@ -36,6 +36,8 @@ oscript src/Главный.os --исходная "D:\Выгрузка УП" --п
 - `summary.json` — количества и списки путей по корзинам, плюс `hooks` (before/after/changeAndControl/instead/newMethod/none).
 - `log.txt` — лог прогона.
 - `self_check.json` — офлайн-самопроверка черновика/restored (категории как при типичных ошибках загрузки: локальные вызовы в `extension`, целостность `#Вставка`/`#Удаление`, шаблонные `e1000001-*` в XML, вызовы удалённых в УП методов в `restored`, счётчик `manual`).
+  Дополнительно: `invalid_class_id` (ClassId в `extension/Configuration.xml` — только платформенные/из выгрузки УП), `duplicate_method_definitions`, `syntax_errors` (разбор каждого модуля `extension`/`restored` vendored-парсером [bsparser](vendor/bsparser/README.md), образцы файл/строка/текст; `--без-синтаксиса` отключает, `--синтаксис-лимит N` ограничивает число модулей). Сканер вызовов не считает методы глобального контекста (bsparser `scope/global`), аннотации, строки запроса `|` и `Новый Имя(`.
+- `&ИзменениеИКонтроль`: типовые строки выводятся байт в байт; локальные вызовы переименовываются в `УП_…` только внутри `#Вставка` (хелпер копируется, только если он нужен коду УП).
 - `extension\` — файловая выгрузка черновика расширения (порт `ExtensionDraftWriter` Сверки): `Configuration.xml`
   (Adopted, Name, NamePrefix, Customization, ChildObjects с заимствованными объектами и языком), `{Папка}\{Имя}.xml`
   заимствованных объектов (ExtendedConfigurationObject = uuid объекта из выгрузки УП) и модули с хуками

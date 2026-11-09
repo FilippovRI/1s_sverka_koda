@@ -55,6 +55,9 @@ grep -q 'xr:ContainedObject' "$E/Configuration.xml" || { echo "FAIL: Configurati
 grep -q 'e1000001-' "$E/Configuration.xml" && { echo "FAIL: synthetic e1000001 in Configuration"; fail=1; }
 [ -f "$OUT/self_check.json" ] || { echo "FAIL: no self_check.json"; fail=1; }
 grep -q '"ok":true' "$OUT/self_check.json" || { echo "FAIL: self_check not ok"; cat "$OUT/self_check.json"; fail=1; }
+for c in invalid_class_id duplicate_method_definitions syntax_errors extension_unresolved_local_calls; do grep -q "\"id\":\"$c\",\"ok\":true" "$OUT/self_check.json" || { echo "FAIL: self_check $c"; fail=1; }; done
+grep -q '9fcd25a0-4822-11d4-9414-008048da11f9' "$E/Configuration.xml" || { echo "FAIL: platform ClassId"; fail=1; }
+grep -q '^Процедура Своя()\|^Функция НоваяУП()' "$E/Documents/Счет/Ext/ObjectModule.bsl" "$E/Catalogs/Банки/Ext/ObjectModule.bsl" && { echo "FAIL: новый метод скопирован повторно"; fail=1; }
 grep -q '<NamePrefix>УП_</NamePrefix>' "$E/Configuration.xml" || { echo "FAIL: NamePrefix"; fail=1; }
 grep -q 'ChildObjects' "$E/CommonModules/ХукНабор.xml" && { echo "FAIL: CommonModule ChildObjects"; fail=1; }
 grep -q 'InternalInfo' "$E/CommonModules/ХукНабор.xml" && { echo "FAIL: CommonModule InternalInfo"; fail=1; }
