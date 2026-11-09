@@ -12,6 +12,7 @@
 
 - Срез 1 (master): имена + тип + `DataPath`; `programGeneration=manual`.
 - Срез 5b: `--превью-форм` → `forms_preview/`, `forms_preview.html`; одиночный added `xs:string`|`xs:boolean` без DataPath — код PREVIEW (не extension).
+- Срез 6 (transfer): `--перенос-форм` / `--forms-transfer` → `forms_transfer/`, `forms_transfer.json`; одиночный added в changed-формах, типы/квалификаторы, DataPath в UI; opt-in, выгрузки не меняются.
 - Полный перенос форм в расширение и runtime-эквивалентность — **не завершены**.
 
 ## Этап 3 (разбор строк)
