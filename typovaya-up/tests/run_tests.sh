@@ -37,6 +37,19 @@ diff -qr "$OUT/extension" "$OUTT/extension" >/dev/null || { echo "FAIL: transfer
 diff -qr "$OUT/restored" "$OUTT/restored" >/dev/null || { echo "FAIL: transfer changed restored"; fail=1; }
 [ -f "$OUTT/forms_transfer/forms_transfer.json" ] || { echo "FAIL: no forms_transfer.json"; fail=1; }
 rm -rf "$OUTT"
+# --без-отчета + --только-отчет == обычный прогон (meta.generated не сравниваем)
+OUTN=$(mktemp -d)
+$OS src/Главный.os -и tests/fixtures/UP -п tests/fixtures/BP -н tests/fixtures/merge.xml --без-отчета -в "$OUTN" >/dev/null || { echo "FAIL: main --без-отчета"; fail=1; }
+[ -f "$OUTN/razbor_moduley.html" ] && { echo "FAIL: --без-отчета написал html"; fail=1; }
+grep -q '"timings":{"readDumps":' "$OUTN/summary.json" || { echo "FAIL: summary timings"; fail=1; }
+grep -q 'Время по шагам' "$OUTN/log.txt" && grep -q '\[шаг 3\]' "$OUTN/log.txt" || { echo "FAIL: log timings/progress"; fail=1; }
+cp "$OUTN/summary.json" "$OUTN/summary.before"
+$OS src/Главный.os --report-only -в "$OUTN" >/dev/null || { echo "FAIL: --только-отчет"; fail=1; }
+cmp -s "$OUTN/summary.json" "$OUTN/summary.before" || { echo "FAIL: --только-отчет изменил summary.json"; fail=1; }
+norm() { sed 's/"generated":"[^"]*"//' "$1"; }
+diff -q <(norm "$OUT/razbor_moduley.html") <(norm "$OUTN/razbor_moduley.html") >/dev/null || { echo "FAIL: отчёт --только-отчет отличается"; fail=1; }
+$OS src/Главный.os --только-отчет -в "$OUTN/нет" >/dev/null; [ $? -eq 1 ] || { echo "FAIL: --только-отчет без summary"; fail=1; }
+rm -rf "$OUTN"
 exp='"counts":{"identical":2,"cosmetic":1,"auto":3,"manual":1,"only_source":1,"only_vendor":0}'
 grep -q "$exp" "$OUT/summary.json" || { echo "FAIL: корзины"; cat "$OUT/summary.json"; fail=1; }
 grep -q '"after":1' "$OUT/summary.json" || { echo "FAIL: hooks.after"; cat "$OUT/summary.json"; fail=1; }
