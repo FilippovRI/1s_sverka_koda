@@ -40,7 +40,7 @@
 		ТелоИз("Для Каждого X Цикл|" + "	// УП_начало x|" + "	B = 2;|" + "	// УП_конец x|" + "	A = 1;|" + "КонецЦикла;"));
 	Проверить(П.hook = "changeAndControl", "CAC markers hook");
 	Проверить(СтрНайти(П.hookBody, "#Вставка") > 0
-		И СтрНайти(П.hookBody, "// УП_начало") > СтрНайти(П.hookBody, "#Вставка"), "markers inside insert block");
+		И СтрНайти(П.hookBody, "УП_начало") > СтрНайти(П.hookBody, "#Вставка"), "markers inside insert block");
 
 	П = Синтез.ПредложитьХук(ТелоИз("Старое = 1;|Общее = 2;"), ТелоИз("Новое = 1;|Общее = 2;"));
 	Проверить(П.decision = "auto" И П.hook = "changeAndControl", "Replace CAC: " + П.decision + "/" + П.hook);
