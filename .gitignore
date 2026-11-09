@@ -16,9 +16,9 @@ typovaya-up/extension/
 typovaya-up/restored/
 typovaya-up/logs/
 
-# Лицензионный дистрибутив 1С — только локально (см. typovaya-up/distributions/1c/README.md)
-typovaya-up/distributions/1c/**
-!typovaya-up/distributions/1c/README.md
-typovaya-up/distributions/1c/_logs/
+# Лицензионный дистрибутив 1С — только локально (см. typovaya-up-gui/distributions/1c/README.md)
+typovaya-up-gui/distributions/1c/**
+!typovaya-up-gui/distributions/1c/README.md
+typovaya-up-gui/distributions/1c/_logs/
 
 typovaya-up/tests/_forms_out/

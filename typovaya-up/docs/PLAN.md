@@ -31,7 +31,7 @@
 - Каталоги `extension/` (черновик расширения) и `restored/` (тексты УП с откатом авто-переноса).
 - XML-черновик с `InternalInfo` на фикстурах; `extension_meta/`.
 - `--анализ-форм`: **inventory-only** — сравнение имён реквизитов в `Form.xml`, без программного создания и без правки выгрузок.
-- WinForms launcher + `distributions/1c/` (установка по кнопке); **GUI на Windows в CI не гоняется**.
+- OneScript CLI в `typovaya-up/`; WinForms — **`typovaya-up-gui/`** (отдельный CI-job `typovaya-gui`).
 
 ## Этапы (не реализовывать в этапе 1)
 
@@ -42,7 +42,7 @@
 | 4 | Безопасный перенос | CallRewrite, сохранение сигнатур, «Не доказано» без ложной уверенности |
 | 5 | Формы | Типы, DataPath, зависимости, opt-in `РеквизитФормы` / `ИзменитьРеквизиты`; исходные выгрузки неизменны |
 | 6 | XML / ibcmd | Сейчас: validator скелета (`ПроверкаСкелетаРасширения.os`); ibcmd/import — долг |
-| 7 | Windows GUI/setup | Проверка launcher, пути OneScript, UX установки платформы |
+| 7 | Windows GUI/setup | `typovaya-up-gui`: launcher, пути oscript, `distributions/1c` |
 | — | Интеграция 1С | Импорт черновика, компиляция, runtime — **отдельно**, только в среде пользователя |
 
 WIP ветка среза форм (не merge): `cursor/wip-forms-slice2-665d`.

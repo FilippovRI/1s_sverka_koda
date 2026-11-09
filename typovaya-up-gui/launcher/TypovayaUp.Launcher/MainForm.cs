@@ -24,6 +24,7 @@ public sealed class MainForm : Form
     readonly Button _btnCheckIbcmd = new() { Text = "Проверить ibcmd", AutoSize = true };
 
     readonly string _typovayaRoot;
+    readonly string _guiRoot;
     OscriptRunSession? _session;
     CancellationTokenSource? _runCts;
     string? _lastOutDir;
@@ -34,6 +35,7 @@ public sealed class MainForm : Form
         Width = 920;
         Height = 700;
         _typovayaRoot = LauncherPaths.ResolveTypovayaUpRoot();
+        _guiRoot = LauncherPaths.ResolveGuiRoot();
 
         var top = new TableLayoutPanel
         {
@@ -94,7 +96,7 @@ public sealed class MainForm : Form
 
         AppendLog($"Корень typovaya-up: {_typovayaRoot}");
         _txtOut.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "typovaya-up-out");
-        _txtDistro.Text = Path.Combine(_typovayaRoot, "distributions", "1c");
+        _txtDistro.Text = Path.Combine(_guiRoot, "distributions", "1c");
     }
 
     void ScanDistribution()
@@ -120,7 +122,7 @@ public sealed class MainForm : Form
             return;
         try
         {
-            var plan = PlatformCsserverInstall.BuildPlan(scan, Path.Combine(_typovayaRoot, "distributions", "1c", "_logs"));
+            var plan = PlatformCsserverInstall.BuildPlan(scan, Path.Combine(_guiRoot, "distributions", "1c", "_logs"));
             PlatformInstallRunner.StartElevated(plan);
             AppendLog("Установка запущена (UAC). Лог: " + plan.LogFilePath);
             AppendLog("После завершения нажмите «Проверить ibcmd».");

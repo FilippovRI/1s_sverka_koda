@@ -11,7 +11,7 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\typovaya-up\launcher\TypovayaUp.Launcher.Core\TypovayaUp.Launcher.Core.csproj" />
+    <ProjectReference Include="..\..\launcher\TypovayaUp.Launcher.Core\TypovayaUp.Launcher.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Fixtures\*.cmd">

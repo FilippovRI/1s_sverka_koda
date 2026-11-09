@@ -20,7 +20,22 @@ jobs:
           sudo chmod +x /opt/onescript/bin/oscript
           echo "/opt/onescript/bin" >> "$GITHUB_PATH"
       - name: typovaya-up tests
-        run: OSCRIPT=/opt/onescript/bin/oscript bash typovaya-up/tests/run_tests.sh
+        run: |
+          set -euo pipefail
+          OSCRIPT=/opt/onescript/bin/oscript bash typovaya-up/tests/run_tests.sh
+
+  typovaya-gui:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: typovaya-up-gui tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash typovaya-up-gui/tests/run_tests.sh
 
   test:
     runs-on: windows-latest
@@ -29,18 +44,12 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: Build typovaya-up launcher (WinForms + Core)
-        run: |
-          dotnet build typovaya-up/launcher/TypovayaUp.Launcher/TypovayaUp.Launcher.csproj -c Release --nologo
-          dotnet build typovaya-up/launcher/TypovayaUp.Launcher.Core/TypovayaUp.Launcher.Core.csproj -c Release --nologo
-      - name: Test typovaya-up launcher
-        run: dotnet test tests/TypovayaUp.Launcher.Tests/TypovayaUp.Launcher.Tests.csproj -c Release --nologo
       - name: Test solution (Sverka)
         run: dotnet test 1c-sverka.sln -c Release --nologo
 
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: test
+    needs: [test, typovaya-oscript, typovaya-gui]
     runs-on: windows-latest
     permissions:
       contents: write
