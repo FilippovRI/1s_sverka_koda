@@ -13,6 +13,7 @@ $OS tests/test_draft.os || { echo "FAIL: unit draft"; fail=1; }
 $OS tests/test_xml.os || { echo "FAIL: unit xml"; fail=1; }
 $OS tests/test_forms.os || { echo "FAIL: unit forms"; fail=1; }
 $OS tests/test_forms_preview.os || { echo "FAIL: unit forms preview"; fail=1; }
+$OS tests/test_forms_transfer.os || { echo "FAIL: unit forms transfer"; fail=1; }
 $OS tests/test_skeleton.os || { echo "FAIL: unit skeleton"; fail=1; }
 $OS tests/test_meta.os || { echo "FAIL: unit meta"; fail=1; }
 $OS tests/test_settings.os || { echo "FAIL: unit settings"; fail=1; }
@@ -24,6 +25,12 @@ $OS src/Главный.os -и tests/fixtures/UP -п tests/fixtures/BP -н tests/
 diff -qr "$OUT/extension" "$OUTP/extension" >/dev/null || { echo "FAIL: preview changed extension"; fail=1; }
 diff -qr "$OUT/restored" "$OUTP/restored" >/dev/null || { echo "FAIL: preview changed restored"; fail=1; }
 rm -rf "$OUTP"
+OUTT=$(mktemp -d)
+$OS src/Главный.os -и tests/fixtures/UP -п tests/fixtures/BP -н tests/fixtures/merge.xml --перенос-форм -в "$OUTT" || { echo "FAIL: main with transfer"; fail=1; }
+diff -qr "$OUT/extension" "$OUTT/extension" >/dev/null || { echo "FAIL: transfer changed extension"; fail=1; }
+diff -qr "$OUT/restored" "$OUTT/restored" >/dev/null || { echo "FAIL: transfer changed restored"; fail=1; }
+[ -f "$OUTT/forms_transfer/forms_transfer.json" ] || { echo "FAIL: no forms_transfer.json"; fail=1; }
+rm -rf "$OUTT"
 exp='"counts":{"identical":2,"cosmetic":1,"auto":3,"manual":1,"only_source":1,"only_vendor":0}'
 grep -q "$exp" "$OUT/summary.json" || { echo "FAIL: корзины"; cat "$OUT/summary.json"; fail=1; }
 grep -q '"after":1' "$OUT/summary.json" || { echo "FAIL: hooks.after"; cat "$OUT/summary.json"; fail=1; }

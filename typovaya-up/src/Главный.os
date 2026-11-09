@@ -27,12 +27,13 @@
 		+ "--настройки:settings,--settings:settings,-н:settings,--выход:out,--out:out,-в:out,"
 		+ "--расширение:extension,--extension:extension,-р:extension,--префикс:prefix,--prefix:prefix,--анализ-форм:__flag_forms,--forms-analysis:__flag_forms,"
 		+ "--превью-форм:__flag_forms_preview,--forms-preview:__flag_forms_preview,"
+		+ "--перенос-форм:__flag_forms_transfer,--forms-transfer:__flag_forms_transfer,"
 		+ "--проверить-скелет:skeleton,--validate-skeleton:skeleton", ",") Цикл
 		КЗ = СтрРазделить(Пара, ":");
 		Синонимы.Вставить(КЗ[0], КЗ[1]);
 	КонецЦикла;
-	Результат = Новый Структура("source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, skeleton, errors",
-		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, "", Новый Массив);
+	Результат = Новый Структура("source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, skeleton, errors",
+		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, "", Новый Массив);
 	Й = 0;
 	Пока Й < Аргументы.Количество() Цикл
 		Ключ = Синонимы.Получить(НРег(Аргументы[Й]));
@@ -40,6 +41,9 @@
 			Результат.analyzeForms = Истина;
 		ИначеЕсли Ключ = "__flag_forms_preview" Тогда
 			Результат.formsPreview = Истина;
+			Результат.analyzeForms = Истина;
+		ИначеЕсли Ключ = "__flag_forms_transfer" Тогда
+			Результат.formsTransfer = Истина;
 			Результат.analyzeForms = Истина;
 		ИначеЕсли Ключ = Неопределено Тогда
 			Результат.errors.Добавить("Неизвестный параметр: " + Аргументы[Й]);
@@ -129,7 +133,7 @@
 		Если Не ФВыход.Существует() Тогда
 			СоздатьКаталог(П.out);
 		КонецЕсли;
-		АнализФорм.СравнитьФормы(Исходная.Корень, Поставщик.Корень, Периметр, П.out, Лог, П.formsPreview);
+		АнализФорм.СравнитьФормы(Исходная.Корень, Поставщик.Корень, Периметр, П.out, Лог, П.formsPreview, П.formsTransfer);
 	КонецЕсли;
 
 	Мета = Новый Структура("source, vendor, sourceName, vendorName, settings, settingsInfo, generated",
