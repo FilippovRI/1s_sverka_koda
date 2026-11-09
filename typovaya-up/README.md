@@ -35,6 +35,7 @@ oscript src/Главный.os --исходная "D:\Выгрузка УП" --п
   Одинаковые модули в HTML не попадают (только их количество).
 - `summary.json` — количества и списки путей по корзинам, плюс `hooks` (before/after/changeAndControl/instead/newMethod/none).
 - `log.txt` — лог прогона.
+- `self_check.json` — офлайн-самопроверка черновика/restored (категории как при типичных ошибках загрузки: локальные вызовы в `extension`, целостность `#Вставка`/`#Удаление`, шаблонные `e1000001-*` в XML, вызовы удалённых в УП методов в `restored`, счётчик `manual`).
 - `extension\` — файловая выгрузка черновика расширения (порт `ExtensionDraftWriter` Сверки): `Configuration.xml`
   (Adopted, Name, NamePrefix, Customization, ChildObjects с заимствованными объектами и языком), `{Папка}\{Имя}.xml`
   заимствованных объектов (ExtendedConfigurationObject = uuid объекта из выгрузки УП) и модули с хуками
@@ -94,7 +95,7 @@ tests/measure_complexity.py src   # эвристика сложности (не 
 ## XML черновика (ibcmd 8.5+)
 
 - Заимствованные **Catalog/Document/…** получают `InternalInfo` из XML объекта в выгрузке УП; **CommonModule**, **Language**, **CommonCommand** — без `InternalInfo` и без пустых `ChildObjects`.
-- `Configuration.xml` подставляет `extension_meta/Configuration_InternalInfo.xml` (замените на фрагмент из экспорта вашего пустого расширения).
+- `Configuration.xml` подставляет `extension_meta/Configuration_InternalInfo.xml` с заменой шаблонных `e1000001-*` на детерминированные UUID по имени расширения (для продакшена лучше фрагмент из ibcmd export вашей ИБ).
 - Формат выгрузки в черновике: `version="2.21"`, `xmlns:pal`.
 
 ## Ограничения (не в master или неполно)

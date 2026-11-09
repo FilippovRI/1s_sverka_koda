@@ -8,6 +8,8 @@ $OS tests/test_transfer.os || { echo "FAIL: unit transfer"; fail=1; }
 $OS tests/test_cac_multiline.os || { echo "FAIL: unit CAC multiline"; fail=1; }
 $OS tests/test_token_line.os || { echo "FAIL: unit token line"; fail=1; }
 $OS tests/test_cac_verbatim.os || { echo "FAIL: unit CAC verbatim"; fail=1; }
+$OS tests/test_internalinfo_uuid.os || { echo "FAIL: unit internalinfo uuid"; fail=1; }
+$OS tests/test_self_check.os || { echo "FAIL: unit self check"; fail=1; }
 $OS tests/test_ibcmd_extension.os || { echo "FAIL: unit ibcmd extension"; fail=1; }
 $OS tests/test_extension_helpers.os || { echo "FAIL: unit extension helpers"; fail=1; }
 $OS tests/test_restored_refs.os || { echo "FAIL: unit restored refs"; fail=1; }
@@ -50,6 +52,9 @@ grep -q 'ХукНабор' "$OUT/summary.json" || { echo "FAIL: ХукНабор
 E="$OUT/extension"
 grep -q 'version="2.21"' "$E/Configuration.xml" || { echo "FAIL: version 2.21"; fail=1; }
 grep -q 'xr:ContainedObject' "$E/Configuration.xml" || { echo "FAIL: Configuration InternalInfo"; fail=1; }
+grep -q 'e1000001-' "$E/Configuration.xml" && { echo "FAIL: synthetic e1000001 in Configuration"; fail=1; }
+[ -f "$OUT/self_check.json" ] || { echo "FAIL: no self_check.json"; fail=1; }
+grep -q '"ok":true' "$OUT/self_check.json" || { echo "FAIL: self_check not ok"; cat "$OUT/self_check.json"; fail=1; }
 grep -q '<NamePrefix>УП_</NamePrefix>' "$E/Configuration.xml" || { echo "FAIL: NamePrefix"; fail=1; }
 grep -q 'ChildObjects' "$E/CommonModules/ХукНабор.xml" && { echo "FAIL: CommonModule ChildObjects"; fail=1; }
 grep -q 'InternalInfo' "$E/CommonModules/ХукНабор.xml" && { echo "FAIL: CommonModule InternalInfo"; fail=1; }
