@@ -25,7 +25,7 @@
 	"Catalog", "Банки", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "11111111-1111-1111-1111-111111111111", ПутьКаталог, Неопределено);
 XmlО = Ч.XmlОбъекта(ДО);
 Проверить(СтрНайти(XmlО, "<InternalInfo>") > 0, "Catalog: есть InternalInfo");
-Проверить(СтрНайти(XmlО, "<ChildObjects") = 0, "Catalog без команд: нет ChildObjects");
+Проверить(СтрНайти(XmlО, "<ChildObjects>") > 0, "Catalog: пустой ChildObjects");
 
 ПутьСм = ОбъединитьПути(Фикстуры, "CommonModules", "ХукНабор.xml");
 ДСм = Новый Структура("Тип, Имя, СвойUuid, БазовыйUuid, ПутьИсходногоXml, Команды",
