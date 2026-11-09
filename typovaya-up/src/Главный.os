@@ -16,6 +16,13 @@
 	|  --выход, --out, -в           папка результата (по умолчанию out)
 	|  --расширение, --extension, -р  имя черновика расширения (по умолчанию УП_Доработки)
 	|  --префикс, --prefix          префикс имён расширения (по умолчанию УП_)
+	|  --ibcmd-загрузка             (opt-in) загрузить черновик в ИБ через ibcmd 8.5+
+	|  --ibcmd-план                только план команд (без ibcmd import/apply)
+	|  --ibcmd-путь                путь к ibcmd.exe (по умолчанию ibcmd в PATH)
+	|  --ibcmd-база, --ibcmd-db    каталог файловой ИБ (--db-path)
+	|  --ibcmd-data               каталог данных автономного сервера (--data)
+	|  --ibcmd-пользователь        пользователь ИБ (--user)
+	|  --ibcmd-пароль              пароль ИБ (--password)
 	|
 	|Результат: <выход>\razbor_moduley.html, <выход>\summary.json, <выход>\log.txt,
 	|  <выход>\extension\ (черновик расширения, см. README.txt), <выход>\restored\ (типовые тексты модулей)";
@@ -28,12 +35,19 @@
 		+ "--расширение:extension,--extension:extension,-р:extension,--префикс:prefix,--prefix:prefix,--анализ-форм:__flag_forms,--forms-analysis:__flag_forms,"
 		+ "--превью-форм:__flag_forms_preview,--forms-preview:__flag_forms_preview,"
 		+ "--перенос-форм:__flag_forms_transfer,--forms-transfer:__flag_forms_transfer,"
-		+ "--проверить-скелет:skeleton,--validate-skeleton:skeleton", ",") Цикл
+		+ "--проверить-скелет:skeleton,--validate-skeleton:skeleton,"
+		+ "--ibcmd-загрузка:__flag_ibcmd,--ibcmd-load:__flag_ibcmd,"
+		+ "--ibcmd-план:__flag_ibcmd_plan,--ibcmd-plan:__flag_ibcmd_plan,"
+		+ "--ibcmd-путь:ibcmdPath,--ibcmd-path:ibcmdPath,--ibcmd-база:ibcmdDb,--ibcmd-db:ibcmdDb,"
+		+ "--ibcmd-data:ibcmdData,--ibcmd-пользователь:ibcmdUser,--ibcmd-user:ibcmdUser,"
+		+ "--ibcmd-пароль:ibcmdPassword,--ibcmd-password:ibcmdPassword,"
+		+ "--ibcmd-сервер:ibcmdServer,--ibcmd-dbms:ibcmdDbms,--ibcmd-имя-бд:ibcmdDbName,--ibcmd-db-name:ibcmdDbName", ",") Цикл
 		КЗ = СтрРазделить(Пара, ":");
 		Синонимы.Вставить(КЗ[0], КЗ[1]);
 	КонецЦикла;
-	Результат = Новый Структура("source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, skeleton, errors",
-		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, "", Новый Массив);
+	Результат = Новый Структура(
+		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, errors",
+		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, "", Ложь, Ложь, "", "", "", "", "", "", "", "", Новый Массив);
 	Й = 0;
 	Пока Й < Аргументы.Количество() Цикл
 		Ключ = Синонимы.Получить(НРег(Аргументы[Й]));
@@ -45,6 +59,11 @@
 		ИначеЕсли Ключ = "__flag_forms_transfer" Тогда
 			Результат.formsTransfer = Истина;
 			Результат.analyzeForms = Истина;
+		ИначеЕсли Ключ = "__flag_ibcmd" Тогда
+			Результат.ibcmdLoad = Истина;
+		ИначеЕсли Ключ = "__flag_ibcmd_plan" Тогда
+			Результат.ibcmdLoad = Истина;
+			Результат.ibcmdPlan = Истина;
 		ИначеЕсли Ключ = Неопределено Тогда
 			Результат.errors.Добавить("Неизвестный параметр: " + Аргументы[Й]);
 		ИначеЕсли Й + 1 >= Аргументы.Количество() Тогда
@@ -157,6 +176,21 @@
 		Рск = Ск.ПроверитьКаталогСкелета(П.skeleton);
 		Ск.ЗаписатьОтчетВалидации(Рск, П.out);
 		Лог.Добавить("Скелет (validator-only): " + ?(Рск.ОК, "OK", "ОТКАЗ") + " — " + Рск.Причина);
+	КонецЕсли;
+	Если П.ibcmdLoad Тогда
+		Иб = Загрузить("IbcmdРасширения");
+		Пи = Новый Структура("ibcmdPath, dbPath, dbms, dbServer, dbName, dataPath, user, password",
+			П.ibcmdPath, П.ibcmdDb, П.ibcmdDbms, П.ibcmdServer, П.ibcmdDbName, П.ibcmdData, П.ibcmdUser, П.ibcmdPassword);
+		Кч = ОбъединитьПути(П.out, "extension");
+		Ри = Иб.ВыполнитьЗагрузку(Пи, П.extension, Кч, Лог, П.ibcmdPlan);
+		Если Не Ри.ok Тогда
+			Лог.Добавить("ibcmd ОТКАЗ: " + Ри.message);
+			ЗавершитьРаботу(3);
+		КонецЕсли;
+		Если Ри.plan <> Неопределено Тогда
+			Отчет.ЗаписатьФайл(ОбъединитьПути(П.out, "ibcmd_load_plan.json"), Отчет.ВJSON(Иб.ПланДляJson(Ри.plan)));
+			Лог.Добавить("ibcmd: план записан в ibcmd_load_plan.json");
+		КонецЕсли;
 	КонецЕсли;
 	Лог.Добавить("Время, с: " + Формат((ТекущаяУниверсальнаяДатаВМиллисекундах() - Старт) / 1000, "ЧДЦ=1; ЧН=0"));
 	Отчет.ЗаписатьФайл(ОбъединитьПути(П.out, "log.txt"), СтрСоединить(Лог, Символы.ПС));
