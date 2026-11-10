@@ -74,5 +74,6 @@ function render(){buildTree();if(!mods.length){document.getElementById("view").i
 document.addEventListener("keydown",e=>{if(e.target.tagName=="INPUT")return;const k=e.key;
  if(k=="ArrowRight"||k=="l"){goMod(1);e.preventDefault()}else if(k=="ArrowLeft"||k=="h"){goMod(-1);e.preventDefault()}
  else if(k=="ArrowDown"||k=="j"){goProc(1);e.preventDefault()}else if(k=="ArrowUp"||k=="k"){goProc(-1);e.preventDefault()}});
+(function(){const B=DATA.bsparser;if(!B)return;const a=B.astCheck||{},f=B.fallbacks||[],it=a.items||[];const li=(t,xs)=>`<li>${esc(t)}<ul>${(xs||[]).map(e=>`<li>${esc(e)}</li>`).join("")}</ul></li>`;let h=`<details id="bsparser"${(f.length||it.length)?" open":""}><summary>Ручной разбор (bsparser): хуков &amp;ИзменениеИКонтроль с замечаниями ${a.failed||0} из ${a.checked||0}, модулей на старом маршруте ${f.length}</summary>`;if(f.length){h+="<div>Не разобраны bsparser — сравнены старым маршрутом, проверьте вручную:</div><ul>";f.forEach(x=>h+=li(x.path,x.errors));h+="</ul>"}if(it.length){h+="<div>Хуки &amp;ИзменениеИКонтроль с замечаниями (ast_check.json):</div><ul>";it.forEach(x=>h+=li(x.file,x.problems));h+="</ul>"}document.getElementById("meta").insertAdjacentHTML("afterend",h+"</details>")})();
 render();
 </script></body></html>
