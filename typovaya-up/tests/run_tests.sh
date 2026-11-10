@@ -4,6 +4,7 @@ set -uo pipefail; cd "$(dirname "$0")/.."; OS=${OSCRIPT:-oscript}; OUT=$(mktemp 
 $OS src/Главный.os >/dev/null; [ $? -eq 1 ] || { echo "FAIL: без аргументов код должен быть 1"; fail=1; }
 $OS tests/test_hooks.os || { echo "FAIL: unit hooks"; fail=1; }
 $OS tests/test_parse.os || { echo "FAIL: unit parse"; fail=1; }
+$OS tests/test_ast.os || { echo "FAIL: unit ast"; fail=1; }
 $OS tests/test_transfer.os || { echo "FAIL: unit transfer"; fail=1; }
 $OS tests/test_cac_multiline.os || { echo "FAIL: unit CAC multiline"; fail=1; }
 $OS tests/test_token_line.os || { echo "FAIL: unit token line"; fail=1; }
@@ -33,6 +34,12 @@ $OS src/Главный.os -и tests/fixtures/UP -п tests/fixtures/BP -н tests/
 diff -qr "$OUT/extension" "$OUTP/extension" >/dev/null || { echo "FAIL: preview changed extension"; fail=1; }
 diff -qr "$OUT/restored" "$OUTP/restored" >/dev/null || { echo "FAIL: preview changed restored"; fail=1; }
 rm -rf "$OUTP"
+OUTA=$(mktemp -d)
+$OS src/Главный.os -и tests/fixtures/UP -п tests/fixtures/BP -н tests/fixtures/merge.xml --parser bsparser -в "$OUTA" >/dev/null || { echo "FAIL: main --parser bsparser"; fail=1; }
+diff -qr "$OUT/extension" "$OUTA/extension" >/dev/null || { echo "FAIL: --parser bsparser changed extension"; fail=1; }
+grep -q '"failed":0' "$OUTA/ast_check.json" || { echo "FAIL: ast_check.json"; cat "$OUTA/ast_check.json"; fail=1; }
+$OS src/Главный.os -и tests/fixtures/UP -п tests/fixtures/BP --parser нет -в "$OUTA/x" >/dev/null; [ $? -eq 1 ] || { echo "FAIL: --parser bad value"; fail=1; }
+rm -rf "$OUTA"
 OUTT=$(mktemp -d)
 $OS src/Главный.os -и tests/fixtures/UP -п tests/fixtures/BP -н tests/fixtures/merge.xml --перенос-форм -в "$OUTT" || { echo "FAIL: main with transfer"; fail=1; }
 diff -qr "$OUT/extension" "$OUTT/extension" >/dev/null || { echo "FAIL: transfer changed extension"; fail=1; }
