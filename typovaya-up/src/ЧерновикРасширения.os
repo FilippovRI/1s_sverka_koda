@@ -7,7 +7,7 @@
 Перем ПроверкаСсылок;
 Перем ОбщиеМодулиУп;
 Перем ОбщиеМодулиБп; // общие модули поставщика: ссылка «Имя.» считается модулем, только если он есть в БП
-Перем РежимСовместимостиУп; // CompatibilityMode основной конфигурации для Configuration.xml расширения
+Перем РежимСовместимостиУп; // CompatibilityMode основной → ConfigurationExtensionCompatibilityMode расширения
 Перем ПорядокТипов;
 Перем ТипыБезChildObjects; // объекты, у которых в черновике нельзя писать <ChildObjects/> (ibcmd 8.5+)
 Перем ТипыБезInternalInfo; // CommonModule, Language, CommonCommand — без InternalInfo
@@ -133,8 +133,9 @@
 				Итог.keptSourceBody = Итог.keptSourceBody + 1;
 			КонецЕсли;
 			Если Лог <> Неопределено Тогда
-				Лог.Добавить("Черновик: " + М.path + " " + Мт.name + " — хук не пишется: в restored остаётся тело УП ("
-					+ "в БП-методе ссылки на отсутствующие в УП: " + СтрСоединить(Отс, ", ") + ")");
+				Лог.Добавить("Черновик: " + М.path + " " + Мт.name + " — доработка УП ОСТАЛАСЬ в основной конфигурации"
+					+ " (restored = тело УП), в extension не вынесена: в БП-методе ссылки на отсутствующие в УП: "
+					+ СтрСоединить(Отс, ", ") + " — ручной разбор");
 			КонецЕсли;
 			Продолжить;
 		КонецЕсли;
@@ -636,16 +637,14 @@
 	Т.Добавить("			<NamePrefix>" + Экранировать(Префикс) + "</NamePrefix>");
 	Т.Добавить("			<ConfigurationExtensionPurpose>Customization</ConfigurationExtensionPurpose>");
 	Т.Добавить("			<KeepMappingToExtendedConfigurationObjectsByIDs>true</KeepMappingToExtendedConfigurationObjectsByIDs>");
-	// Без явного режима 1С берёт режим платформы: «Режим совместимости расширения больше режима основной».
+	// Как в выгрузках расширений: ConfigurationExtensionCompatibilityMode после KeepMapping/NamePrefix,
+	// значение — CompatibilityMode основной (ошибка 1С сравнивает с режимом совместимости основной).
 	Если ЗначениеЗаполнено(РежимСовместимостиУп) Тогда
 		Т.Добавить("			<ConfigurationExtensionCompatibilityMode>" + Экранировать(РежимСовместимостиУп) + "</ConfigurationExtensionCompatibilityMode>");
 	КонецЕсли;
 	Т.Добавить("			<Version>1.0.0.1</Version>");
 	Если ЯзыкXml <> "" Тогда
 		Т.Добавить("			<DefaultLanguage>Language." + Экранировать(ЯзыкXml) + "</DefaultLanguage>");
-	КонецЕсли;
-	Если ЗначениеЗаполнено(РежимСовместимостиУп) Тогда
-		Т.Добавить("			<CompatibilityMode>" + Экранировать(РежимСовместимостиУп) + "</CompatibilityMode>");
 	КонецЕсли;
 	Т.Добавить("		</Properties>");
 	Т.Добавить("		<ChildObjects>");
