@@ -8,6 +8,8 @@ $OS tests/test_transfer.os || { echo "FAIL: unit transfer"; fail=1; }
 $OS tests/test_cac_multiline.os || { echo "FAIL: unit CAC multiline"; fail=1; }
 $OS tests/test_token_line.os || { echo "FAIL: unit token line"; fail=1; }
 $OS tests/test_cac_verbatim.os || { echo "FAIL: unit CAC verbatim"; fail=1; }
+$OS tests/test_cac_applicability.os || { echo "FAIL: unit CAC applicability"; fail=1; }
+OSCRIPT="$OS" bash tests/e2e_cac_applicability.sh || { echo "FAIL: e2e CAC applicability"; fail=1; }
 $OS tests/test_internalinfo_uuid.os || { echo "FAIL: unit internalinfo uuid"; fail=1; }
 $OS tests/test_self_check.os || { echo "FAIL: unit self check"; fail=1; }
 $OS tests/test_ibcmd_extension.os || { echo "FAIL: unit ibcmd extension"; fail=1; }
@@ -68,10 +70,15 @@ grep -q 'xr:ContainedObject' "$E/Configuration.xml" || { echo "FAIL: Configurati
 grep -q 'e1000001-' "$E/Configuration.xml" && { echo "FAIL: synthetic e1000001 in Configuration"; fail=1; }
 [ -f "$OUT/self_check.json" ] || { echo "FAIL: no self_check.json"; fail=1; }
 grep -q '"ok":true' "$OUT/self_check.json" || { echo "FAIL: self_check not ok"; cat "$OUT/self_check.json"; fail=1; }
-for c in invalid_class_id duplicate_method_definitions syntax_errors extension_unresolved_local_calls; do grep -q "\"id\":\"$c\",\"ok\":true" "$OUT/self_check.json" || { echo "FAIL: self_check $c"; fail=1; }; done
+for c in invalid_class_id duplicate_method_definitions syntax_errors extension_unresolved_local_calls cac_vs_main; do grep -q "\"id\":\"$c\",\"ok\":true" "$OUT/self_check.json" || { echo "FAIL: self_check $c"; fail=1; }; done
 grep -q '9fcd25a0-4822-11d4-9414-008048da11f9' "$E/Configuration.xml" || { echo "FAIL: platform ClassId"; fail=1; }
 grep -q '^Процедура Своя()\|^Функция НоваяУП()' "$E/Documents/Счет/Ext/ObjectModule.bsl" "$E/Catalogs/Банки/Ext/ObjectModule.bsl" && { echo "FAIL: новый метод скопирован повторно"; fail=1; }
 grep -q '<NamePrefix>УП_</NamePrefix>' "$E/Configuration.xml" || { echo "FAIL: NamePrefix"; fail=1; }
+grep -q '<CompatibilityMode>' "$E/Configuration.xml" && { echo "FAIL: extension must not have CompatibilityMode"; fail=1; }
+grep -q '<ConfigurationExtensionCompatibilityMode>Version8_3_24</ConfigurationExtensionCompatibilityMode>' "$E/Configuration.xml" || { echo "FAIL: extension ConfigurationExtensionCompatibilityMode"; fail=1; }
+# порядок как в выгрузках расширений: KeepMapping < ConfigurationExtensionCompatibilityMode < Version
+ord=$(grep -n -o '<KeepMappingToExtendedConfigurationObjectsByIDs>\|<ConfigurationExtensionCompatibilityMode>\|<Version>' "$E/Configuration.xml" | cut -d: -f2 | tr -d '<>' | tr '\n' ' ')
+[ "$ord" = "KeepMappingToExtendedConfigurationObjectsByIDs ConfigurationExtensionCompatibilityMode Version " ] || { echo "FAIL: порядок ConfigurationExtensionCompatibilityMode: $ord"; fail=1; }
 grep -q 'ChildObjects' "$E/CommonModules/ХукНабор.xml" && { echo "FAIL: CommonModule ChildObjects"; fail=1; }
 grep -q 'InternalInfo' "$E/CommonModules/ХукНабор.xml" && { echo "FAIL: CommonModule InternalInfo"; fail=1; }
 grep -q 'xr:GeneratedType' "$E/Catalogs/Банки.xml" || { echo "FAIL: Catalog InternalInfo"; fail=1; }

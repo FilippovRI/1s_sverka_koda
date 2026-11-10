@@ -20,7 +20,7 @@
 М = Новый Массив;
 Сводка = Новый Структура("counts", Новый Структура("manual", 1));
 Р = Сам.ПроверитьКаталогВыхода(ОбъединитьПути(Корень, "tests/fixtures/UP/out_missing"), М, Сводка);
-П(Р.categories.Количество() = 8, "eight categories");
+П(Р.categories.Количество() = 9, "nine categories");
 
 // ClassId шаблона InternalInfo — ровно платформенные константы (ObjectId меняются, ClassId — никогда).
 Эталон = Новый Соответствие;
