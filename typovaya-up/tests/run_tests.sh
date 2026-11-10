@@ -41,6 +41,7 @@ diff -qr "$OUT/extension" "$OUTA/extension" >/dev/null || { echo "FAIL: --parser
 grep -q '"failed":0' "$OUTA/ast_check.json" || { echo "FAIL: ast_check.json"; cat "$OUTA/ast_check.json"; fail=1; }
 grep -q '"bsparser":{"astCheck"' "$OUTA/razbor_moduley.html" || { echo "FAIL: bsparser section in html"; fail=1; }
 grep -q 'bsparser: модулей сравнено по дереву разбора' "$OUTA/log.txt" || { echo "FAIL: bsparser log"; fail=1; }
+grep -q 'bsparser: самые медленные модули сравнения' "$OUTA/log.txt" && grep -q 'фрагментов методов разобрано' "$OUTA/log.txt" || { echo "FAIL: bsparser timings log"; fail=1; }
 grep -q '"parser":"bsparser"' "$OUT/summary.json" "$OUT/razbor_moduley.html" && { echo "FAIL: old route marked bsparser"; fail=1; }
 $OS src/Главный.os -и tests/fixtures/UP -п tests/fixtures/BP --parser нет -в "$OUTA/x" >/dev/null; [ $? -eq 1 ] || { echo "FAIL: --parser bad value"; fail=1; }
 rm -rf "$OUTA"
