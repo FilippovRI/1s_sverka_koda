@@ -5,6 +5,7 @@ $OS src/Главный.os >/dev/null; [ $? -eq 1 ] || { echo "FAIL: без ар�
 $OS tests/test_hooks.os || { echo "FAIL: unit hooks"; fail=1; }
 $OS tests/test_parse.os || { echo "FAIL: unit parse"; fail=1; }
 $OS tests/test_ast.os || { echo "FAIL: unit ast"; fail=1; }
+$OS tests/test_ast_route.os || { echo "FAIL: unit ast route"; fail=1; }
 $OS tests/test_transfer.os || { echo "FAIL: unit transfer"; fail=1; }
 $OS tests/test_cac_multiline.os || { echo "FAIL: unit CAC multiline"; fail=1; }
 $OS tests/test_token_line.os || { echo "FAIL: unit token line"; fail=1; }
@@ -38,6 +39,9 @@ OUTA=$(mktemp -d)
 $OS src/Главный.os -и tests/fixtures/UP -п tests/fixtures/BP -н tests/fixtures/merge.xml --parser bsparser -в "$OUTA" >/dev/null || { echo "FAIL: main --parser bsparser"; fail=1; }
 diff -qr "$OUT/extension" "$OUTA/extension" >/dev/null || { echo "FAIL: --parser bsparser changed extension"; fail=1; }
 grep -q '"failed":0' "$OUTA/ast_check.json" || { echo "FAIL: ast_check.json"; cat "$OUTA/ast_check.json"; fail=1; }
+grep -q '"bsparser":{"astCheck"' "$OUTA/razbor_moduley.html" || { echo "FAIL: bsparser section in html"; fail=1; }
+grep -q 'bsparser: модулей сравнено по дереву разбора' "$OUTA/log.txt" || { echo "FAIL: bsparser log"; fail=1; }
+grep -q '"parser":"bsparser"' "$OUT/summary.json" "$OUT/razbor_moduley.html" && { echo "FAIL: old route marked bsparser"; fail=1; }
 $OS src/Главный.os -и tests/fixtures/UP -п tests/fixtures/BP --parser нет -в "$OUTA/x" >/dev/null; [ $? -eq 1 ] || { echo "FAIL: --parser bad value"; fail=1; }
 rm -rf "$OUTA"
 OUTT=$(mktemp -d)
