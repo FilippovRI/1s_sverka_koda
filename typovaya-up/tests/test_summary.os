@@ -13,4 +13,12 @@
 П(Св.counts.auto = 1, "auto count");
 П(Св.hooks.after = 1, "hook after");
 П(Св.paths.identical.Количество() = 1, "paths list");
+// Раздел «Ручной разбор (bsparser)» — отдельная свёрнутая полоса между шапкой и деревом, не внутри flex-шапки
+Т = Новый ТекстовыйДокумент;
+Т.Прочитать(ОбъединитьПути(Корень, "src", "шаблон.html"), КодировкаТекста.UTF8);
+Шаб = Т.ПолучитьТекст();
+П(СтрНайти(Шаб, "getElementById(""main"").insertAdjacentHTML(""beforebegin""") > 0, "bsparser-раздел перед #main");
+П(СтрНайти(Шаб, "getElementById(""meta"").insertAdjacentHTML") = 0, "bsparser-раздел не в шапке");
+П(СтрНайти(Шаб, "#bsparser{flex:none") > 0 И СтрНайти(Шаб, "max-height:35vh;overflow:auto") > 0, "bsparser-раздел ограничен по высоте");
+П(СтрНайти(Шаб, "<details id=""bsparser""><summary>") > 0, "bsparser-раздел свёрнут по умолчанию");
 Если Ошибок = 0 Тогда Сообщить("OK: сводка"); Иначе ЗавершитьРаботу(1); КонецЕсли;
