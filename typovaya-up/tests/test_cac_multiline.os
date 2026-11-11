@@ -125,7 +125,7 @@
 Если П6.hook = "changeAndControl" Тогда
 	П(Синтез.ПроверитьЦелостностьТелаИк(П6.hookBody), "multiline call integrity");
 Иначе
-	П(П6.hook = "instead", "multiline call fallback instead");
+	П(Ложь, "multiline call: ожидался ИиК, получен " + П6.hook);
 КонецЕсли;
 
 ТелоЦ = Т("	Р = А.|" + "		Б(|" + "			1);");
