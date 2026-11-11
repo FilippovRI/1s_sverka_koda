@@ -7,6 +7,9 @@
 Ошибок = 0;
 Пред = Новый Структура("hook, hookBody, decision, reason, insteadAppendContinue", "after", "X=1;", "auto", "", Ложь);
 Пред = Син.СкорректироватьХукДляФункции(Пред, "Возврат 0;", "X=1;" + Символы.ПС + "Возврат 0;");
-П(Пред.hook = "instead" Или Пред.hook = "changeAndControl", "function not before/after: " + Пред.hook);
+П(Пред.hook = "changeAndControl", "function not before/after: " + Пред.hook);
+Пред = Новый Структура("hook, hookBody, decision, reason, insteadAppendContinue", "before", "X=1;", "auto", "", Ложь);
+Пред = Син.СкорректироватьХукДляФункции(Пред, "Возврат 0;", "X=1;" + Символы.ПС + "Y=2;" + Символы.ПС + "Возврат 0;");
+П(Пред.hook <> "instead" И Пред.hook <> "before", "функция: &Вместо не выводится: " + Пред.hook);
 
 Если Ошибок = 0 Тогда Сообщить("OK: function hooks"); Иначе ЗавершитьРаботу(1); КонецЕсли;

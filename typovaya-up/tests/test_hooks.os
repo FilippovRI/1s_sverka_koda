@@ -47,15 +47,13 @@
 	Проверить(СтрНайти(П.hookBody, "#Удаление") > 0, "Delete marker");
 
 	П = Синтез.ПредложитьХук(ТелоИз("А = 1;|Б = 2;"), ТелоИз("Х = 9;|У = 8;"));
-	Проверить(П.decision = "auto" И П.hook = "instead", "Instead: " + П.decision + "/" + П.hook);
+	Проверить(П.decision = "auto" И П.hook = "changeAndControl" И СтрНачинаетсяС(П.hookBody, "#Удаление"), "Полная замена через ИиК: " + П.decision + "/" + П.hook);
 
 	П = Синтез.ПредложитьХук("", "А = 1;");
 	Проверить(П.decision = "manual" И П.hook = "none", "Empty typical: " + П.decision + "/" + П.hook);
 
 	П = Синтез.ПредложитьХук("А = 1;", "Х = 1;" + Символы.ПС + "ПродолжитьВызов();" + Символы.ПС + "У = 2;");
-	Проверить(П.decision = "auto" И П.hook = "instead", "Proceed Instead");
-	Проверить(СтрНайти(П.hookBody, "ПродолжитьВызов") > 0, "Proceed preserved in hookBody");
-	Проверить(Не П.insteadAppendContinue, "no append continue in draft");
+	Проверить(П.decision = "manual" И П.hook = "none", "ПродолжитьВызов -> manual: " + П.decision + "/" + П.hook);
 
 	Полный = "Процедура Т()" + Символы.ПС + "	А = 1;" + Символы.ПС + "КонецПроцедуры";
 	ТелоМ = Разбор.ИзвлечьТелоМетода(Полный);

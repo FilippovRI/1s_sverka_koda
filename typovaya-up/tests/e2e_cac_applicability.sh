@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # E2E (синтетика): реальная генерация с #Если в типовом и доработкой, зависящей от модуля только БП.
-# Проверяет: доработка не теряется (&Вместо в extension, а не разрезанный CAC); keptSourceBody —
+# Проверяет: &Вместо в extension нет; тело с #Если не режется CAC и уходит на ручной разбор (доработка остаётся в restored); keptSourceBody —
 # доработка осталась в restored; cac_vs_main сверяет с restored, а не со старым up-typical.
 set -uo pipefail; cd "$(dirname "$0")/.."; OS=${OSCRIPT:-oscript}; T=$(mktemp -d); fail=0
 cp -r tests/fixtures/UP tests/fixtures/BP "$T/"
@@ -56,9 +56,9 @@ echo "// устаревший up-typical прошлого прогона" > "$O/
 $OS src/Главный.os -и "$T/UP" -п "$T/BP" -н tests/fixtures/merge.xml --без-отчета -в "$O" >/dev/null || { echo "FAIL: e2e run"; fail=1; }
 X="$O/extension/CommonModules/ХукНабор/Ext/Module.bsl"; R="$O/restored/CommonModules/ХукНабор/Ext/Module.bsl"
 grep -q '&ИзменениеИКонтроль("ПериодОжидания")' "$X" && { echo "FAIL: e2e #Если разрезан CAC"; fail=1; }
-grep -q '&Вместо("ПериодОжидания")' "$X" || { echo "FAIL: e2e нет &Вместо для #Если"; fail=1; }
-grep -A8 '&Вместо("ПериодОжидания")' "$X" | grep -q 'Если ЭтоВеб() Тогда' || { echo "FAIL: e2e доработка #Если потеряна"; fail=1; }
-grep -q '#Если ВебКлиент Тогда' "$R" || { echo "FAIL: e2e restored без типового #Если"; fail=1; }
+grep -q '&Вместо(' "$X" && { echo "FAIL: e2e &Вместо в extension"; fail=1; }
+grep -q 'ПериодОжидания' "$X" && { echo "FAIL: e2e хук для тела с #Если (должен быть ручной разбор)"; fail=1; }
+grep -A8 'Функция ПериодОжидания' "$R" | grep -q 'Если ЭтоВеб() Тогда' || { echo "FAIL: e2e доработка #Если не осталась в restored"; fail=1; }
 grep -q 'СМодулемБп' "$X" && { echo "FAIL: e2e хук при теле УП в restored"; fail=1; }
 grep -A4 'Процедура СМодулемБп' "$R" | grep -q 'Б = 2;' || { echo "FAIL: e2e доработка СМодулемБп не осталась в restored"; fail=1; }
 grep -q 'СМодулемБп — доработка УП ОСТАЛАСЬ в основной' "$O/log.txt" || { echo "FAIL: e2e лог keptSourceBody"; fail=1; }
