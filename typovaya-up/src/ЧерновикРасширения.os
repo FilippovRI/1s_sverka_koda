@@ -39,7 +39,8 @@
 
 Процедура ИнициализироватьПравилаXml()
 	ТипыБезChildObjects = Новый Соответствие;
-	Для Каждого Т Из СтрРазделить("CommonModule,Language,CommonCommand,Constant,Subsystem,Role,CommonPicture,StyleItem,CommonForm", ",") Цикл
+	Для Каждого Т Из СтрРазделить("CommonModule,Language,CommonCommand,Constant,Subsystem,Role,CommonPicture,StyleItem,CommonForm,"
+		+ "DefinedType,FunctionalOption,CommandGroup,SettingsStorage", ",") Цикл
 		ТипыБезChildObjects.Вставить(Т, Истина);
 	КонецЦикла;
 	ТипыБезInternalInfo = Новый Соответствие;
@@ -115,10 +116,14 @@
 
 	Если КореньПоставщика <> "" Тогда
 		ЗаписатьЗапросыДинСписков(КореньИсходной, КореньПоставщика, КаталогРасш, КаталогВосст, Объекты, ИмяРасширения, Выход, Раздел, Итог, Лог);
+		ПеренестиОбъектыТолькоУп(КореньИсходной, КореньПоставщика, КаталогРасш, КаталогВосст, Объекты, ИмяРасширения, Выход, Итог, Лог);
 	КонецЕсли;
 
 	Для Каждого КЗ Из Объекты Цикл
 		О = КЗ.Значение;
+		Если О.Свойство("ЗаписанВручную") Тогда
+			Продолжить; // собственный объект расширения / роль / подсистема — XML уже записан
+		КонецЕсли;
 		ПутьИсх = ОбъединитьПути(КореньИсходной, О.Папка, О.Имя + ".xml");
 		ДанныеОб = Новый Структура("Тип, Имя, СвойUuid, БазовыйUuid, ПутьИсходногоXml, Команды, Формы",
 			О.Тип, О.Имя, ДетерминированныйUuid(ИмяРасширения + Символы.ПС + КЗ.Ключ + Символы.ПС + "object"), О.Уид, ПутьИсх, О.Команды, О.Формы);
@@ -139,6 +144,21 @@
 	Возврат Итог;
 
 КонецФункции
+
+// Объекты «только в УП»: общие модули, обработки, отчёты, формы УП у типовых объектов — собственными объектами
+// расширения (ОбъектыТолькоУп.Анализ решает, ПереносОбъектовУп пишет). Итог — в Итог.uponly.
+Процедура ПеренестиОбъектыТолькоУп(КореньИсходной, КореньПоставщика, КаталогРасш, КаталогВосст, Объекты, ИмяРасширения, Выход, Итог, Лог) Экспорт
+	ОТУ = ЗагрузитьСценарий(ОбъединитьПути(ТекущийСценарий().Каталог, "ОбъектыТолькоУп.os"));
+	Пер = ЗагрузитьСценарий(ОбъединитьПути(ТекущийСценарий().Каталог, "ПереносОбъектовУп.os"));
+	Пер.Инициализировать(ЭтотОбъект, ОТУ);
+	Уже = Новый Соответствие;
+	Для Каждого КЗ Из Объекты Цикл
+		Уже.Вставить(КЗ.Ключ, Истина);
+	КонецЦикла;
+	Ан = ОТУ.Анализ(КореньИсходной, КореньПоставщика, КаталогВосст, Лог, Уже);
+	ИтогП = Пер.Перенести(Ан, КореньИсходной, КаталогРасш, КаталогВосст, Объекты, ИмяРасширения, Выход, Итог, Лог);
+	Итог.Вставить("uponly", ОТУ.ЗаписатьОтчёт(Ан, Выход, Лог, ИтогП));
+КонецПроцедуры
 
 // Задача 6: запросы динамических списков. Form.xml restored — запрос БП; в заимствованной форме
 // собственный обработчик ПриСозданииНаСервере (callType="Before") ставит запрос УП, если типовой не изменился.
@@ -283,7 +303,7 @@
 		Папка, Тип, ИмяОбъекта, ИмяКоманды, ЭтоКоманда, Тип + "." + ИмяОбъекта, ИмяФормы, ЭтоФорма, ЭтоОбщаяФорма);
 КонецФункции
 
-Функция ЗарегистрироватьОбъект(Объекты, Контекст, КореньИсходной, ИмяРасширения, Итог, Лог)
+Функция ЗарегистрироватьОбъект(Объекты, Контекст, КореньИсходной, ИмяРасширения, Итог, Лог) Экспорт
 	Объект = Объекты.Получить(Контекст.КлючОбъекта);
 	Если Объект <> Неопределено Тогда
 		Возврат Объект;
@@ -299,7 +319,7 @@
 	Возврат Объект;
 КонецФункции
 
-Процедура ЗарегистрироватьКоманду(Объект, Контекст, КореньИсходной, ИмяРасширения, Итог, Лог, ПутьМодуля)
+Процедура ЗарегистрироватьКоманду(Объект, Контекст, КореньИсходной, ИмяРасширения, Итог, Лог, ПутьМодуля) Экспорт
 	Если Объект.ИменаКоманд.Найти(НРег(Контекст.ИмяКоманды)) <> Неопределено Тогда
 		Возврат;
 	КонецЕсли;
@@ -963,7 +983,7 @@
 
 // ---------- XML ----------
 
-Функция ЗаголовокXml()
+Функция ЗаголовокXml() Экспорт
 	// Формат выгрузки 2.21; xmlns:pal нужен для некоторых узлов InternalInfo (совместимость с ibcmd 8.5+).
 	Возврат "<?xml version=""1.0"" encoding=""UTF-8""?>
 	|<MetaDataObject xmlns=""http://v8.1c.ru/8.3/MDClasses"" xmlns:app=""http://v8.1c.ru/8.2/managed-application/core"" xmlns:cfg=""http://v8.1c.ru/8.1/data/enterprise/current-config"" xmlns:cmi=""http://v8.1c.ru/8.2/managed-application/cmi"" xmlns:ent=""http://v8.1c.ru/8.1/data/enterprise"" xmlns:lf=""http://v8.1c.ru/8.2/managed-application/logform"" xmlns:pal=""http://v8.1c.ru/8.3/xcf/extrnprops"" xmlns:style=""http://v8.1c.ru/8.1/data/ui/style"" xmlns:sys=""http://v8.1c.ru/8.1/data/ui/fonts/system"" xmlns:v8=""http://v8.1c.ru/8.1/data/core"" xmlns:v8ui=""http://v8.1c.ru/8.1/data/ui"" xmlns:web=""http://v8.1c.ru/8.1/data/ui/colors/web"" xmlns:win=""http://v8.1c.ru/8.1/data/ui/colors/windows"" xmlns:xen=""http://v8.1c.ru/8.3/xcf/enums"" xmlns:xpr=""http://v8.1c.ru/8.3/xcf/predef"" xmlns:xr=""http://v8.1c.ru/8.3/xcf/readable"" xmlns:xs=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" version=""2.21"">";
@@ -1134,7 +1154,7 @@
 // Ext/Form.xml «чистого заимствования» (свойства формы, пустая командная панель, пустые Attributes и
 // BaseForm — та же копия). Модуль формы с хуками &ИзменениеИКонтроль пишет ЗаписатьТелоМодуля.
 // Визуальная часть формы остаётся в основной конфигурации (Form.xml УП).
-Процедура ЗаписатьЗаимствованнуюФорму(Объект, Контекст, КореньИсходной, КаталогРасш, ИмяРасширения, Итог, Лог)
+Процедура ЗаписатьЗаимствованнуюФорму(Объект, Контекст, КореньИсходной, КаталогРасш, ИмяРасширения, Итог, Лог) Экспорт
 	Если Контекст.ЭтоФорма Тогда
 		Если Объект.Формы.Найти(Контекст.ИмяФормы) <> Неопределено Тогда
 			Возврат;
@@ -1301,6 +1321,12 @@
 	Т.Добавить("			<ObjectBelonging>Adopted</ObjectBelonging>");
 	Т.Добавить("			<Name>" + Экранировать(Данные.Имя) + "</Name>");
 	Т.Добавить("			<ExtendedConfigurationObject>" + Экранировать(Данные.БазовыйUuid) + "</ExtendedConfigurationObject>");
+	Если Тип = "StyleItem" И Данные.ПутьИсходногоXml <> "" Тогда
+		ТипЭл = ИзвлечьБлокXml(Данные.ПутьИсходногоXml, "Type");
+		Т.Добавить("			" + ?(ТипЭл = "", "<Type>Color</Type>", СокрЛП(ТипЭл)));
+	ИначеЕсли Тип = "DefinedType" Тогда
+		Т.Добавить("			<Type/>");
+	КонецЕсли;
 	Если Тип = "CommonForm" Тогда
 		Т.Добавить("			<FormType>Managed</FormType>");
 	КонецЕсли;
@@ -1428,7 +1454,7 @@
 	СоздатьКаталог(Путь);
 КонецПроцедуры
 
-Функция ДетерминированныйUuid(Строка)
+Функция ДетерминированныйUuid(Строка) Экспорт
 	Хеш = Новый ХешированиеДанных(ХешФункция.MD5);
 	Хеш.Добавить(Строка);
 	Х = НРег(Хеш.ХешСуммаСтрокой);
@@ -1462,6 +1488,9 @@
 	Возврат СтрЗаменить(З, """", "&quot;");
 КонецФункции
 
-ПорядокТипов = СтрРазделить("Subsystem,CommonModule,ExchangePlan,WebService,HTTPService,SettingsStorage,CommonForm,CommonCommand,Constant,Catalog,Document,"
-	+ "DocumentJournal,Enum,Report,DataProcessor,InformationRegister,AccumulationRegister,AccountingRegister,CalculationRegister,"
-	+ "ChartOfCharacteristicTypes,ChartOfAccounts,ChartOfCalculationTypes,BusinessProcess,Task", ",");
+ПорядокТипов = СтрРазделить("Subsystem,StyleItem,Style,CommonPicture,SessionParameter,Role,CommonTemplate,FilterCriterion,CommonModule,"
+	+ "CommonAttribute,ExchangePlan,XDTOPackage,WebService,HTTPService,WSReference,EventSubscription,ScheduledJob,SettingsStorage,"
+	+ "FunctionalOption,FunctionalOptionsParameter,DefinedType,CommonCommand,CommandGroup,Constant,CommonForm,Catalog,Document,"
+	+ "DocumentNumerator,Sequence,DocumentJournal,Enum,Report,DataProcessor,InformationRegister,AccumulationRegister,"
+	+ "ChartOfCharacteristicTypes,ChartOfAccounts,AccountingRegister,ChartOfCalculationTypes,CalculationRegister,BusinessProcess,Task,"
+	+ "ExternalDataSource,IntegrationService", ",");
