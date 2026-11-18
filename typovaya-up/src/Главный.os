@@ -417,6 +417,19 @@
 	Сводка.Вставить("formsCheck", Новый Структура("formModules, adoptedForms, withMissingHandlers",
 		Рф.formModules, Рф.adoptedForms, Рф.withMissingHandlers));
 	ЗавершитьШаг();
+	НачатьШаг("dynlistCheck", "Динамические списки: поля DataPath есть в запросе/основной таблице (restored, extension)");
+	ДСп = Загрузить("ЗапросыДинСписков");
+	Рдр = ДСп.ПроверитьКаталог(ОбъединитьПути(П.out, "restored"), Исходная.Корень, Исходная.Корень);
+	Рдх = ДСп.ПроверитьКаталог(ОбъединитьПути(П.out, "extension"), Исходная.Корень, Исходная.Корень);
+	Отчет.ЗаписатьФайл(ОбъединитьПути(П.out, "dynlist_check.json"), Отчет.ВJSON(Новый Структура("restored, extension", Рдр, Рдх)));
+	Лог.Добавить("Динамические списки: форм restored " + Рдр.forms + ", списков " + Рдр.lists + ", с неверными путями к данным/запросом вне метаданных УП " + Рдр.bad
+		+ "; extension " + Рдх.forms + "/" + Рдх.lists + ", неверных " + Рдх.bad + " — dynlist_check.json");
+	Для Каждого Э Из Рдр.items Цикл
+		Лог.Добавить("  ОШИБКА dynlist restored: " + Э.form + " / " + Э.list + ": поля " + СтрСоединить(Э.missingFields, ", ") + "; запрос " + СтрСоединить(Э.queryProblems, ", "));
+	КонецЦикла;
+	Сводка.Вставить("dynlistCheck", Новый Структура("forms, lists, bad, extensionForms, extensionLists, extensionBad",
+		Рдр.forms, Рдр.lists, Рдр.bad, Рдх.forms, Рдх.lists, Рдх.bad));
+	ЗавершитьШаг();
 	Если П.parser = "bsparser" Тогда
 		НачатьШаг("astCheck", "bsparser: контроль хуков &ИзменениеИКонтроль");
 		Рх = Аст.ПроверитьХукиКаталога(ОбъединитьПути(П.out, "extension"));
