@@ -135,6 +135,15 @@
 		Возврат Неопределено;
 	КонецЕсли;
 	База = Каталог + "\" + Части[1];
+	Если Свойство = "Form" Тогда
+		// модуль управляемой формы: общая форма или форма объекта
+		Если Части.Количество() = 2 И Части[0] = "CommonForm" Тогда
+			Возврат База + "\Ext\Form\Module.bsl";
+		ИначеЕсли Части.Количество() = 4 И Части[2] = "Form" Тогда
+			Возврат База + "\Forms\" + Части[3] + "\Ext\Form\Module.bsl";
+		КонецЕсли;
+		Возврат Неопределено;
+	КонецЕсли;
 	Если Части.Количество() = 2 Тогда
 		Возврат База + "\Ext\" + Свойство + ".bsl";
 	ИначеЕсли Части.Количество() = 4 И Части[2] = "Command" Тогда
@@ -168,4 +177,4 @@
 	КаталогиТипов.Вставить(КЗ[0], КЗ[1]);
 КонецЦикла;
 СвойстваМодулей = СтрРазделить("Module,ManagerModule,ObjectModule,CommandModule,RecordSetModule,ValueManagerModule,"
-	+ "ManagedApplicationModule,OrdinaryApplicationModule,SessionModule,ExternalConnectionModule", ",");
+	+ "ManagedApplicationModule,OrdinaryApplicationModule,SessionModule,ExternalConnectionModule,Form", ",");

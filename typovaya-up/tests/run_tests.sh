@@ -4,6 +4,8 @@ set -uo pipefail; cd "$(dirname "$0")/.."; OS=${OSCRIPT:-oscript}; OUT=$(mktemp 
 $OS src/Главный.os >/dev/null; [ $? -eq 1 ] || { echo "FAIL: без аргументов код должен быть 1"; fail=1; }
 $OS tests/test_hooks.os || { echo "FAIL: unit hooks"; fail=1; }
 $OS tests/test_parse.os || { echo "FAIL: unit parse"; fail=1; }
+$OS tests/test_preproc_wrap.os || { echo "FAIL: unit preproc wrap"; fail=1; }
+$OS tests/test_module_preproc_wrap.os || { echo "FAIL: unit module preproc wrap"; fail=1; }
 $OS tests/test_ast.os || { echo "FAIL: unit ast"; fail=1; }
 $OS tests/test_ast_route.os || { echo "FAIL: unit ast route"; fail=1; }
 $OS tests/test_transfer.os || { echo "FAIL: unit transfer"; fail=1; }
@@ -17,8 +19,12 @@ $OS tests/test_self_check.os || { echo "FAIL: unit self check"; fail=1; }
 $OS tests/test_ibcmd_extension.os || { echo "FAIL: unit ibcmd extension"; fail=1; }
 $OS tests/test_extension_helpers.os || { echo "FAIL: unit extension helpers"; fail=1; }
 $OS tests/test_restored_refs.os || { echo "FAIL: unit restored refs"; fail=1; }
+$OS tests/test_reverse_build.os || { echo "FAIL: unit reverse build"; fail=1; }
 $OS tests/test_function_hooks.os || { echo "FAIL: unit function hooks"; fail=1; }
 $OS tests/test_contracts.os || { echo "FAIL: unit contracts"; fail=1; }
+$OS tests/test_signature_transfer.os || { echo "FAIL: unit signature transfer"; fail=1; }
+$OS tests/test_arity_unresolved.os || { echo "FAIL: unit arity/unresolved"; fail=1; }
+$OS tests/test_dynlist.os || { echo "FAIL: unit dynlist"; fail=1; }
 $OS tests/test_draft.os || { echo "FAIL: unit draft"; fail=1; }
 $OS tests/test_xml.os || { echo "FAIL: unit xml"; fail=1; }
 $OS tests/test_forms.os || { echo "FAIL: unit forms"; fail=1; }
@@ -69,7 +75,8 @@ grep -q "$exp" "$OUT/summary.json" || { echo "FAIL: корзины"; cat "$OUT/s
 grep -q '"after":1' "$OUT/summary.json" || { echo "FAIL: hooks.after"; cat "$OUT/summary.json"; fail=1; }
 grep -q '"before":1' "$OUT/summary.json" || { echo "FAIL: hooks.before"; fail=1; }
 grep -q 'changeAndControl' "$OUT/summary.json" || { echo "FAIL: hooks.changeAndControl"; fail=1; }
-grep -q 'Forms' "$OUT/summary.json" && { echo "FAIL: формы не исключены"; fail=1; }
+# Задача 4: в периметр входят только модули форм (Forms/*/Ext/Form/Module.bsl); Form.xml и макеты — нет.
+grep -qE 'Form\.xml|Templates' "$OUT/summary.json" && { echo "FAIL: в сравнение попали Form.xml/макеты"; fail=1; }
 grep -q '"name":"Старая","kind":"Процедура","status":"removed"' "$OUT/razbor_moduley.html" || { echo "FAIL: удалённый метод"; fail=1; }
 grep -q '&После\|\\u0026После\|after' "$OUT/razbor_moduley.html" || { echo "FAIL: badge after in html"; fail=1; }
 $OS src/Главный.os --source tests/fixtures/UP --vendor tests/fixtures/BP --out "$OUT/all" || { echo "FAIL: no settings"; fail=1; }
