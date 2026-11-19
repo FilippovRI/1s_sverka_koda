@@ -37,6 +37,7 @@ $OS tests/test_forms.os || { echo "FAIL: unit forms"; fail=1; }
 $OS tests/test_forms_preview.os || { echo "FAIL: unit forms preview"; fail=1; }
 $OS tests/test_forms_transfer.os || { echo "FAIL: unit forms transfer"; fail=1; }
 $OS tests/test_forms_restored.os || { echo "FAIL: unit forms restored"; fail=1; }
+$OS tests/test_form_meta.os || { echo "FAIL: unit form meta"; fail=1; }
 $OS tests/test_skeleton.os || { echo "FAIL: unit skeleton"; fail=1; }
 $OS tests/test_meta.os || { echo "FAIL: unit meta"; fail=1; }
 $OS tests/test_settings.os || { echo "FAIL: unit settings"; fail=1; }
