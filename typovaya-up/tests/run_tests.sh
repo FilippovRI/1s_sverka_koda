@@ -26,6 +26,7 @@ $OS tests/test_signature_transfer.os || { echo "FAIL: unit signature transfer"; 
 $OS tests/test_arity_unresolved.os || { echo "FAIL: unit arity/unresolved"; fail=1; }
 $OS tests/test_dynlist.os || { echo "FAIL: unit dynlist"; fail=1; }
 $OS tests/test_ext_forms.os || { echo "FAIL: unit ext forms"; fail=1; }
+$OS tests/test_task10.os || { echo "FAIL: unit task10"; fail=1; }
 $OS tests/test_uponly.os || { echo "FAIL: unit uponly"; fail=1; }
 $OS tests/test_draft.os || { echo "FAIL: unit draft"; fail=1; }
 $OS tests/test_xml.os || { echo "FAIL: unit xml"; fail=1; }
