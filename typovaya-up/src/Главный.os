@@ -28,6 +28,8 @@
 	|  --без-синтаксиса             не проверять модули extension/restored через bsparser (self_check syntax_errors)
 	|  --синтаксис-лимит N          проверить не больше N модулей (0 — все; ~1–3 тыс. строк/с)
 	|  --парсер, --parser          old (по умолчанию) | bsparser: отбор изменённых методов и сигнатуры по дереву bsparser, контроль хуков ИиК (ast_check.json)
+	|  --лог-проверки, --check-log  лог CheckConfig основной: методы БП с ошибками компиляции -> заглушки (stubbed_methods.json)
+	|  --корень-проверки            каталог, загруженный в базу при проверке (номера строк лога; по умолчанию <выход>\restored)
 	|  --ibcmd-загрузка             (opt-in) загрузить черновик в ИБ через ibcmd 8.5+
 	|  --ibcmd-план                только план команд (без ibcmd import/apply)
 	|  --ibcmd-путь                путь к ibcmd.exe (по умолчанию ibcmd в PATH)
@@ -58,6 +60,7 @@
 		+ "--без-отчета:__flag_no_report,--no-report:__flag_no_report,--только-отчет:__flag_report_only,--report-only:__flag_report_only,"
 		+ "--парсер:parser,--parser:parser,--без-синтаксиса:__flag_no_syntax,--no-syntax:__flag_no_syntax,--синтаксис-лимит:syntaxLimit,--syntax-limit:syntaxLimit,"
 		+ "--проверить-скелет:skeleton,--validate-skeleton:skeleton,"
+		+ "--лог-проверки:checkLog,--check-log:checkLog,--корень-проверки:checkRoot,--check-root:checkRoot,"
 		+ "--ibcmd-загрузка:__flag_ibcmd,--ibcmd-load:__flag_ibcmd,"
 		+ "--ibcmd-план:__flag_ibcmd_plan,--ibcmd-plan:__flag_ibcmd_plan,"
 		+ "--ibcmd-путь:ibcmdPath,--ibcmd-path:ibcmdPath,--ibcmd-база:ibcmdDb,--ibcmd-db:ibcmdDb,"
@@ -68,8 +71,8 @@
 		Синонимы.Вставить(КЗ[0], КЗ[1]);
 	КонецЦикла;
 	Результат = Новый Структура(
-		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, noReport, reportOnly, noSyntax, syntaxLimit, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, parser, errors",
-		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, "0", "", Ложь, Ложь, "", "", "", "", "", "", "", "", "old", Новый Массив);
+		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, noReport, reportOnly, noSyntax, syntaxLimit, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, parser, checkLog, checkRoot, errors",
+		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, "0", "", Ложь, Ложь, "", "", "", "", "", "", "", "", "old", "", "", Новый Массив);
 	Й = 0;
 	Пока Й < Аргументы.Количество() Цикл
 		Ключ = Синонимы.Получить(НРег(Аргументы[Й]));
@@ -185,6 +188,28 @@
 		Ч.Добавить(КЗ.Ключ + "=" + Формат(КЗ.Значение, "ЧДЦ=1; ЧН=0; ЧРД=."));
 	КонецЦикла;
 	Возврат "Время по шагам, с: " + СтрСоединить(Ч, ", ");
+КонецФункции
+
+// Шаг stubbedMethods: методы БП, на которых основная не компилируется (лог CheckConfig, --лог-проверки),
+// глушатся в restored; хуки &ИзменениеИКонтроль расширения переписываются под заглушку. Номера строк
+// лога — по каталогу --корень-проверки (что было загружено в базу; по умолчанию restored). stubbed_methods.json.
+Функция ЗаглушитьМетодыБпПоЛогу(П, КореньБп, Лог) Экспорт
+	Зм = Загрузить("ЗаглушкиМетодовБп");
+	Зм.Инициализировать(Загрузить("РазборМетодов"));
+	КаталогВосст = ОбъединитьПути(П.out, "restored");
+	КореньПроверки = ?(П.checkRoot = "", КаталогВосст, П.checkRoot);
+	ФЛог = Зм.ПрочитатьФайл(П.checkLog);
+	Ошибки = ?(ФЛог = Неопределено, Новый Массив, Зм.ОшибкиОсновнойИзЛога(ФЛог.Текст));
+	Отбор = Зм.Отобрать(Ошибки, КореньПроверки, КореньБп);
+	Ит = Зм.Применить(Отбор, КаталогВосст, КореньБп, ОбъединитьПути(П.out, "extension"));
+	Загрузить("ОтчетHTML").ЗаписатьФайл(ОбъединитьПути(П.out, "stubbed_methods.json"), Загрузить("ОтчетHTML").ВJSON(
+		Новый Структура("count, stubbed, already, notVendor, hooksRewritten, items, skipped",
+		Отбор.items.Количество(), Ит.stubbed, Ит.already, Ит.notVendor, Ит.hooksRewritten, Отбор.items, Отбор.skipped)));
+	Лог.Добавить("Заглушки методов БП по логу проверки: ошибок основной " + Ошибки.Количество() + ", методов " + Отбор.items.Количество()
+		+ " (заглушено " + Ит.stubbed + ", уже " + Ит.already + ", хуков ИиК переписано " + Ит.hooksRewritten
+		+ "), пропущено " + Отбор.skipped.Количество() + " — stubbed_methods.json");
+	Возврат Новый Структура("errors, methods, stubbed, hooksRewritten, skipped", Ошибки.Количество(), Отбор.items.Количество(),
+		Ит.stubbed, Ит.hooksRewritten, Отбор.skipped.Количество());
 КонецФункции
 
 Функция Загрузить(Имя)
@@ -445,6 +470,12 @@
 		Сводка.Вставить("bpStubs", Новый Структура("modules, methods, refModules, refLines", РзБп.modules.Количество(), РзБп.methods, СсБп.modules, СсБп.lines));
 	КонецЕсли;
 	ЗавершитьШаг();
+	Если П.checkLog <> "" И Поставщик.Корень <> "" Тогда
+		НачатьШаг("stubbedMethods", "Заглушки методов БП по логу проверки основной (объекты/реквизиты нет в УП)");
+		Рзм = ЗаглушитьМетодыБпПоЛогу(П, Поставщик.Корень, Лог);
+		Сводка.Вставить("stubbedMethods", Рзм);
+		ЗавершитьШаг();
+	КонецЕсли;
 	НачатьШаг("formsCheck", "Формы: модули restored (БП) против Form.xml основной (УП)");
 	Рф = Загрузить("ПроверкаФорм").Проверить(П.out, Исходная.Корень, Разбор);
 	Отчет.ЗаписатьФайл(ОбъединитьПути(П.out, "forms_check.json"), Отчет.ВJSON(Рф));
