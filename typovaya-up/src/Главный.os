@@ -30,6 +30,8 @@
 	|  --парсер, --parser          old (по умолчанию) | bsparser: отбор изменённых методов и сигнатуры по дереву bsparser, контроль хуков ИиК (ast_check.json)
 	|  --лог-проверки, --check-log  лог CheckConfig основной: методы БП с ошибками компиляции -> заглушки (stubbed_methods.json)
 	|  --корень-проверки            каталог, загруженный в базу при проверке (номера строк лога; по умолчанию <выход>\restored)
+	|  --без-кэша, --no-cache      не брать/не писать кэш шага compare (<выход>\cache\compare.json)
+	|  --полная-проверка, --full-check  bsparser (syntax, astCheck) по всем модулям, без кэша по хешам (<выход>\cache)
 	|  --ibcmd-загрузка             (opt-in) загрузить черновик в ИБ через ibcmd 8.5+
 	|  --ibcmd-план                только план команд (без ibcmd import/apply)
 	|  --ibcmd-путь                путь к ibcmd.exe (по умолчанию ibcmd в PATH)
@@ -61,6 +63,7 @@
 		+ "--парсер:parser,--parser:parser,--без-синтаксиса:__flag_no_syntax,--no-syntax:__flag_no_syntax,--синтаксис-лимит:syntaxLimit,--syntax-limit:syntaxLimit,"
 		+ "--проверить-скелет:skeleton,--validate-skeleton:skeleton,"
 		+ "--лог-проверки:checkLog,--check-log:checkLog,--корень-проверки:checkRoot,--check-root:checkRoot,"
+		+ "--без-кэша:__flag_no_cache,--no-cache:__flag_no_cache,--полная-проверка:__flag_full_check,--full-check:__flag_full_check,"
 		+ "--ibcmd-загрузка:__flag_ibcmd,--ibcmd-load:__flag_ibcmd,"
 		+ "--ibcmd-план:__flag_ibcmd_plan,--ibcmd-plan:__flag_ibcmd_plan,"
 		+ "--ibcmd-путь:ibcmdPath,--ibcmd-path:ibcmdPath,--ibcmd-база:ibcmdDb,--ibcmd-db:ibcmdDb,"
@@ -71,8 +74,8 @@
 		Синонимы.Вставить(КЗ[0], КЗ[1]);
 	КонецЦикла;
 	Результат = Новый Структура(
-		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, noReport, reportOnly, noSyntax, syntaxLimit, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, parser, checkLog, checkRoot, errors",
-		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, "0", "", Ложь, Ложь, "", "", "", "", "", "", "", "", "old", "", "", Новый Массив);
+		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, noReport, reportOnly, noSyntax, syntaxLimit, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, parser, checkLog, checkRoot, noCache, fullCheck, errors",
+		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, "0", "", Ложь, Ложь, "", "", "", "", "", "", "", "", "old", "", "", Ложь, Ложь, Новый Массив);
 	Й = 0;
 	Пока Й < Аргументы.Количество() Цикл
 		Ключ = Синонимы.Получить(НРег(Аргументы[Й]));
@@ -90,6 +93,10 @@
 			Результат.reportOnly = Истина;
 		ИначеЕсли Ключ = "__flag_no_syntax" Тогда
 			Результат.noSyntax = Истина;
+		ИначеЕсли Ключ = "__flag_no_cache" Тогда
+			Результат.noCache = Истина;
+		ИначеЕсли Ключ = "__flag_full_check" Тогда
+			Результат.fullCheck = Истина;
 		ИначеЕсли Ключ = "__flag_ibcmd" Тогда
 			Результат.ibcmdLoad = Истина;
 		ИначеЕсли Ключ = "__flag_ibcmd_plan" Тогда
@@ -324,11 +331,31 @@
 	КонецЕсли;
 
 	НачатьШаг("compare", "Сравнение модулей и синтез хуков/&ИзменениеИКонтроль");
-	Модули = Сравнение.СравнитьВыгрузки(Исходная, Поставщик, Периметр, Лог);
+	КэшП = Загрузить("КэшПроверок");
+	ПутьКэшаСр = ОбъединитьПути(П.out, "cache", "compare.json");
+	КлючСр = "";
+	Модули = Неопределено;
+	СтрокиBsparser = Неопределено;
+	Если Не П.noCache Тогда
+		КлючСр = КэшП.КлючСравнения(Исходная, Поставщик, П.settings, Каталог, П.parser);
+		Сохр = КэшП.ПрочитатьСравнение(ПутьКэшаСр, КлючСр);
+		Если Сохр <> Неопределено Тогда
+			Модули = Сохр.modules;
+			СтрокиBsparser = Сохр.bsparserReport;
+			Лог.Добавить("compare: результат взят из кэша " + ПутьКэшаСр + " (ключ совпал; отключить — --без-кэша)");
+		КонецЕсли;
+	КонецЕсли;
+	Если Модули = Неопределено Тогда
+		Модули = Сравнение.СравнитьВыгрузки(Исходная, Поставщик, Периметр, Лог);
+		СтрокиBsparser = Сравнение.ОтчетBsparser();
+		Если Не П.noCache Тогда
+			КэшП.ЗаписатьСравнение(ПутьКэшаСр, КлючСр, Модули, СтрокиBsparser);
+		КонецЕсли;
+	КонецЕсли;
 	Стат = СтатистикаBsparser(Модули);
 	Если Аст <> Неопределено Тогда
 		Лог.Добавить("bsparser: модулей сравнено по дереву разбора " + Стат.ast + ", откат на старый маршрут " + Стат.fallbacks.Количество());
-		Для Каждого Стр Из Сравнение.ОтчетBsparser() Цикл
+		Для Каждого Стр Из СтрокиBsparser Цикл
 			Лог.Добавить(Стр);
 		КонецЦикла;
 	КонецЕсли;
@@ -405,7 +432,8 @@
 	НачатьШаг("selfCheck", "Самопроверка (в т.ч. синтаксис bsparser)");
 	Самопров = Загрузить("СамопроверкаВыхода");
 	Самопров.Инициализировать(Разбор, Доз, Синтез);
-	ПарСинт = Новый Структура("enabled, limit", Не П.noSyntax, Число(П.syntaxLimit));
+	ПарСинт = Новый Структура("enabled, limit, cachePath", Не П.noSyntax, Число(П.syntaxLimit),
+		?(П.fullCheck, "", ОбъединитьПути(П.out, "cache", "syntax.json")));
 	Рсп = Самопров.ПроверитьКаталогВыхода(П.out, Модули, Сводка, Исходная.Корень, ПарСинт);
 	Отчет.ЗаписатьФайл(ОбъединитьПути(П.out, "self_check.json"), Отчет.ВJSON(Рсп));
 	Лог.Добавить("Самопроверка: " + ?(Рсп.ok, "OK", "ЗАМЕЧАНИЯ") + " — " + Отчет.ВJSON(Рсп.categories));
@@ -522,7 +550,10 @@
 	ЗавершитьШаг();
 	Если П.parser = "bsparser" Тогда
 		НачатьШаг("astCheck", "bsparser: контроль хуков &ИзменениеИКонтроль");
+		Аст.УстановитьКэш(?(П.fullCheck, "", ОбъединитьПути(П.out, "cache", "ast.json")));
 		Рх = Аст.ПроверитьХукиКаталога(ОбъединитьПути(П.out, "extension"));
+		Аст.УстановитьКэш("");
+		Лог.Добавить("bsparser: хуков ИиК из кэша " + Рх.cached + " (полная проверка — --полная-проверка)");
 		Отчет.ЗаписатьФайл(ОбъединитьПути(П.out, "ast_check.json"), Отчет.ВJSON(Рх));
 		Лог.Добавить("bsparser: хуков ИиК проверено " + Рх.checked + ", на ручной разбор " + Рх.failed + " (ast_check.json)");
 		Сводка.Вставить("bsparser", Новый Структура("astCheck, fallbacks", Рх, Стат.fallbacks));

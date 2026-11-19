@@ -14,6 +14,7 @@ $OS tests/test_token_line.os || { echo "FAIL: unit token line"; fail=1; }
 $OS tests/test_cac_verbatim.os || { echo "FAIL: unit CAC verbatim"; fail=1; }
 $OS tests/test_cac_applicability.os || { echo "FAIL: unit CAC applicability"; fail=1; }
 OSCRIPT="$OS" bash tests/e2e_cac_applicability.sh || { echo "FAIL: e2e CAC applicability"; fail=1; }
+OSCRIPT="$OS" bash tests/e2e_cache.sh || { echo "FAIL: e2e cache"; fail=1; }
 $OS tests/test_internalinfo_uuid.os || { echo "FAIL: unit internalinfo uuid"; fail=1; }
 $OS tests/test_self_check.os || { echo "FAIL: unit self check"; fail=1; }
 $OS tests/test_ibcmd_extension.os || { echo "FAIL: unit ibcmd extension"; fail=1; }
