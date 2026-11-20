@@ -29,6 +29,31 @@
 П(СтрНайти(Нов, "КнОк") > 0 И СтрНайти(Нов, "Моя") > 0, "свои команды остались");
 П(Фр.ЗапрещенаСтандартнаяКомандаРасширения("Form.Item.X.StandardCommand.Copy"), "детектор StandardCommand");
 
+Пров = ЗагрузитьСценарий(ОбъединитьПути(ТекущийСценарий().Каталог, "..", "src", "ПроверкаXmlForm.os"));
+КмМеню = "<?xml version=""1.0"" encoding=""UTF-8""?>" + Символы.ПС
+	+ "<Form xmlns=""http://v8.1c.ru/8.3/xcf/logform"" version=""2.17"">" + Символы.ПС
+	+ "	<AutoCommandBar name=""ФормаКоманднаяПанель"" id=""1"">" + Символы.ПС
+	+ "		<ChildItems>" + Символы.ПС
+	+ "			<Button name=""КнКопия"" id=""2""><CommandName>Form.StandardCommand.Copy</CommandName></Button>" + Символы.ПС
+	+ "			<Button name=""КнСвоя"" id=""3""><CommandName>Form.Command.Моя</CommandName></Button>" + Символы.ПС
+	+ "		</ChildItems>" + Символы.ПС
+	+ "	</AutoCommandBar>" + Символы.ПС
+	+ "	<ChildItems>" + Символы.ПС
+	+ "		<Table name=""Список"" id=""4"">" + Символы.ПС
+	+ "			<ContextMenu name=""СписокКонтекстноеМеню"" id=""5"">" + Символы.ПС
+	+ "				<ChildItems>" + Символы.ПС
+	+ "					<Button name=""КнСтд"" id=""6""><CommandName>Form.Item.Список.StandardCommand.Find</CommandName></Button>" + Символы.ПС
+	+ "				</ChildItems>" + Символы.ПС
+	+ "			</ContextMenu>" + Символы.ПС
+	+ "		</Table>" + Символы.ПС
+	+ "	</ChildItems>" + Символы.ПС
+	+ "</Form>";
+КмНов = Фр.УбратьНедопустимыеСтандартныеКомандыФормы(КмМеню);
+П(СтрНайти(КмНов, "StandardCommand") = 0, "ContextMenu/AutoCommandBar: нет StandardCommand");
+П(СтрНайти(КмНов, "</ContextMenu>") > 0 И СтрНайти(КмНов, "</AutoCommandBar>") > 0, "панели на месте");
+П(СтрНайти(КмНов, "КнСвоя") > 0, "своя кнопка в AutoCommandBar");
+П(Пров.XmlСтруктураВалидна(КмНов), "ContextMenu/AutoCommandBar: well-formed");
+
 Тмп = ОбъединитьПути(ТекущийСценарий().Каталог, "_stdcmd_tmp");
 Если (Новый Файл(Тмп)).Существует() Тогда
 	УдалитьФайлы(Тмп);
