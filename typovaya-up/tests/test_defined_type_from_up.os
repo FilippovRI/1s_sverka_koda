@@ -1,4 +1,4 @@
-// DefinedType из БП: полная копия в restored при ссылке cfg: из формы/реквизита (XDTO Type).
+// DefinedType в restored: полная копия из УП (состав УП), при отсутствии в УП — из БП.
 Перем Ошибок;
 
 Процедура П(У, С)
@@ -32,33 +32,28 @@
 ТипБп = "<?xml version=""1.0"" encoding=""UTF-8""?>" + Символы.ПС
 	+ "<MetaDataObject xmlns=""http://v8.1c.ru/8.3/MDClasses""><DefinedType uuid=""dt-1111-1111-1111-111111111111"">" + Символы.ПС
 	+ "	<Properties><Name>ТерриторияТест</Name>" + Символы.ПС
+	+ "		<Type><v8:Type>xs:string</v8:Type><v8:StringQualifiers><v8:Length>10</v8:Length></v8:StringQualifiers></Type>" + Символы.ПС
+	+ "	</Properties></DefinedType></MetaDataObject>";
+ТипУп = "<?xml version=""1.0"" encoding=""UTF-8""?>" + Символы.ПС
+	+ "<MetaDataObject xmlns=""http://v8.1c.ru/8.3/MDClasses""><DefinedType uuid=""dt-1111-1111-1111-111111111111"">" + Символы.ПС
+	+ "	<Properties><Name>ТерриторияТест</Name>" + Символы.ПС
 	+ "		<Type><v8:Type>xs:string</v8:Type><v8:StringQualifiers><v8:Length>50</v8:Length><v8:AllowedLength>Variable</v8:AllowedLength></v8:StringQualifiers></Type>" + Символы.ПС
 	+ "	</Properties></DefinedType></MetaDataObject>";
 Зап(ОбъединитьПути(Бп, "Configuration.xml"), СтрЗаменить(КонфШаб, Символы.Таб + Символы.Таб + Символы.Таб + "</ChildObjects>",
 	Символы.Таб + Символы.Таб + Символы.Таб + "<DefinedType>ТерриторияТест</DefinedType>" + Символы.ПС + Символы.Таб + Символы.Таб + Символы.Таб + "</ChildObjects>"));
 Зап(ОбъединитьПути(Бп, "DefinedTypes\ТерриторияТест.xml"), ТипБп);
+Зап(ОбъединитьПути(Уп, "DefinedTypes\ТерриторияТест.xml"), ТипУп);
 
-// форма регистра (как РедактированиеИстории)
 ФормИР = ОбъединитьПути(Осн, "InformationRegisters\РегТест\Forms\Редактирование\Ext\Form.xml");
 СоздатьКаталог((Новый Файл(ФормИР)).Путь);
 Зап(ФормИР, "<?xml version=""1.0""?><Form xmlns:v8=""http://v8.1c.ru/8.1/data/core"">"
 	+ "<Attributes><Attribute name=""Территория""><Type><v8:Type>cfg:DefinedType.ТерриторияТест</v8:Type></Type></Attribute></Attributes></Form>");
 
-// общая форма с тем же типом
-ФормОб = ОбъединитьПути(Осн, "CommonForms\ПодробнееТест\Ext\Form.xml");
-СоздатьКаталог((Новый Файл(ФормОб)).Путь);
-Зап(ФормОб, "<?xml version=""1.0""?><Form xmlns:v8=""http://v8.1c.ru/8.1/data/core"">"
-	+ "<Attributes><Attribute name=""Поле""><Type><v8:Type>cfg:DefinedType.ТерриторияТест</v8:Type></Type></Attribute></Attributes></Form>");
-
-// реквизит объекта без формы
-Зап(ОбъединитьПути(Осн, "Catalogs\СпрТест.xml"), "<?xml version=""1.0""?><MetaDataObject><Catalog uuid=""c1"">"
-	+ "<ChildObjects><Attribute uuid=""a1""><Properties><Name>РекТер</Name>"
-	+ "<Type><v8:Type>cfg:DefinedType.ТерриторияТест</v8:Type></Type></Properties></Attribute></ChildObjects></Catalog></MetaDataObject>");
-
 Ошибок = 0;
 Заг = ЗагрузитьСценарий(ОбъединитьПути(ТекущийСценарий().Каталог, "..", "src", "ЗаготовкиОбъектовБп.os"));
 Заг.Инициализировать();
-П(Заг.ПолныйВозвратТег("DefinedType"), "DefinedType — полный возврат");
+П(Заг.ПолныйВозвратDefinedType("DefinedType"), "DefinedType — отдельный полный возврат");
+П(Не Заг.ПолныйВозвратТег("DefinedType"), "DefinedType не в списке БП-полного возврата");
 Лог = Новый Массив;
 Р = Заг.Применить(Осн, Бп, Лог, "", Уп);
 ПутьТипа = ОбъединитьПути(Осн, "DefinedTypes\ТерриторияТест.xml");
@@ -66,14 +61,24 @@
 Т = Новый ЧтениеТекста(ПутьТипа, КодировкаТекста.UTF8);
 Тело = Т.Прочитать();
 Т.Закрыть();
-П(СтрНайти(Тело, "<v8:Type>xs:string</v8:Type>") > 0, "полное тело типа из БП");
+П(СтрНайти(Тело, "<v8:Length>50</v8:Length>") > 0, "полное тело типа из УП, не БП");
+П(СтрНайти(Тело, "<v8:Length>10</v8:Length>") = 0, "нет усечённого БП");
 П(Р.full >= 1, "full >= 1");
-ТК = Новый ЧтениеТекста(ОбъединитьПути(Осн, "Configuration.xml"), КодировкаТекста.UTF8);
-Конф = ТК.Прочитать();
-ТК.Закрыть();
-П(СтрНайти(Конф, "<DefinedType>ТерриторияТест</DefinedType>") > 0, "DefinedType в Configuration.xml");
+
+// только в БП
+Зап(ОбъединитьПути(Бп, "DefinedTypes\ТолькоБП.xml"), СтрЗаменить(СтрЗаменить(ТипБп, "ТерриторияТест", "ТолькоБП"), "dt-1111-1111-1111-111111111111", "dt-2222-2222-2222-222222222222"));
+ПутьФ = ОбъединитьПути(Осн, "CommonForms\ФСсылка\Ext\Form.xml");
+СоздатьКаталог((Новый Файл(ПутьФ)).Путь);
+Зап(ПутьФ, "<?xml version=""1.0""?><Form>"
+	+ "<Attributes><Attribute name=""X""><Type><v8:Type>cfg:DefinedType.ТолькоБП</v8:Type></Type></Attribute></Attributes></Form>");
+Р2 = Заг.Применить(Осн, Бп, Лог, "", Уп);
+П((Новый Файл(ОбъединитьПути(Осн, "DefinedTypes\ТолькоБП.xml"))).Существует(), "тип только БП — файл из БП");
+Т2 = Новый ЧтениеТекста(ОбъединитьПути(Осн, "DefinedTypes\ТолькоБП.xml"), КодировкаТекста.UTF8);
+Тб = Т2.Прочитать();
+Т2.Закрыть();
+П(СтрНайти(Тб, "<v8:Length>10</v8:Length>") > 0, "тип только БП — состав БП");
 
 Если Ошибок > 0 Тогда
-	ВызватьИсключение "test_defined_type_from_bp: " + Ошибок;
+	ВызватьИсключение "test_defined_type_from_up: " + Ошибок;
 КонецЕсли;
-Сообщить("OK test_defined_type_from_bp");
+Сообщить("OK test_defined_type_from_up");
