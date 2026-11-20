@@ -81,12 +81,15 @@
 ТелоСпР = Фр.XmlТелаЗаимствованнойФормыБпУп(ФУпСп, ФБпСп, "УП_");
 ПозБф2 = СтрНайти(ТелоСпР, "<BaseForm");
 Проверить(ПозБф2 > 0, "ManualQuery list: BaseForm");
-Проверить(СтрНайти(Лев(ТелоСпР, ПозБф2 - 1), "name=""Список""") > 0, "ManualQuery list: main hoisted");
+Проверить(СтрНайти(Лев(ТелоСпР, ПозБф2 - 1), "name=""Список""") = 0, "ManualQuery list without UP layer: main stays in BaseForm");
+Проверить(СтрНайти(Сред(ТелоСпР, ПозБф2), "name=""Список""") > 0, "ManualQuery list: Список in BaseForm");
 
-Пост = Фр.ПостобработкаИтоговогоForm("<Form><Attributes><Attribute><Type><v8:Type>v8:ValueTable</v8:Type></Type></Attribute></Attributes></Form>");
-Проверить(СтрНайти(Пост, "v8:ValueTable") = 0, "ValueTable normalized for ibcmd");
-Пост2 = Фр.ПостобработкаИтоговогоForm("<Type><v8:Type>cfg:InformationRegisterRecordManager.Рег</v8:Type></Type>");
-Проверить(СтрНайти(Пост2, "InformationRegisterRecordManager") = 0, "RecordManager normalized for ibcmd");
+Пост = Фр.ПостобработкаИтоговогоForm("<Form><Attributes><Attribute name=""УП_Таб""><Type><v8:Type>v8:ValueTable</v8:Type></Type></Attribute></Attributes></Form>");
+Проверить(СтрНайти(Пост, "v8:ValueTable") = 0, "ValueTable normalized for УП_ attr");
+ПостБ = Фр.ПостобработкаИтоговогоForm("<Form><Attributes><Attribute name=""Таб""><Type><v8:Type>v8:ValueTable</v8:Type></Type></Attribute></Attributes></Form>");
+Проверить(СтрНайти(ПостБ, "v8:ValueTable") > 0, "ValueTable kept for BaseForm attr");
+Пост2 = Фр.ПостобработкаИтоговогоForm("<Attribute name=""УП_Зап""><Type><v8:Type>cfg:InformationRegisterRecordManager.Рег</v8:Type></Type></Attribute>");
+Проверить(СтрНайти(Пост2, "InformationRegisterRecordManager") = 0, "RecordManager normalized for УП_ attr");
 
 Если Ошибок > 0 Тогда
 	ВызватьИсключение "test_forms_restored: " + Ошибок + " failures";
