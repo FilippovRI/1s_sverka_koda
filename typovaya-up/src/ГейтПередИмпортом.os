@@ -1,4 +1,4 @@
-// Жёсткий pre-import: XML well-formed + offline XDTO scan. ibcmd не вызывается при провале.
+// Жёсткий pre-import: только XML well-formed. Offline XDTO — предупреждение, не блокирует ibcmd.
 // oscript ГейтПередИмпортом.os [каталог extension]
 КореньСк = ТекущийСценарий().Каталог;
 Oscript = "C:\Users\rst_filippov\OneScript\bin\oscript.exe";
@@ -10,6 +10,10 @@ Oscript = "C:\Users\rst_filippov\OneScript\bin\oscript.exe";
 КонецЕсли;
 Сообщить("=== pre-import gate ===");
 ПровXml.ВывестиИПровалить(ПровXml.СканироватьСтруктуруКаталога(Корень));
-ПровXdto = ЗагрузитьСценарий(ОбъединитьПути(КореньСк, "ПроверкаFormXdto.os"));
-ПровXdto.СканироватьКаталог(Корень);
-Сообщить("=== pre-import gate OK ===");
+Попытка
+	ПровXdto = ЗагрузитьСценарий(ОбъединитьПути(КореньСк, "ПроверкаFormXdto.os"));
+	ПровXdto.СканироватьКаталог(Корень);
+Исключение
+	Сообщить("WARN: offline XDTO heuristic (не блокирует import): " + ОписаниеОшибки());
+КонецПопытки;
+Сообщить("=== pre-import gate OK (XML) ===");

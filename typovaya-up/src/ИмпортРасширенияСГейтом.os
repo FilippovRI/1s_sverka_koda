@@ -1,4 +1,4 @@
-// import только после гейта XML+XDTO.
+// import только после гейта XML (XDTO heuristic — warn only).
 КореньСк = ТекущийСценарий().Каталог;
 Oscript = "C:\Users\rst_filippov\OneScript\bin\oscript.exe";
 Кав = Символ(34);
