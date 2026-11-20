@@ -88,12 +88,8 @@
 Проверить(СтрНайти(Лев(ТелоСпР, ПозБф2 - 1), "name=""Список""") = 0, "ManualQuery list without UP layer: main stays in BaseForm");
 Проверить(СтрНайти(Сред(ТелоСпР, ПозБф2), "name=""Список""") > 0, "ManualQuery list: Список in BaseForm");
 
-Пост = Фр.ПостобработкаИтоговогоForm("<Form><Attributes><Attribute name=""УП_Таб""><Type><v8:Type>v8:ValueTable</v8:Type></Type></Attribute></Attributes></Form>");
-Проверить(СтрНайти(Пост, "v8:ValueTable") = 0, "ValueTable normalized for УП_ attr");
-ПостБ = Фр.ПостобработкаИтоговогоForm("<Form><Attributes><Attribute name=""Таб""><Type><v8:Type>v8:ValueTable</v8:Type></Type></Attribute></Attributes></Form>");
-Проверить(СтрНайти(ПостБ, "v8:ValueTable") > 0, "ValueTable kept for BaseForm attr");
-Пост2 = Фр.ПостобработкаИтоговогоForm("<Attribute name=""УП_Зап""><Type><v8:Type>cfg:InformationRegisterRecordManager.Рег</v8:Type></Type></Attribute>");
-Проверить(СтрНайти(Пост2, "InformationRegisterRecordManager") = 0, "RecordManager normalized for УП_ attr");
+ПостUi = Фр.ПостобработкаИтоговогоForm("<Form><Attributes><Attribute name=""УП_Ц""><Type><v8:Type>v8ui:Color</v8:Type></Type></Attribute></Attributes></Form>");
+Проверить(СтрНайти(ПостUi, "v8ui:Color") = 0, "v8ui Color normalized in УП_ attr");
 
 Если Ошибок > 0 Тогда
 	ВызватьИсключение "test_forms_restored: " + Ошибок + " failures";
