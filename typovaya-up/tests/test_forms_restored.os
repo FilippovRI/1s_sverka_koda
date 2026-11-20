@@ -67,8 +67,8 @@
 Проверить(СтрНайти(Тело, "<BaseForm") > 0, "BaseForm present");
 Проверить(СтрНайти(Тело, "name=""УП_ДопПоле""") > 0, "prefixed attribute in extension layer");
 	ПозБф = СтрНайти(Тело, "<BaseForm");
-Проверить(СтрНайти(Сред(Тело, ПозБф), "<MainAttribute>true</MainAttribute>") > 0, "catalog main stays in BaseForm (bea6124 hoist)");
-Проверить(СтрНайти(Лев(Тело, ПозБф - 1), "name=""Объект""") = 0, "catalog main not hoisted to root");
+Проверить(СтрНайти(Лев(Тело, ПозБф - 1), "name=""Объект""") > 0, "catalog main hoisted to root for XDTO");
+Проверить(СтрНайти(Сред(Тело, ПозБф), "<MainAttribute>true</MainAttribute>") = 0, "catalog main removed from BaseForm");
 Проверить(СтрДлина(Тело) > 200, "non-trivial borrowed form body");
 
 ФБпСп = ОбъединитьПути(ОбъединитьПути(КатБ, "Documents\Тест\Forms\Список\Ext"), "Form.xml");
