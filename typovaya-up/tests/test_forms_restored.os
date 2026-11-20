@@ -81,8 +81,8 @@
 ТелоСпР = Фр.XmlТелаЗаимствованнойФормыБпУп(ФУпСп, ФБпСп, "УП_");
 ПозБф2 = СтрНайти(ТелоСпР, "<BaseForm");
 Проверить(ПозБф2 > 0, "ManualQuery list: BaseForm");
-Проверить(СтрНайти(Лев(ТелоСпР, ПозБф2 - 1), "name=""Список""") = 0, "ManualQuery list without UP layer: main stays in BaseForm");
-Проверить(СтрНайти(Сред(ТелоСпР, ПозБф2), "name=""Список""") > 0, "ManualQuery list: Список in BaseForm");
+Проверить(СтрНайти(Лев(ТелоСпР, ПозБф2 - 1), "name=""Список""") > 0, "DynamicList main hoisted to root");
+Проверить(СтрНайти(Сред(ТелоСпР, ПозБф2), "<MainAttribute>true</MainAttribute>") = 0, "main not duplicated in BaseForm");
 
 Пост = Фр.ПостобработкаИтоговогоForm("<Form><Attributes><Attribute name=""УП_Таб""><Type><v8:Type>v8:ValueTable</v8:Type></Type></Attribute></Attributes></Form>");
 Проверить(СтрНайти(Пост, "v8:ValueTable") = 0, "ValueTable normalized for УП_ attr");
@@ -90,6 +90,19 @@
 Проверить(СтрНайти(ПостБ, "v8:ValueTable") > 0, "ValueTable kept for BaseForm attr");
 Пост2 = Фр.ПостобработкаИтоговогоForm("<Attribute name=""УП_Зап""><Type><v8:Type>cfg:InformationRegisterRecordManager.Рег</v8:Type></Type></Attribute>");
 Проверить(СтрНайти(Пост2, "InformationRegisterRecordManager") = 0, "RecordManager normalized for УП_ attr");
+Пост3 = Фр.ПостобработкаИтоговогоForm("<Form><Attributes><Attribute name=""Цвет""><Type><v8:Type>v8ui:Color</v8:Type></Type><FillCheck>ShowError</FillCheck></Attribute></Attributes><BaseForm/></Form>");
+Проверить(СтрНайти(Пост3, "v8ui:Color") = 0, "v8ui:Color attribute type normalized");
+Проверить(СтрНайти(Пост3, "FillCheck") = 0, "FillCheck stripped in BaseForm form");
+Пост4 = Фр.ПостобработкаИтоговогоForm("<Form><BaseForm><Parameters><Parameter name=""П""><Type><v8:TypeSet>cfg:DocumentRef</v8:TypeSet></Type></Parameter></Parameters></BaseForm></Form>");
+Проверить(СтрНайти(Пост4, "TypeSet") = 0, "TypeSet in parameter normalized");
+Пост5 = Фр.ПостобработкаИтоговогоForm("<Column><Type><v8:TypeSet>cfg:DocumentRef</v8:TypeSet><v8:TypeSet>cfg:CatalogRef</v8:TypeSet></Type></Column>");
+Проверить(СтрНайти(Пост5, "TypeSet") = 0, "TypeSet in column normalized");
+Пост6 = Фр.ПостобработкаИтоговогоForm("<Parameters><Parameter name=""Вид""><Type><v8:Type>cfg:EnumRef.X</v8:Type></Type></Parameter></Parameters>");
+Проверить(СтрНайти(Пост6, "cfg:EnumRef") = 0, "cfg enum parameter type normalized");
+Пост7 = Фр.ПостобработкаИтоговогоForm("<Form><Attributes><Attribute name=""УП_Чис""><Type><v8:Type>xs:decimal</v8:Type><v8:NumberQualifiers><v8:Digits>10</v8:Digits></v8:NumberQualifiers></Type></Attribute></Attributes><BaseForm/></Form>");
+Проверить(СтрНайти(Пост7, "xs:decimal") = 0, "root УП_ decimal normalized to string");
+Пост8 = Фр.ПостобработкаИтоговогоForm("<Attribute name=""А""><Type><v8:Type>cfg:A</v8:Type><v8:Type>cfg:B</v8:Type></Type></Attribute>");
+Проверить(СтрНайти(Пост8, "cfg:A") = 0, "composite cfg attribute type normalized");
 
 Если Ошибок > 0 Тогда
 	ВызватьИсключение "test_forms_restored: " + Ошибок + " failures";
