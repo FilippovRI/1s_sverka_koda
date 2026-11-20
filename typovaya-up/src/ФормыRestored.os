@@ -717,6 +717,8 @@
 	Рез = Текст;
 	РвКом = Новый РегулярноеВыражение("(?s)<Command\s+name=""[^""]*StandardCommand[^""]*""[^>]*>.*?</Command>");
 	Рез = РвКом.Заменить(Рез, "");
+	РвКомСтр = Новый РегулярноеВыражение("(?m)^\s*<Command>[^<]*StandardCommand[^<]*</Command>\s*$");
+	Рез = РвКомСтр.Заменить(Рез, "");
 	РвКн = Новый РегулярноеВыражение("(?s)<(?:Button|PopupButton)\b[^>]*>.*?<CommandName>[^<]*StandardCommand[^<]*</CommandName>.*?</(?:Button|PopupButton)>");
 	Рез = РвКн.Заменить(Рез, "");
 	РвКн2 = Новый РегулярноеВыражение("(?s)<(?:Button|PopupButton)\b[^>]*>.*?<CommandName>Form\.Command\.(?:Copy|Find|SortListAsc|SortListDesc)</CommandName>.*?</(?:Button|PopupButton)>");
