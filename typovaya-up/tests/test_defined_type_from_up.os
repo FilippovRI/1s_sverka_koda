@@ -78,6 +78,36 @@
 Т2.Закрыть();
 П(СтрНайти(Тб, "<v8:Length>10</v8:Length>") > 0, "тип только БП — состав БП");
 
+// УП/БП: одно uuid, разные имена файла — один DefinedType с именем БП и составом УП
+AliasБп = "<?xml version=""1.0"" encoding=""UTF-8""?>" + Символы.ПС
+	+ "<MetaDataObject xmlns=""http://v8.1c.ru/8.3/MDClasses"">" + Символы.ПС
+	+ "	<DefinedType uuid=""al-0000-0000-0000-000000000001"">" + Символы.ПС
+	+ "	<InternalInfo><xr:GeneratedType name=""DefinedType.ТерриторияAlias"" category=""DefinedType"">"
+	+ "<xr:TypeId>al-tid</xr:TypeId><xr:ValueId>al-vid</xr:ValueId></xr:GeneratedType></InternalInfo>" + Символы.ПС
+	+ "	<Properties><Name>ТерриторияAlias</Name>"
+	+ "		<Type><v8:Type>xs:string</v8:Type><v8:StringQualifiers><v8:Length>3</v8:Length></v8:StringQualifiers></Type>" + Символы.ПС
+	+ "	</Properties></DefinedType></MetaDataObject>";
+AliasУп = СтрЗаменить(СтрЗаменить(СтрЗаменить(СтрЗаменить(AliasБп,
+	"ТерриторияAlias", "ТерриторииAlias"), "al-tid", "al-tid-up"), "al-vid", "al-vid-up"), "<v8:Length>3</v8:Length>", "<v8:Length>99</v8:Length>");
+Зап(ОбъединитьПути(Бп, "DefinedTypes\ТерриторияAlias.xml"), AliasБп);
+Зап(ОбъединитьПути(Уп, "DefinedTypes\ТерриторииAlias.xml"), AliasУп);
+Зап(ОбъединитьПути(Осн, "DefinedTypes\ТерриторииAlias.xml"), AliasУп);
+// старый дубликат по имени УП в restored
+ФормА = ОбъединитьПути(Осн, "InformationRegisters\РегAlias\Forms\Форма\Ext\Form.xml");
+СоздатьКаталог((Новый Файл(ФормА)).Путь);
+Зап(ФормА, "<?xml version=""1.0""?><Form xmlns:v8=""http://v8.1c.ru/8.1/data/core"">"
+	+ "<Attributes><Attribute name=""T""><Type><v8:Type>cfg:DefinedType.ТерриторияAlias</v8:Type></Type></Attribute></Attributes></Form>");
+СпД = ОбъединитьПути(Осн, "dog_alias.txt");
+Зап(СпД, "DefinedType.ТерриторияAlias");
+Заг.ДополнитьЗаготовки(Осн, Бп, Лог, Уп, СпД, Истина);
+ПутьА = ОбъединитьПути(Осн, "DefinedTypes\ТерриторияAlias.xml");
+П((Новый Файл(ПутьА)).Существует(), "файл псевдонима БП создан");
+П(Не (Новый Файл(ОбъединитьПути(Осн, "DefinedTypes\ТерриторииAlias.xml"))).Существует(), "дубликат УП-имени удалён");
+Та = ПолучитьСтрокуИзДвоичныхДанных(Новый ДвоичныеДанные(ПутьА), "UTF-8");
+П(СтрНайти(Та, "<v8:Length>99</v8:Length>") > 0, "псевдоним: состав УП");
+П(СтрНайти(Та, "DefinedType.ТерриторияAlias") > 0, "псевдоним: имя БП в GeneratedType");
+П(СтрНайти(Та, "DefinedType.ТерриторииAlias") = 0, "псевдоним: нет имени УП в GeneratedType");
+
 Если Ошибок > 0 Тогда
 	ВызватьИсключение "test_defined_type_from_up: " + Ошибок;
 КонецЕсли;
