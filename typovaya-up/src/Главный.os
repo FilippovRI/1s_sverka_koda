@@ -63,6 +63,7 @@
 		+ "--парсер:parser,--parser:parser,--без-синтаксиса:__flag_no_syntax,--no-syntax:__flag_no_syntax,--синтаксис-лимит:syntaxLimit,--syntax-limit:syntaxLimit,"
 		+ "--проверить-скелет:skeleton,--validate-skeleton:skeleton,"
 		+ "--лог-проверки:checkLog,--check-log:checkLog,--корень-проверки:checkRoot,--check-root:checkRoot,"
+		+ "--лог-импорта:importLog,--import-log:importLog,"
 		+ "--без-кэша:__flag_no_cache,--no-cache:__flag_no_cache,--полная-проверка:__flag_full_check,--full-check:__flag_full_check,"
 		+ "--ibcmd-загрузка:__flag_ibcmd,--ibcmd-load:__flag_ibcmd,"
 		+ "--ibcmd-план:__flag_ibcmd_plan,--ibcmd-plan:__flag_ibcmd_plan,"
@@ -74,8 +75,8 @@
 		Синонимы.Вставить(КЗ[0], КЗ[1]);
 	КонецЦикла;
 	Результат = Новый Структура(
-		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, noReport, reportOnly, noSyntax, syntaxLimit, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, parser, checkLog, checkRoot, noCache, fullCheck, errors",
-		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, "0", "", Ложь, Ложь, "", "", "", "", "", "", "", "", "old", "", "", Ложь, Ложь, Новый Массив);
+		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, noReport, reportOnly, noSyntax, syntaxLimit, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, parser, checkLog, checkRoot, importLog, noCache, fullCheck, errors",
+		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, "0", "", Ложь, Ложь, "", "", "", "", "", "", "", "", "old", "", "", "", Ложь, Ложь, Новый Массив);
 	Й = 0;
 	Пока Й < Аргументы.Количество() Цикл
 		Ключ = Синонимы.Получить(НРег(Аргументы[Й]));
@@ -464,6 +465,8 @@
 	ЗавершитьШаг();
 	НачатьШаг("bpModules", "Общие модули только БП, на которые ссылается код restored (возврат в основную)");
 	КаталогВосстБп = ОбъединитьПути(П.out, "restored");
+	ЗагКаркас = Загрузить("ЗаготовкиОбъектовБп");
+	ЗагКаркас.ОбеспечитьКаркасRestored(КаталогВосстБп, Исходная.Корень, Лог);
 	Если Поставщик.Корень <> "" И (Новый Файл(ОбъединитьПути(КаталогВосстБп, "Configuration.xml"))).Существует() Тогда
 		ВозвратБп = Загрузить("ВозвратОбщихМодулейБп");
 		РвБп = ВозвратБп.Анализ(КаталогВосстБп, Поставщик.Корень);
@@ -498,6 +501,35 @@
 		Сводка.Вставить("bpStubs", Новый Структура("modules, methods, refModules, refLines", РзБп.modules.Количество(), РзБп.methods, СсБп.modules, СсБп.lines));
 	КонецЕсли;
 	ЗавершитьШаг();
+	Если Поставщик.Корень <> "" И (Новый Файл(ОбъединитьПути(КаталогВосстБп, "Configuration.xml"))).Существует() Тогда
+		НачатьШаг("restoredStubs", "Заготовки и фрагменты БП в restored (скан + догрузка по логу import)");
+		ПутьДогрузки = "";
+		КолПутейИмп = 0;
+		Если П.importLog <> "" И (Новый Файл(П.importLog)).Существует() Тогда
+			РазборИмп = Загрузить("РазборЛогаИмпорта");
+			ПутиИмп = РазборИмп.ПутиНеизвестныхМетаданных(П.importLog);
+			КолПутейИмп = ПутиИмп.Количество();
+			ПутьДогрузки = ОбъединитьПути(П.out, "import_dogruzka_build.txt");
+			РазборИмп.ЗаписатьСписокДогрузки(ПутиИмп, ПутьДогрузки);
+			Лог.Добавить("import log: путей для догрузки " + КолПутейИмп + " — " + П.importLog);
+		КонецЕсли;
+		РзЗаг = ЗагКаркас.ДополнитьЗаготовки(КаталогВосстБп, Поставщик.Корень, Лог, Исходная.Корень, ПутьДогрузки);
+		РДоп = Новый Структура("files, meta, fragments, commands, metaCmd", 0, 0, 0, 0, 0);
+		ФормБп = 0;
+		Если П.importLog <> "" И (Новый Файл(П.importLog)).Существует() Тогда
+			Доп = Загрузить("ДополненияПоЛогуImport");
+			РДоп = Доп.Применить(КаталогВосстБп, Поставщик.Корень, П.importLog, Лог, Ложь);
+		КонецЕсли;
+		ЗагКаркас.Инициализировать();
+		ФормБп = ЗагКаркас.ВернутьFormXmlИзБп(КаталогВосстБп, Поставщик.Корень);
+		ДопКр = Загрузить("ДополненияПоЛогуImport");
+		ДопКр.КопироватьCommonPictureПоЛогу("", КаталогВосстБп, Поставщик.Корень, Лог);
+		Лог.Добавить("restored: Form.xml дословно из БП, файлов " + ФормБп);
+		Сводка.Вставить("restoredStubs", Новый Структура("stubs, fragments, requirements, importPaths, logExtras, formsLiteral",
+			РзЗаг.stubs, РзЗаг.fragments, РзЗаг.requirements, КолПутейИмп, РДоп, ФормБп));
+		Лог.Добавить("restored: заготовок " + РзЗаг.stubs + ", фрагментов ChildObjects " + РзЗаг.fragments + ", требований " + РзЗаг.requirements);
+		ЗавершитьШаг();
+	КонецЕсли;
 	Если П.checkLog <> "" И Поставщик.Корень <> "" Тогда
 		НачатьШаг("stubbedMethods", "Заглушки методов БП по логу проверки основной (объекты/реквизиты нет в УП)");
 		Рзм = ЗаглушитьМетодыБпПоЛогу(П, Поставщик.Корень, Лог);
@@ -535,8 +567,12 @@
 		КомандыП.Добавить(С);
 	КонецЦикла;
 	ПоляП = ЗпП.Применить(КаталогРасшП, Исходная.Корень, "", Ложь);
-	Отчет.ЗаписатьФайл(ОбъединитьПути(П.out, "ext_forms_check.json"), Отчет.ВJSON(Новый Структура("badCommands, ownForms, missing, notes",
-		КомандыП, ПоляП.forms, ПоляП.missing, ПоляП.notes)));
+	ФрСтд = Загрузить("ФормыRestored");
+	РСтд = ФрСтд.ОчиститьСтандартныеКомандыВКаталоге(КаталогРасшП, Лог);
+	Сводка.Вставить("stdCommandsRemoved", РСтд.forms);
+	Отчет.ЗаписатьФайл(ОбъединитьПути(П.out, "ext_forms_check.json"), Отчет.ВJSON(Новый Структура("badCommands, ownForms, missing, notes, stdCommandsRemoved",
+		КомандыП, ПоляП.forms, ПоляП.missing, ПоляП.notes, РСтд.forms)));
+	Лог.Добавить("Формы расширения: очищено от недопустимых стандартных команд " + РСтд.forms);
 	Лог.Добавить("Формы расширения: невалидных стандартных команд " + КомандыП.Количество() + ", собственных форм с динсписками " + ПоляП.forms.Количество()
 		+ ", незаимствованных полей/объектов " + ПоляП.missing.Количество() + " — ext_forms_check.json");
 	Для Каждого С Из КомандыП Цикл

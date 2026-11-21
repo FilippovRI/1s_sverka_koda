@@ -1,0 +1,1 @@
+<?xml version="1.0"?><Form xmlns:v8="http://v8.1c.ru/8.1/data/core"><ChildItems><InputField><DataPath>Объект.СпособФормирования</DataPath></InputField></ChildItems><Attributes><Attribute name="Объект"><Type><v8:Type>cfg:DocumentObject.СпрНДФЛ</v8:Type></Type></Attribute></Attributes></Form>

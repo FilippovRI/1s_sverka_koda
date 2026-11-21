@@ -1,0 +1,10 @@
+<?xml version="1.0"?><Form xmlns:v8="http://v8.1c.ru/8.1/data/core">
+	<ChildItems>
+		<Label><TextColor>style:FormBackColor</TextColor></Label>
+		<Button><CommandName>Form.StandardCommand.Save</CommandName></Button>
+	</ChildItems>
+	<Attributes><Attribute name="X"><Type>
+		<v8:TypeSet>cfg:Characteristic.ОбъектыАдресацииЗадач</v8:TypeSet>
+		<v8:TypeSet>cfg:DocumentRef</v8:TypeSet>
+	</Type></Attribute></Attributes>
+</Form>
