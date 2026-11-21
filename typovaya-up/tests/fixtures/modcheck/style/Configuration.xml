@@ -2,5 +2,6 @@
 <Configuration>
 	<ChildObjects>
 			<StyleItem>ЕстьСтиль</StyleItem>
+			<StyleItem>НетТакогоСтиля</StyleItem>
 	</ChildObjects>
 </Configuration>
