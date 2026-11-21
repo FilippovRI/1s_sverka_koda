@@ -1,0 +1,1 @@
+<?xml version="1.0"?><Form xmlns:v8="http://v8.1c.ru/8.1/data/core"><Attributes><Attribute name="Таб"><Type><v8:Type>v8:ValueTable</v8:Type></Type><Columns><Column name="К"><Type><v8:Type>cfg:ChartOfCharacteristicTypesRef.ПВХ</v8:Type></Type></Column></Columns></Attribute></Attributes></Form>
