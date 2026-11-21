@@ -1,4 +1,5 @@
-// XDTO-постобработка Form.xml в restored по мета-папкам (быстрее полного дерева).
+// УСТАРЕЛО для restored: Form.xml БП должны быть дословно (см. ВосстановитьFormБпДословно.os).
+// Этот скрипт оставлен только для ручной диагностики; в генераторе restored не вызывать.
 // oscript ПостобработкаRestoredForm.os [restored] [Catalogs|Documents|DataProcessors|Reports|all]
 Корень = "D:\typovaya-up-out-20261118u\restored";
 Область = "all";
