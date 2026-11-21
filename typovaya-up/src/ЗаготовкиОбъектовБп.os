@@ -1111,7 +1111,7 @@
 	Если Стр = "" Или СтрНачинаетсяС(Стр, "#") Тогда
 		Возврат;
 	КонецЕсли;
-	РвОб = Новый РегулярноеВыражение("^(Catalog|Document|InformationRegister|AccumulationRegister|ChartOfAccounts|ChartOfCharacteristicTypes|ChartOfCalculationTypes|DocumentJournal|DataProcessor|Report)\.([\wЁёА-Яа-яA-Za-z0-9_]+)");
+	РвОб = Новый РегулярноеВыражение("^(Catalog|Document|Task|InformationRegister|AccumulationRegister|ChartOfAccounts|ChartOfCharacteristicTypes|ChartOfCalculationTypes|DocumentJournal|DataProcessor|Report)\.([\wЁёА-Яа-яA-Za-z0-9_]+)");
 	Со = РвОб.НайтиСовпадения(Стр);
 	Если Со.Количество() > 0 Тогда
 		ДобОбъектПоТегу(Объекты, Со[0].Группы[1].Значение, Со[0].Группы[2].Значение, Состав, КореньУп, Истина);

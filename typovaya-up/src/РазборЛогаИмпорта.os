@@ -27,6 +27,8 @@
 		Возврат "ChartOfCharacteristicTypes." + Имя;
 	ИначеЕсли Преф = "InformationRegisterRef" Тогда
 		Возврат "InformationRegister." + Имя;
+	ИначеЕсли Преф = "TaskRef" Тогда
+		Возврат "Task." + Имя;
 	КонецЕсли;
 	Возврат "";
 КонецФункции
@@ -65,7 +67,7 @@
 	Уник = Новый Соответствие;
 	Список = Новый Массив;
 	Рв = Новый РегулярноеВыражение("Неизвестный объект метаданных\s*-\s*([A-Za-zА-Яа-яЁё\w\.]+)");
-	РвТип = Новый РегулярноеВыражение("Неизвестное имя типа\s*-\s*(CatalogRef|DocumentRef|DataProcessorRef|ReportRef|EnumRef|ChartOfAccountsRef|ChartOfCharacteristicTypesRef|InformationRegisterRef|DefinedType)\.([\wЁёА-Яа-яA-Za-z0-9_]+)");
+	РвТип = Новый РегулярноеВыражение("Неизвестное имя типа\s*-\s*(CatalogRef|DocumentRef|DataProcessorRef|ReportRef|EnumRef|ChartOfAccountsRef|ChartOfCharacteristicTypesRef|InformationRegisterRef|DefinedType|TaskRef)\.([\wЁёА-Яа-яA-Za-z0-9_]+)");
 	РвКарт = Новый РегулярноеВыражение("Неверное имя картинки\s*-\s*(CommonPicture\.[\wЁёА-Яа-яA-Za-z0-9_]+)");
 	РвГрКом = Новый РегулярноеВыражение("Неизвестная категория команд\s*-\s*(CommandGroup\.[\wЁёА-Яа-яA-Za-z0-9_]+)");
 	РвПоле = Новый РегулярноеВыражение("Ссылка на неизвестное поле[^\-]*-\s*([A-Za-zА-Яа-яЁё\w\.]+)");
