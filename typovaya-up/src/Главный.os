@@ -514,8 +514,15 @@
 			Лог.Добавить("import log: путей для догрузки " + КолПутейИмп + " — " + П.importLog);
 		КонецЕсли;
 		РзЗаг = ЗагКаркас.ДополнитьЗаготовки(КаталогВосстБп, Поставщик.Корень, Лог, Исходная.Корень, ПутьДогрузки);
-		Сводка.Вставить("restoredStubs", Новый Структура("stubs, fragments, requirements, importPaths",
-			РзЗаг.stubs, РзЗаг.fragments, РзЗаг.requirements, КолПутейИмп));
+		РДоп = Новый Структура("files, meta, fragments, commands, formsPost", 0, 0, 0, 0, 0);
+		Если П.importLog <> "" И (Новый Файл(П.importLog)).Существует() Тогда
+			Доп = Загрузить("ДополненияПоЛогуImport");
+			РДоп = Доп.Применить(КаталогВосстБп, Поставщик.Корень, П.importLog, Лог);
+			ФрВ = Загрузить("ФормыRestored");
+			ФрВ.ПостобработкаFormУЗаготовок(КаталогВосстБп, Лог, Ложь);
+		КонецЕсли;
+		Сводка.Вставить("restoredStubs", Новый Структура("stubs, fragments, requirements, importPaths, logExtras",
+			РзЗаг.stubs, РзЗаг.fragments, РзЗаг.requirements, КолПутейИмп, РДоп));
 		Лог.Добавить("restored: заготовок " + РзЗаг.stubs + ", фрагментов ChildObjects " + РзЗаг.fragments + ", требований " + РзЗаг.requirements);
 		ЗавершитьШаг();
 	КонецЕсли;
