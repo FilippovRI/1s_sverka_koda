@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Прогон на фикстурах. OSCRIPT можно переопределить: OSCRIPT=/path/oscript tests/run_tests.sh
 set -uo pipefail; cd "$(dirname "$0")/.."; OS=${OSCRIPT:-oscript}; OUT=$(mktemp -d); fail=0
-$OS v2/tasks/smoke.os || { echo "FAIL: v2 smoke"; fail=1; }
+( cd v2 && opm install --dev -l >/dev/null 2>&1 && opm build >/dev/null 2>&1 && TMP=$(mktemp -d) && unzip -q typovaya-up-2.0.0.ospx -d "$TMP" && unzip -qo "$TMP/content.zip" -d "$TMP/pkg" && cp "$TMP/pkg/lib.config" lib.config && $OS tasks/smoke.os ) || { echo "FAIL: v2 smoke"; fail=1; }
+( cd v2 && $OS tasks/test.os ) || { echo "FAIL: v2 oneunit"; fail=1; }
 $OS src/Главный.os >/dev/null; [ $? -eq 1 ] || { echo "FAIL: без аргументов код должен быть 1"; fail=1; }
 $OS tests/test_hooks.os || { echo "FAIL: unit hooks"; fail=1; }
 $OS tests/test_parse.os || { echo "FAIL: unit parse"; fail=1; }
