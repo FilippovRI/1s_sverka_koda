@@ -23,7 +23,7 @@
 
 	// §9
 	Выход = ОбъединитьПути(К, "out");
-	ПутьМ = "ChartsOfCalculationTypes/Начисления/Ext/ManagerModule.bsl";
+	ПутьМ = "ChartsOfCalculationTypes\Начисления\Ext\ManagerModule.bsl";
 	ТелоУп = testlib.Т("Процедура Рабочая()|	Типовой = 1;|КонецПроцедуры||Процедура ЗаписатьНачисление(Описание)|	Н = 1;|КонецПроцедуры");
 	ТелоБп = testlib.Т(Дир + "|Процедура Рабочая()|	Типовой = 1;|КонецПроцедуры||Процедура ЗаписатьНачисление(Описание)|	Н = 1;|КонецПроцедуры|#КонецЕсли|");
 	МтРаб = Новый Структура("name, kind, status, vendorText, sourceText, hook, hookDecision, hookBody, insteadAppendContinue, explain",
@@ -62,7 +62,7 @@
 
 	// §10 wrap-only
 	МТолько = Новый Структура("path, type, object, bucket, reason, vendorText, sourceText, outsideDiffers, methods, counts",
-		"Catalogs/Банки/Ext/ObjectModule.bsl", "Catalog", "Catalog.Банки", "manual", "",
+		"Catalogs\Банки\Ext\ObjectModule.bsl", "Catalog", "Catalog.Банки", "manual", "",
 		testlib.Т(Дир + "|Процедура А()|КонецПроцедуры|#КонецЕсли|"),
 		testlib.Т("Процедура А()|КонецПроцедуры|"),
 		Истина, Новый Массив, Новый Структура("same, changed, added, removed", 1, 0, 0, 0));
@@ -84,7 +84,7 @@
 
 	// §11 уже обёрнутый УП
 	МУже = Новый Структура("path, type, object, bucket, reason, vendorText, sourceText, outsideDiffers, methods, counts",
-		"Catalogs/Уже/Ext/ObjectModule.bsl", "Catalog", "Catalog.Уже", "manual", "",
+		"Catalogs\Уже\Ext\ObjectModule.bsl", "Catalog", "Catalog.Уже", "manual", "",
 		testlib.Т(Дир + "|Процедура А()|КонецПроцедуры|#КонецЕсли|"),
 		testlib.Т(Дир + "|Процедура А()|КонецПроцедуры|#КонецЕсли|"),
 		Ложь, Новый Массив, Новый Структура("same, changed, added, removed", 1, 0, 0, 0));
