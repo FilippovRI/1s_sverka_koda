@@ -27,8 +27,8 @@
 СоздатьКаталог(КатБ);
 СоздатьКаталог(КатВ);
 
-ФУп = ОбъединитьПути(ОбъединитьПути(КатУ, "Catalogs\Тест\Forms\Форма\Ext"), "Form.xml");
-ФБп = ОбъединитьПути(ОбъединитьПути(КатБ, "Catalogs\Тест\Forms\Форма\Ext"), "Form.xml");
+ФУп = ОбъединитьПути(ОбъединитьПути(КатУ, "Catalogs/Тест/Forms/Форма/Ext"), "Form.xml");
+ФБп = ОбъединитьПути(ОбъединитьПути(КатБ, "Catalogs/Тест/Forms/Форма/Ext"), "Form.xml");
 Записать(ФБп, "<?xml version=""1.0"" encoding=""UTF-8""?>" + Символы.ПС
 	+ "<Form xmlns=""http://v8.1c.ru/8.3/xcf/logform"" version=""2.17"">" + Символы.ПС
 	+ "	<Attributes>" + Символы.ПС
@@ -61,7 +61,7 @@
 Лог = Новый Массив;
 Ст = Фр.ЗаписатьFormXmlБпВRestored(КатУ, КатБ, КатВ, Неопределено, Лог);
 Проверить(Ст.written = 1, "restored Form.xml written");
-Проверить((Новый Файл(ОбъединитьПути(ОбъединитьПути(КатВ, "Catalogs\Тест\Forms\Форма\Ext"), "Form.xml"))).Существует(), "restored file exists");
+Проверить((Новый Файл(ОбъединитьПути(ОбъединитьПути(КатВ, "Catalogs/Тест/Forms/Форма/Ext"), "Form.xml"))).Существует(), "restored file exists");
 
 Тело = Фр.XmlТелаЗаимствованнойФормыБпУп(ФУп, ФБп, "УП_");
 Проверить(СтрНайти(Тело, "<BaseForm") > 0, "BaseForm present");
@@ -71,10 +71,10 @@
 Проверить(СтрНайти(Сред(Тело, ПозБф), "<MainAttribute>true</MainAttribute>") = 0, "no duplicate main in BaseForm when hoisted");
 Проверить(СтрДлина(Тело) > 200, "non-trivial borrowed form body");
 
-ФБпСп = ОбъединитьПути(ОбъединитьПути(КатБ, "Documents\Тест\Forms\Список\Ext"), "Form.xml");
-ФУпСп = ОбъединитьПути(ОбъединитьПути(КатУ, "Documents\Тест\Forms\Список\Ext"), "Form.xml");
-СоздатьКаталог(ОбъединитьПути(КатБ, "Documents\Тест\Forms\Список\Ext"));
-СоздатьКаталог(ОбъединитьПути(КатУ, "Documents\Тест\Forms\Список\Ext"));
+ФБпСп = ОбъединитьПути(ОбъединитьПути(КатБ, "Documents/Тест/Forms/Список/Ext"), "Form.xml");
+ФУпСп = ОбъединитьПути(ОбъединитьПути(КатУ, "Documents/Тест/Forms/Список/Ext"), "Form.xml");
+СоздатьКаталог(ОбъединитьПути(КатБ, "Documents/Тест/Forms/Список/Ext"));
+СоздатьКаталог(ОбъединитьПути(КатУ, "Documents/Тест/Forms/Список/Ext"));
 Зап = "			<Settings xsi:type=""DynamicList""><ManualQuery>true</ManualQuery></Settings>";
 ТелоСп = "<?xml version=""1.0"" encoding=""UTF-8""?>" + Символы.ПС
 	+ "<Form xmlns=""http://v8.1c.ru/8.3/xcf/logform"" version=""2.17"">" + Символы.ПС
@@ -91,10 +91,10 @@
 ПостUi = Фр.ПостобработкаИтоговогоForm("<Form><Attributes><Attribute name=""УП_Ц""><Type><v8:Type>v8ui:Color</v8:Type></Type></Attribute></Attributes></Form>");
 Проверить(СтрНайти(ПостUi, "v8ui:Color") = 0, "v8ui Color normalized in УП_ attr");
 
-ФБпДп = ОбъединитьПути(ОбъединитьПути(КатБ, "Catalogs\Тест2\Forms\Форма\Ext"), "Form.xml");
-ФУпДп = ОбъединитьПути(ОбъединитьПути(КатУ, "Catalogs\Тест2\Forms\Форма\Ext"), "Form.xml");
-СоздатьКаталог(ОбъединитьПути(КатБ, "Catalogs\Тест2\Forms\Форма\Ext"));
-СоздатьКаталог(ОбъединитьПути(КатУ, "Catalogs\Тест2\Forms\Форма\Ext"));
+ФБпДп = ОбъединитьПути(ОбъединитьПути(КатБ, "Catalogs/Тест2/Forms/Форма/Ext"), "Form.xml");
+ФУпДп = ОбъединитьПути(ОбъединитьПути(КатУ, "Catalogs/Тест2/Forms/Форма/Ext"), "Form.xml");
+СоздатьКаталог(ОбъединитьПути(КатБ, "Catalogs/Тест2/Forms/Форма/Ext"));
+СоздатьКаталог(ОбъединитьПути(КатУ, "Catalogs/Тест2/Forms/Форма/Ext"));
 Записать(ФБпДп, "<?xml version=""1.0"" encoding=""UTF-8""?>" + Символы.ПС
 	+ "<Form xmlns=""http://v8.1c.ru/8.3/xcf/logform"" version=""2.17"">" + Символы.ПС
 	+ "	<Attributes><Attribute name=""Объект"" id=""1""><Type><v8:Type>cfg:CatalogObject.Тест2</v8:Type></Type><MainAttribute>true</MainAttribute></Attribute></Attributes>" + Символы.ПС

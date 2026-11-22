@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Прогон на фикстурах. OSCRIPT можно переопределить: OSCRIPT=/path/oscript tests/run_tests.sh
-set -uo pipefail; cd "$(dirname "$0")/.."; OS=${OSCRIPT:-oscript}; OUT=$(mktemp -d); fail=0
-( cd v2 && opm install --dev -l >/dev/null 2>&1 && opm build >/dev/null 2>&1 && TMP=$(mktemp -d) && unzip -q typovaya-up-2.0.0.ospx -d "$TMP" && unzip -qo "$TMP/content.zip" -d "$TMP/pkg" && cp "$TMP/pkg/lib.config" lib.config && $OS tasks/smoke.os ) || { echo "FAIL: v2 smoke"; fail=1; }
+set -uo pipefail; cd "$(dirname "$0")/.."; OS=${OSCRIPT:-oscript}; OPM="$(dirname "$OS")/opm"; command -v "$OPM" >/dev/null 2>&1 || OPM=opm; export PATH="$(dirname "$OS"):${PATH:-}"; OUT=$(mktemp -d); fail=0
+( cd v2 && "$OPM" install --dev -l >/dev/null 2>&1 && "$OPM" build >/dev/null 2>&1 && TMP=$(mktemp -d) && unzip -q typovaya-up-2.0.0.ospx -d "$TMP" && unzip -qo "$TMP/content.zip" -d "$TMP/pkg" && cp "$TMP/pkg/lib.config" lib.config && ln -sfn ../../tests/testlib oscript_modules/testlib 2>/dev/null || true && $OS tasks/smoke.os ) || { echo "FAIL: v2 smoke"; fail=1; }
 ( cd v2 && $OS tasks/test.os ) || { echo "FAIL: v2 oneunit"; fail=1; }
 $OS src/Главный.os >/dev/null; [ $? -eq 1 ] || { echo "FAIL: без аргументов код должен быть 1"; fail=1; }
 $OS tests/test_hooks.os || { echo "FAIL: unit hooks"; fail=1; }

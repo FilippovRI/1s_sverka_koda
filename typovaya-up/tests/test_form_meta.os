@@ -30,9 +30,9 @@
 Зап(ОбъединитьПути(Уп, "Configuration.xml"), КонфШаб);
 Зап(ОбъединитьПути(Бп, "Configuration.xml"), СтрЗаменить(КонфШаб, Символы.Таб + Символы.Таб + Символы.Таб + "</ChildObjects>",
 	Символы.Таб + Символы.Таб + Символы.Таб + "<CommonPicture>КартТест</CommonPicture>" + Символы.ПС + Символы.Таб + Символы.Таб + Символы.Таб + "</ChildObjects>"));
-Зап(ОбъединитьПути(Бп, "CommonPictures\КартТест.xml"), "<MetaDataObject xmlns=""http://v8.1c.ru/8.3/MDClasses""><CommonPicture uuid=""a""><Properties><Name>КартТест</Name></Properties></CommonPicture></MetaDataObject>");
+Зап(ОбъединитьПути(Бп, "CommonPictures/КартТест.xml"), "<MetaDataObject xmlns=""http://v8.1c.ru/8.3/MDClasses""><CommonPicture uuid=""a""><Properties><Name>КартТест</Name></Properties></CommonPicture></MetaDataObject>");
 
-Форм = ОбъединитьПути(Осн, "CommonForms\Тест\Ext\Form.xml");
+Форм = ОбъединитьПути(Осн, "CommonForms/Тест/Ext/Form.xml");
 СоздатьКаталог((Новый Файл(Форм)).Путь);
 Зап(Форм, "<?xml version=""1.0""?><Form><RowsPicture><xr:Ref>CommonPicture.КартТест</xr:Ref></RowsPicture></Form>");
 
@@ -40,7 +40,7 @@
 Вм = ЗагрузитьСценарий(ОбъединитьПути(ТекущийСценарий().Каталог, "..", "src", "ВозвратМетаданныхФормБп.os"));
 Лог = Новый Массив;
 Р = Вм.Исправить(Осн, Бп, Уп, Лог);
-Проверить((Новый Файл(ОбъединитьПути(Осн, "CommonPictures\КартТест.xml"))).Существует(), "picture copied");
+Проверить((Новый Файл(ОбъединитьПути(Осн, "CommonPictures/КартТест.xml"))).Существует(), "picture copied");
 Проверить(Р.full >= 1, "one full return");
 Т = Новый ЧтениеТекста(Форм, КодировкаТекста.UTF8);
 Тело = Т.Прочитать();
