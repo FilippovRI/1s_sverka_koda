@@ -64,6 +64,11 @@
 // негативный style уже проверен; позитив: только ЕстьСтиль в конфиге — всё ещё ошибка из-за НетТакогоСтиля
 П(Счетчик(РСт, "StyleItem") = 1, "style single StyleItem unresolved");
 
+ПутьИнф = ОбъединитьПути(Фикс, "internal_info_territory");
+РИнф = Пров.ВыполнитьПроверку(ПутьИнф, ПутьИнф, ПутьИнф);
+П(ЕстьКласс(РИнф, "InternalInfoDuplicateTypeId"), "R-DOM-005: дубль TypeId f99fe44f");
+П(СтрНайти(РИнф.unresolved[0].ref, "f99fe44f") > 0, "R-DOM-005: uuid в ref");
+
 РИск = Пров.ВыполнитьПроверку(ОбъединитьПути(Фикс, "exclusions"));
 П(РИск.ok, "exclusions platform style/cmd/typeset");
 П(Не ЕстьКласс(РИск, "StyleItem"), "exclusions no StyleItem noise");
