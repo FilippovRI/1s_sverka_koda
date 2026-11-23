@@ -26,6 +26,11 @@ $args = @(
     '--только-extension',
     '--без-отчета'
 )
+$checkModules = 'D:\typovaya-up-tmp-check\check_modules.txt'
+if (Test-Path $checkModules) {
+    $args += '--лог-импорта'
+    $args += $checkModules
+}
 & $oscript @args
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 $ext = Join-Path $Out 'extension'
