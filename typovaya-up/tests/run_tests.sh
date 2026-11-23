@@ -51,6 +51,7 @@ $OS tests/test_main_no_autorun.os || { echo "FAIL: Главный.os no autorun 
 $OS tests/test_modules_forms_only.os || { echo "FAIL: modules-forms-only overlay"; fail=1; }
 $OS tests/test_forms_from_up.os || { echo "FAIL: forms-from-up overlay"; fail=1; }
 $OS tests/test_extension_no_forms.os || { echo "FAIL: extension no forms check"; fail=1; }
+$OS tests/test_bp_modules_extension.os || { echo "FAIL: bp modules in extension"; fail=1; }
 $OS tests/test_form_overlay_precheck.os || { echo "FAIL: form overlay precheck"; fail=1; }
 $OS tests/test_form_datapath_dynlist.os || { echo "FAIL: form datapath dynlist"; fail=1; }
 $OS tests/test_perf_scaffold.os || { echo "FAIL: perf scaffold copy"; fail=1; }

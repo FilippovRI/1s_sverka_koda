@@ -1,10 +1,12 @@
 ﻿param(
     [string]$OutRoot = 'D:\typovaya-up-out-mf2',
-    [switch]$WithExtension
+    [switch]$WithExtension,
+    [switch]$CheckModules
 )
 $ErrorActionPreference = 'Continue'
 $bin = 'C:\Program Files\1cv8\8.5.1.1150\bin'
 $ibcmd = Join-Path $bin 'ibcmd.exe'
+$v8 = Join-Path $bin '1cv8.exe'
 $repo = Split-Path $PSScriptRoot -Parent
 $tmp = 'D:\typovaya-up-tmp-check'
 $db = Join-Path $tmp 'ib'
@@ -36,6 +38,14 @@ if ($WithExtension -and $code -eq 0 -and (Test-Path (Join-Path $ext 'Configurati
         if ($LASTEXITCODE -ne 0) { $code = $LASTEXITCODE }
     }
 }
+$checkOut = Join-Path $tmp 'check_modules.txt'
+if ($CheckModules -and $code -eq 0 -and (Test-Path $v8)) {
+    Add-Content -LiteralPath $log -Value '--- CheckModules ---' -Encoding UTF8
+    & $v8 DESIGNER "/F$db" '/DisableStartupMessages' '/CheckModules' "-Out$checkOut" 2>&1 | Add-Content -LiteralPath $log -Encoding UTF8
+    if ($LASTEXITCODE -ne 0) { $code = $LASTEXITCODE }
+    Add-Content -LiteralPath $log -Value "CheckModules exit=$LASTEXITCODE out=$checkOut" -Encoding UTF8
+}
 Remove-Item -LiteralPath $db, $data -Recurse -Force -EA SilentlyContinue
 Write-Host "temp import restored exit=$code log=$log"
+if ($CheckModules -and (Test-Path $checkOut)) { Write-Host "check_modules=$checkOut" }
 exit $code
