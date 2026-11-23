@@ -528,7 +528,7 @@
 		КаталогВосст = ОбъединитьПути(П.out, "restored");
 		Если П.onlyExtension Тогда
 			Сводка.Вставить("formsFromUp", П.formsFromUp);
-			Лог.Добавить("--только-extension: restored не изменялся");
+			Лог.Добавить("--только-extension: restored не пересобирался (меняется только шагом upOnlyCmFromRestored: ОМ только УП)");
 			Если Поставщик.Корень <> "" И (Новый Файл(ОбъединитьПути(КаталогВосст, "Configuration.xml"))).Существует() Тогда
 				НачатьШаг("bpModulesExtension", "Заглушки общих модулей БП в extension (restored не меняется)");
 				ВозвратБп = Загрузить("ВозвратОбщихМодулейБп");
@@ -536,6 +536,19 @@
 				МбРасш.Инициализировать(ВозвратБп);
 				Рмб = МбРасш.Обеспечить(КаталогВосст, ОбъединитьПути(П.out, "extension"), Поставщик.Корень, Лог, П.out);
 				Сводка.Вставить("bpModulesExtension", Рмб);
+				ЗавершитьШаг();
+			КонецЕсли;
+			Если Исходная.Корень <> "" И Поставщик.Корень <> "" И (Новый Файл(ОбъединитьПути(КаталогВосст, "Configuration.xml"))).Существует() Тогда
+				// Решение 23.11: ОМ только УП (нет в БП) — только собственными объектами extension, из restored убираются.
+				НачатьШаг("upOnlyCmFromRestored", "Общие модули только УП: из restored в extension");
+				Чр = Загрузить("ЧерновикРасширения");
+				Пер = Загрузить("ПереносОбъектовУп");
+				ОТУ = Загрузить("ОбъектыТолькоУп");
+				Пер.Инициализировать(Чр, ОТУ);
+				Руо = Пер.УбратьОбщиеМодулиТолькоУпИзRestored(ОбъединитьПути(П.out, "extension"), КаталогВосст, Исходная.Корень, Поставщик.Корень,
+					Новый Соответствие, П.extension, Лог, П.out);
+				Сводка.Вставить("upOnlyCmFromRestored", Новый Структура("removed, extAdded, extHad, extReplacedAdopted, refsFiles, refsLines, xmlRefs",
+					Руо.removed, Руо.extAdded, Руо.extHad, Руо.extReplacedAdopted, Руо.refsFiles, Руо.refsLines, Руо.xmlRefs));
 				ЗавершитьШаг();
 			КонецЕсли;
 			Если Исходная.Корень <> "" И Поставщик.Корень <> "" Тогда
@@ -590,6 +603,17 @@
 		Сводка.Вставить("modulesForms", Новый Структура("modulesBsl, formsXml, formsKeptUp, formsUpRestored, hooks, wrappersAdded, extensionMethods",
 			Рмф.modulesBsl, Рмф.formsXml, Рмф.formsKeptUp.Количество(),
 			?(Рмф.Свойство("formsUpRestored"), Рмф.formsUpRestored, 0), ИтогЧ.hooks, ИтогОб.count, ИтогЧ.methods));
+		Если Не П.onlyRestored И Исходная.Корень <> "" И Поставщик.Корень <> ""
+			И (Новый Файл(ОбъединитьПути(КаталогВосст, "Configuration.xml"))).Существует()
+			И (Новый Файл(ОбъединитьПути(П.out, "extension", "Configuration.xml"))).Существует() Тогда
+			НачатьШаг("upOnlyCmFromRestored", "Общие модули только УП: из restored в extension");
+			Пер = Загрузить("ПереносОбъектовУп");
+			Пер.Инициализировать(Загрузить("ЧерновикРасширения"), Загрузить("ОбъектыТолькоУп"));
+			Руо = Пер.УбратьОбщиеМодулиТолькоУпИзRestored(ОбъединитьПути(П.out, "extension"), КаталогВосст, Исходная.Корень, Поставщик.Корень,
+				Новый Соответствие, П.extension, Лог, П.out);
+			Сводка.Вставить("upOnlyCmFromRestored", Новый Структура("removed, extAdded, extHad, extReplacedAdopted, refsFiles, refsLines, xmlRefs",
+				Руо.removed, Руо.extAdded, Руо.extHad, Руо.extReplacedAdopted, Руо.refsFiles, Руо.refsLines, Руо.xmlRefs));
+		КонецЕсли;
 		Лог.Добавить("modulesForms: итог — модулей .bsl " + Рмф.modulesBsl + ", Form.xml БП " + Рмф.formsXml
 			+ ", форм УП " + ?(Рмф.Свойство("formsUpRestored"), Рмф.formsUpRestored, Рмф.formsKeptUp.Количество())
 			+ "; хуков в расширении " + ИтогЧ.hooks + ", обёрток &Вместо " + ИтогОб.count);
