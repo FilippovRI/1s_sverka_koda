@@ -37,6 +37,7 @@
 	|  --корень-проверки            каталог, загруженный в базу при проверке (номера строк лога; по умолчанию <выход>\restored)
 	|  --без-кэша, --no-cache      не брать/не писать кэш шага compare (<выход>\cache\compare.json)
 	|  --только-restored, --only-restored  пересобрать только restored (compare из кэша; extension не трогается)
+	|  --только-extension, --only-extension  только extension (compare из кэша; restored не трогается; включает --формы-из-уп)
 	|  --полная-проверка, --full-check  bsparser (syntax, astCheck) по всем модулям, без кэша по хешам (<выход>\cache)
 	|  --ibcmd-загрузка             (opt-in) загрузить черновик в ИБ через ibcmd 8.5+
 	|  --ibcmd-план                только план команд (без ibcmd import/apply)
@@ -73,6 +74,7 @@
 		+ "--лог-проверки:checkLog,--check-log:checkLog,--корень-проверки:checkRoot,--check-root:checkRoot,"
 		+ "--лог-импорта:importLog,--import-log:importLog,"
 		+ "--без-кэша:__flag_no_cache,--no-cache:__flag_no_cache,--только-restored:__flag_only_restored,--only-restored:__flag_only_restored,"
+		+ "--только-extension:__flag_only_extension,--only-extension:__flag_only_extension,"
 		+ "--полная-проверка:__flag_full_check,--full-check:__flag_full_check,"
 		+ "--ibcmd-загрузка:__flag_ibcmd,--ibcmd-load:__flag_ibcmd,"
 		+ "--ibcmd-план:__flag_ibcmd_plan,--ibcmd-plan:__flag_ibcmd_plan,"
@@ -84,8 +86,8 @@
 		Синонимы.Вставить(КЗ[0], КЗ[1]);
 	КонецЦикла;
 	Результат = Новый Структура(
-		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, noReport, reportOnly, modulesFormsOnly, formsFromUp, onlyRestored, noSyntax, syntaxLimit, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, parser, checkLog, checkRoot, importLog, noCache, fullCheck, errors",
-		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, "0", "", Ложь, Ложь, "", "", "", "", "", "", "", "", "old", "", "", "", Ложь, Ложь, Новый Массив);
+		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, noReport, reportOnly, modulesFormsOnly, formsFromUp, onlyRestored, onlyExtension, noSyntax, syntaxLimit, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, parser, checkLog, checkRoot, importLog, noCache, fullCheck, errors",
+		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, "0", "", Ложь, Ложь, "", "", "", "", "", "", "", "", "old", "", "", "", Ложь, Ложь, Новый Массив);
 	Й = 0;
 	Пока Й < Аргументы.Количество() Цикл
 		Ключ = Синонимы.Получить(НРег(Аргументы[Й]));
@@ -107,6 +109,8 @@
 			Результат.formsFromUp = Истина;
 		ИначеЕсли Ключ = "__flag_only_restored" Тогда
 			Результат.onlyRestored = Истина;
+		ИначеЕсли Ключ = "__flag_only_extension" Тогда
+			Результат.onlyExtension = Истина;
 		ИначеЕсли Ключ = "__flag_no_syntax" Тогда
 			Результат.noSyntax = Истина;
 		ИначеЕсли Ключ = "__flag_no_cache" Тогда
@@ -134,6 +138,12 @@
 	Если Результат.reportOnly И Результат.noReport Тогда
 		Результат.errors.Добавить("--только-отчет и --без-отчета несовместимы.");
 	КонецЕсли;
+	Если Результат.onlyExtension Тогда
+		Результат.modulesFormsOnly = Истина;
+		Результат.formsFromUp = Истина;
+		Результат.noSyntax = Истина;
+		Результат.noReport = Истина;
+	КонецЕсли;
 	Если Результат.modulesFormsOnly Тогда
 		Результат.noSyntax = Истина;
 		Результат.noReport = Истина;
@@ -141,8 +151,11 @@
 	Если Результат.formsFromUp И Не Результат.modulesFormsOnly Тогда
 		Результат.errors.Добавить("--формы-из-уп требует --только-модули-и-формы.");
 	КонецЕсли;
-	Если Результат.onlyRestored И Результат.noCache Тогда
-		Результат.errors.Добавить("--только-restored несовместим с --без-кэша: нужен cache/compare.json от прошлого прогона.");
+	Если Результат.onlyRestored И Результат.onlyExtension Тогда
+		Результат.errors.Добавить("--только-restored и --только-extension несовместимы.");
+	КонецЕсли;
+	Если (Результат.onlyRestored Или Результат.onlyExtension) И Результат.noCache Тогда
+		Результат.errors.Добавить("--только-restored/--только-extension несовместимы с --без-кэша: нужен cache/compare.json.");
 	КонецЕсли;
 	Результат.parser = НРег(Результат.parser);
 	Если Результат.parser <> "old" И Результат.parser <> "bsparser" Тогда
@@ -383,8 +396,21 @@
 			Лог.Добавить("compare: результат взят из кэша " + ПутьКэшаСр + " (ключ совпал; отключить — --без-кэша)");
 		КонецЕсли;
 	КонецЕсли;
-	Если П.onlyRestored И Не КэшСравнения Тогда
-		Сообщить("--только-restored: нет действующего cache/compare.json — сначала полный прогон в " + П.out);
+	Если (П.onlyRestored Или П.onlyExtension) И Не КэшСравнения И (Новый Файл(ПутьКэшаСр)).Существует() Тогда
+		Сохр = КэшП.ПрочитатьСравнениеЛюбой(ПутьКэшаСр);
+		Если Сохр <> Неопределено Тогда
+			Модули = Сохр.modules;
+			СтрокиBsparser = Сохр.bsparserReport;
+			КэшСравнения = Истина;
+			Лог.Добавить("compare: кэш " + ПутьКэшаСр + " (ключ не проверялся — only restored/extension)");
+		КонецЕсли;
+	КонецЕсли;
+	Если (П.onlyRestored Или П.onlyExtension) И Модули = Неопределено Тогда
+		Сообщить("--только-restored/--только-extension: нет cache/compare.json в " + П.out);
+		ЗавершитьРаботу(2);
+	КонецЕсли;
+	Если П.onlyExtension И Не (Новый Файл(ОбъединитьПути(П.out, "restored", "Configuration.xml"))).Существует() Тогда
+		Сообщить("--только-extension: нет restored/Configuration.xml в " + П.out);
 		ЗавершитьРаботу(2);
 	КонецЕсли;
 	Если Модули = Неопределено Тогда
@@ -451,6 +477,7 @@
 	Черновик.УстановитьТолькоМодулиИФормы(П.modulesFormsOnly);
 	Черновик.УстановитьФормыИзУп(П.formsFromUp);
 	Черновик.УстановитьТолькоRestored(П.onlyRestored);
+	Черновик.УстановитьТолькоExtension(П.onlyExtension);
 	ИтогЧ = Черновик.Записать(Модули, Исходная.Корень, П.out, П.extension, П.prefix, Лог, Поставщик.Корень);
 	Лог.Добавить("Черновик расширения " + П.extension + " (префикс " + П.prefix + "): " + Отчет.ВJSON(ИтогЧ));
 	ЗавершитьШаг();
@@ -481,10 +508,24 @@
 		Отчет.ЗаписатьHtml(Модули, Сводка, П.out, Каталог);
 	КонецЕсли;
 
+	Если П.onlyExtension Тогда
+		ПровФ = Загрузить("ПроверкаРасширенияБезФорм");
+		Рф = ПровФ.ПроверитьКаталог(ОбъединитьПути(П.out, "extension"));
+		Сводка.Вставить("extensionNoForms", Рф);
+		Лог.Добавить("extensionNoForms: dirs=" + Рф.formsDirs + " bodies=" + Рф.formExtXml + " cfgFormRefs=" + Рф.formRefsInConfiguration);
+		Если Не Рф.ok Тогда
+			Сообщить("ПРЕДУПРЕЖДЕНИЕ: extension содержит формы при --формы-из-уп");
+		КонецЕсли;
+	КонецЕсли;
 	Если П.modulesFormsOnly Тогда
 		Мф = Загрузить("МодулиИФормыБыстро");
 		КаталогВосст = ОбъединитьПути(П.out, "restored");
-		Если П.formsFromUp Тогда
+		Если П.onlyExtension Тогда
+			Сводка.Вставить("formsFromUp", П.formsFromUp);
+			Лог.Добавить("--только-extension: restored не изменялся");
+			ЗавершитьРаботуСЛогом(П, Лог, Отчет, Старт, "log.txt", Сводка);
+			Возврат;
+		ИначеЕсли П.formsFromUp Тогда
 			НачатьШаг("modulesForms", "Подмена не-форменных .bsl из БП; формы целиком из УП");
 			Рмф = Мф.ПрименитьМодулиБпФормыИзУп(КаталогВосст, Поставщик.Корень, Исходная.Корень, Лог, П.out);
 			Сводка.Вставить("engine", "modules-forms-only-forms-from-up");

@@ -1,5 +1,6 @@
 ﻿param(
-    [string]$OutRoot = 'D:\typovaya-up-out-mf2'
+    [string]$OutRoot = 'D:\typovaya-up-out-mf2',
+    [switch]$WithExtension
 )
 $ErrorActionPreference = 'Continue'
 $bin = 'C:\Program Files\1cv8\8.5.1.1150\bin'
@@ -23,6 +24,17 @@ if (-not $oscript) { $oscript = 'oscript' }
 if ($code -eq 0) {
     & $ibcmd infobase config apply "--db-path=$db" "--data=$data" --force 2>&1 | Add-Content -LiteralPath $log -Encoding UTF8
     if ($LASTEXITCODE -ne 0) { $code = $LASTEXITCODE }
+}
+$ext = Join-Path $OutRoot 'extension'
+$extName = 'УП_Доработки'
+if ($WithExtension -and $code -eq 0 -and (Test-Path (Join-Path $ext 'Configuration.xml'))) {
+    Add-Content -LiteralPath $log -Value '--- extension import ---' -Encoding UTF8
+    & $ibcmd infobase config import "--db-path=$db" "--data=$data" "--extension=$extName" $ext 2>&1 | Add-Content -LiteralPath $log -Encoding UTF8
+    if ($LASTEXITCODE -ne 0) { $code = $LASTEXITCODE }
+    if ($code -eq 0) {
+        & $ibcmd infobase config apply "--db-path=$db" "--data=$data" "--extension=$extName" --force 2>&1 | Add-Content -LiteralPath $log -Encoding UTF8
+        if ($LASTEXITCODE -ne 0) { $code = $LASTEXITCODE }
+    }
 }
 Remove-Item -LiteralPath $db, $data -Recurse -Force -EA SilentlyContinue
 Write-Host "temp import restored exit=$code log=$log"
