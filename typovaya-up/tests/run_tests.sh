@@ -50,6 +50,8 @@ $OS tests/test_modcheck_closure.os || { echo "FAIL: unit modcheck closure"; fail
 $OS tests/test_main_no_autorun.os || { echo "FAIL: Главный.os no autorun on load"; fail=1; }
 $OS tests/test_modules_forms_only.os || { echo "FAIL: modules-forms-only overlay"; fail=1; }
 $OS tests/test_form_overlay_precheck.os || { echo "FAIL: form overlay precheck"; fail=1; }
+$OS tests/test_perf_scaffold.os || { echo "FAIL: perf scaffold copy"; fail=1; }
+$OS tests/test_only_restored.os || { echo "FAIL: only-restored"; fail=1; }
 $OS tests/test_standard_commands_ext.os || { echo "FAIL: unit standard commands ext"; fail=1; }
 $OS tests/test_skeleton.os || { echo "FAIL: unit skeleton"; fail=1; }
 $OS tests/test_meta.os || { echo "FAIL: unit meta"; fail=1; }
