@@ -22,6 +22,8 @@
 	|  --выход, --out, -в           папка результата (по умолчанию out)
 	|  --расширение, --extension, -р  имя черновика расширения (по умолчанию УП_Доработки)
 	|  --префикс, --prefix          префикс имён расширения (по умолчанию УП_)
+	|  --только-модули-и-формы, --modules-forms-only  быстрый режим: restored = копия УП + дословно .bsl и Form.xml из БП;
+	|                               без заготовок/stub, замкнутости, bsparser по всему выходу (extension — как обычно)
 	|  --без-отчета, --no-report    не писать razbor_moduley.html (summary.json хранит пути для --только-отчет)
 	|  --только-отчет, --report-only  только razbor_moduley.html в готовом --выход (без extension/restored/самопроверки);
 	|                               --исходная/--поставщик/--настройки берутся из <выход>\summary.json, если не заданы
@@ -60,6 +62,7 @@
 		+ "--превью-форм:__flag_forms_preview,--forms-preview:__flag_forms_preview,"
 		+ "--перенос-форм:__flag_forms_transfer,--forms-transfer:__flag_forms_transfer,"
 		+ "--без-отчета:__flag_no_report,--no-report:__flag_no_report,--только-отчет:__flag_report_only,--report-only:__flag_report_only,"
+		+ "--только-модули-и-формы:__flag_modules_forms_only,--modules-forms-only:__flag_modules_forms_only,"
 		+ "--парсер:parser,--parser:parser,--без-синтаксиса:__flag_no_syntax,--no-syntax:__flag_no_syntax,--синтаксис-лимит:syntaxLimit,--syntax-limit:syntaxLimit,"
 		+ "--проверить-скелет:skeleton,--validate-skeleton:skeleton,"
 		+ "--лог-проверки:checkLog,--check-log:checkLog,--корень-проверки:checkRoot,--check-root:checkRoot,"
@@ -75,8 +78,8 @@
 		Синонимы.Вставить(КЗ[0], КЗ[1]);
 	КонецЦикла;
 	Результат = Новый Структура(
-		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, noReport, reportOnly, noSyntax, syntaxLimit, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, parser, checkLog, checkRoot, importLog, noCache, fullCheck, errors",
-		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, "0", "", Ложь, Ложь, "", "", "", "", "", "", "", "", "old", "", "", "", Ложь, Ложь, Новый Массив);
+		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, noReport, reportOnly, modulesFormsOnly, noSyntax, syntaxLimit, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, parser, checkLog, checkRoot, importLog, noCache, fullCheck, errors",
+		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, "0", "", Ложь, Ложь, "", "", "", "", "", "", "", "", "old", "", "", "", Ложь, Ложь, Новый Массив);
 	Й = 0;
 	Пока Й < Аргументы.Количество() Цикл
 		Ключ = Синонимы.Получить(НРег(Аргументы[Й]));
@@ -92,6 +95,8 @@
 			Результат.noReport = Истина;
 		ИначеЕсли Ключ = "__flag_report_only" Тогда
 			Результат.reportOnly = Истина;
+		ИначеЕсли Ключ = "__flag_modules_forms_only" Тогда
+			Результат.modulesFormsOnly = Истина;
 		ИначеЕсли Ключ = "__flag_no_syntax" Тогда
 			Результат.noSyntax = Истина;
 		ИначеЕсли Ключ = "__flag_no_cache" Тогда
@@ -118,6 +123,10 @@
 	КонецЕсли;
 	Если Результат.reportOnly И Результат.noReport Тогда
 		Результат.errors.Добавить("--только-отчет и --без-отчета несовместимы.");
+	КонецЕсли;
+	Если Результат.modulesFormsOnly Тогда
+		Результат.noSyntax = Истина;
+		Результат.noReport = Истина;
 	КонецЕсли;
 	Результат.parser = НРег(Результат.parser);
 	Если Результат.parser <> "old" И Результат.parser <> "bsparser" Тогда
@@ -411,6 +420,7 @@
 	НачатьШаг("extension", "Запись extension и restored (с замыканием хелперов)");
 	Черновик = Загрузить("ЧерновикРасширения");
 	Черновик.Инициализировать(Разбор, Настройки);
+	Черновик.УстановитьТолькоМодулиИФормы(П.modulesFormsOnly);
 	ИтогЧ = Черновик.Записать(Модули, Исходная.Корень, П.out, П.extension, П.prefix, Лог, Поставщик.Корень);
 	Лог.Добавить("Черновик расширения " + П.extension + " (префикс " + П.prefix + "): " + Отчет.ВJSON(ИтогЧ));
 	ЗавершитьШаг();
@@ -428,6 +438,20 @@
 	Отчет.ЗаписатьФайл(ОбъединитьПути(П.out, "summary.json"), Отчет.ВJSON(Сводка));
 	Если Не П.noReport И П.parser <> "bsparser" Тогда
 		Отчет.ЗаписатьHtml(Модули, Сводка, П.out, Каталог);
+	КонецЕсли;
+
+	Если П.modulesFormsOnly Тогда
+		НачатьШаг("modulesForms", "Дословная подмена .bsl и Form.xml в restored из БП");
+		Мф = Загрузить("МодулиИФормыБыстро");
+		КаталогВосст = ОбъединитьПути(П.out, "restored");
+		Рмф = Мф.ПрименитьДословноБпКRestored(КаталогВосст, Поставщик.Корень, Лог);
+		Сводка.Вставить("engine", "modules-forms-only");
+		Сводка.Вставить("modulesForms", Новый Структура("modulesBsl, formsXml, hooks, wrappersAdded, extensionMethods",
+			Рмф.modulesBsl, Рмф.formsXml, ИтогЧ.hooks, ИтогОб.count, ИтогЧ.methods));
+		Лог.Добавить("modulesForms: итог — модулей .bsl " + Рмф.modulesBsl + ", Form.xml " + Рмф.formsXml
+			+ "; хуков в расширении " + ИтогЧ.hooks + ", обёрток &Вместо " + ИтогОб.count);
+		ЗавершитьРаботуСЛогом(П, Лог, Отчет, Старт, "log.txt", Сводка);
+		Возврат;
 	КонецЕсли;
 
 	НачатьШаг("selfCheck", "Самопроверка (в т.ч. синтаксис bsparser)");

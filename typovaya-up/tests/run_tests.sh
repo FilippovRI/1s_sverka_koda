@@ -48,6 +48,7 @@ $OS tests/test_defined_type_from_up.os || { echo "FAIL: unit defined type UP"; f
 $OS tests/test_task_full_metadata.os || { echo "FAIL: unit task full metadata"; fail=1; }
 $OS tests/test_modcheck_closure.os || { echo "FAIL: unit modcheck closure"; fail=1; }
 $OS tests/test_main_no_autorun.os || { echo "FAIL: Главный.os no autorun on load"; fail=1; }
+$OS tests/test_modules_forms_only.os || { echo "FAIL: modules-forms-only overlay"; fail=1; }
 $OS tests/test_standard_commands_ext.os || { echo "FAIL: unit standard commands ext"; fail=1; }
 $OS tests/test_skeleton.os || { echo "FAIL: unit skeleton"; fail=1; }
 $OS tests/test_meta.os || { echo "FAIL: unit meta"; fail=1; }
