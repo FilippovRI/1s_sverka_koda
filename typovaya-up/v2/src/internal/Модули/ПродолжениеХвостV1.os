@@ -12,10 +12,13 @@
 	Лог.Добавить("В расширение добавлены обёртки &Вместо: " + ИтогОб.count + " методов");
 	Мф = Ф.Подключить("МодулиИФормыБыстро");
 	КаталогВосст = ОбъединитьПути(П.out, "restored");
-	Рмф = Мф.ПрименитьДословноБпКRestored(КаталогВосст, Поставщик.Корень, Лог);
+	Рмф = Мф.ПрименитьДословноБпКRestored(КаталогВосст, Поставщик.Корень, Исходная.Корень, Лог, П.out);
 	Сводка.Вставить("engine", "v2-m4-modules-forms-only");
-	Сводка.Вставить("modulesForms", Новый Структура("modulesBsl, formsXml, hooks, wrappersAdded, extensionMethods",
-		Рмф.modulesBsl, Рмф.formsXml, ИтогЧ.hooks, ИтогОб.count, ИтогЧ.methods));
+	Сводка.Вставить("formsKeptUp", Рмф.formsKeptUp);
+	Сводка.Вставить("formPrecheck", Новый Структура("checked, incompatible, topReasons",
+		Рмф.formPrecheck.checked, Рмф.formPrecheck.incompatible, Рмф.formPrecheck.topReasons));
+	Сводка.Вставить("modulesForms", Новый Структура("modulesBsl, formsXml, formsKeptUp, hooks, wrappersAdded, extensionMethods",
+		Рмф.modulesBsl, Рмф.formsXml, Рмф.formsKeptUp.Количество(), ИтогЧ.hooks, ИтогОб.count, ИтогЧ.methods));
 	Лог.Добавить("modulesForms: итог — модулей .bsl " + Рмф.modulesBsl + ", Form.xml " + Рмф.formsXml
 		+ "; хуков " + ИтогЧ.hooks + ", обёрток &Вместо " + ИтогОб.count);
 	Отчет.ЗаписатьФайл(ОбъединитьПути(П.out, "summary.json"), Отчет.ВJSON(Сводка));

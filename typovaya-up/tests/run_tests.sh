@@ -49,6 +49,7 @@ $OS tests/test_task_full_metadata.os || { echo "FAIL: unit task full metadata"; 
 $OS tests/test_modcheck_closure.os || { echo "FAIL: unit modcheck closure"; fail=1; }
 $OS tests/test_main_no_autorun.os || { echo "FAIL: Главный.os no autorun on load"; fail=1; }
 $OS tests/test_modules_forms_only.os || { echo "FAIL: modules-forms-only overlay"; fail=1; }
+$OS tests/test_form_overlay_precheck.os || { echo "FAIL: form overlay precheck"; fail=1; }
 $OS tests/test_standard_commands_ext.os || { echo "FAIL: unit standard commands ext"; fail=1; }
 $OS tests/test_skeleton.os || { echo "FAIL: unit skeleton"; fail=1; }
 $OS tests/test_meta.os || { echo "FAIL: unit meta"; fail=1; }

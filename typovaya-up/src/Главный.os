@@ -444,11 +444,15 @@
 		НачатьШаг("modulesForms", "Дословная подмена .bsl и Form.xml в restored из БП");
 		Мф = Загрузить("МодулиИФормыБыстро");
 		КаталогВосст = ОбъединитьПути(П.out, "restored");
-		Рмф = Мф.ПрименитьДословноБпКRestored(КаталогВосст, Поставщик.Корень, Лог);
+		Рмф = Мф.ПрименитьДословноБпКRestored(КаталогВосст, Поставщик.Корень, Исходная.Корень, Лог, П.out);
 		Сводка.Вставить("engine", "modules-forms-only");
-		Сводка.Вставить("modulesForms", Новый Структура("modulesBsl, formsXml, hooks, wrappersAdded, extensionMethods",
-			Рмф.modulesBsl, Рмф.formsXml, ИтогЧ.hooks, ИтогОб.count, ИтогЧ.methods));
+		Сводка.Вставить("formsKeptUp", Рмф.formsKeptUp);
+		Сводка.Вставить("formPrecheck", Новый Структура("checked, incompatible, topReasons",
+			Рмф.formPrecheck.checked, Рмф.formPrecheck.incompatible, Рмф.formPrecheck.topReasons));
+		Сводка.Вставить("modulesForms", Новый Структура("modulesBsl, formsXml, formsKeptUp, hooks, wrappersAdded, extensionMethods",
+			Рмф.modulesBsl, Рмф.formsXml, Рмф.formsKeptUp.Количество(), ИтогЧ.hooks, ИтогОб.count, ИтогЧ.methods));
 		Лог.Добавить("modulesForms: итог — модулей .bsl " + Рмф.modulesBsl + ", Form.xml " + Рмф.formsXml
+			+ ", Form.xml оставлено УП " + Рмф.formsKeptUp.Количество()
 			+ "; хуков в расширении " + ИтогЧ.hooks + ", обёрток &Вместо " + ИтогОб.count);
 		ЗавершитьРаботуСЛогом(П, Лог, Отчет, Старт, "log.txt", Сводка);
 		Возврат;
