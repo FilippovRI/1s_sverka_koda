@@ -25,6 +25,8 @@
 	|  --префикс, --prefix          префикс имён расширения (по умолчанию УП_)
 	|  --только-модули-и-формы, --modules-forms-only  быстрый режим: restored = копия УП + дословно .bsl и Form.xml из БП;
 	|                               без заготовок/stub, замкнутости, bsparser по всему выходу (extension — как обычно)
+	|  --формы-из-уп, --forms-from-up  с --только-модули-и-формы: Form.xml и модули форм только из УП; из БП — прочие .bsl;
+	|                               заимствованные формы в extension не пишутся (предчек overlay форм не нужен)
 	|  --без-отчета, --no-report    не писать razbor_moduley.html (summary.json хранит пути для --только-отчет)
 	|  --только-отчет, --report-only  только razbor_moduley.html в готовом --выход (без extension/restored/самопроверки);
 	|                               --исходная/--поставщик/--настройки берутся из <выход>\summary.json, если не заданы
@@ -65,6 +67,7 @@
 		+ "--перенос-форм:__flag_forms_transfer,--forms-transfer:__flag_forms_transfer,"
 		+ "--без-отчета:__flag_no_report,--no-report:__flag_no_report,--только-отчет:__flag_report_only,--report-only:__flag_report_only,"
 		+ "--только-модули-и-формы:__flag_modules_forms_only,--modules-forms-only:__flag_modules_forms_only,"
+		+ "--формы-из-уп:__flag_forms_from_up,--forms-from-up:__flag_forms_from_up,"
 		+ "--парсер:parser,--parser:parser,--без-синтаксиса:__flag_no_syntax,--no-syntax:__flag_no_syntax,--синтаксис-лимит:syntaxLimit,--syntax-limit:syntaxLimit,"
 		+ "--проверить-скелет:skeleton,--validate-skeleton:skeleton,"
 		+ "--лог-проверки:checkLog,--check-log:checkLog,--корень-проверки:checkRoot,--check-root:checkRoot,"
@@ -81,8 +84,8 @@
 		Синонимы.Вставить(КЗ[0], КЗ[1]);
 	КонецЦикла;
 	Результат = Новый Структура(
-		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, noReport, reportOnly, modulesFormsOnly, onlyRestored, noSyntax, syntaxLimit, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, parser, checkLog, checkRoot, importLog, noCache, fullCheck, errors",
-		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, "0", "", Ложь, Ложь, "", "", "", "", "", "", "", "", "old", "", "", "", Ложь, Ложь, Новый Массив);
+		"source, vendor, settings, out, extension, prefix, analyzeForms, formsPreview, formsTransfer, noReport, reportOnly, modulesFormsOnly, formsFromUp, onlyRestored, noSyntax, syntaxLimit, skeleton, ibcmdLoad, ibcmdPlan, ibcmdPath, ibcmdDb, ibcmdData, ibcmdUser, ibcmdPassword, ibcmdServer, ibcmdDbms, ibcmdDbName, parser, checkLog, checkRoot, importLog, noCache, fullCheck, errors",
+		"", "", "", "out", "УП_Доработки", "УП_", Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, Ложь, "0", "", Ложь, Ложь, "", "", "", "", "", "", "", "", "old", "", "", "", Ложь, Ложь, Новый Массив);
 	Й = 0;
 	Пока Й < Аргументы.Количество() Цикл
 		Ключ = Синонимы.Получить(НРег(Аргументы[Й]));
@@ -100,6 +103,8 @@
 			Результат.reportOnly = Истина;
 		ИначеЕсли Ключ = "__flag_modules_forms_only" Тогда
 			Результат.modulesFormsOnly = Истина;
+		ИначеЕсли Ключ = "__flag_forms_from_up" Тогда
+			Результат.formsFromUp = Истина;
 		ИначеЕсли Ключ = "__flag_only_restored" Тогда
 			Результат.onlyRestored = Истина;
 		ИначеЕсли Ключ = "__flag_no_syntax" Тогда
@@ -132,6 +137,9 @@
 	Если Результат.modulesFormsOnly Тогда
 		Результат.noSyntax = Истина;
 		Результат.noReport = Истина;
+	КонецЕсли;
+	Если Результат.formsFromUp И Не Результат.modulesFormsOnly Тогда
+		Результат.errors.Добавить("--формы-из-уп требует --только-модули-и-формы.");
 	КонецЕсли;
 	Если Результат.onlyRestored И Результат.noCache Тогда
 		Результат.errors.Добавить("--только-restored несовместим с --без-кэша: нужен cache/compare.json от прошлого прогона.");
@@ -441,6 +449,7 @@
 	Черновик = Загрузить("ЧерновикРасширения");
 	Черновик.Инициализировать(Разбор, Настройки);
 	Черновик.УстановитьТолькоМодулиИФормы(П.modulesFormsOnly);
+	Черновик.УстановитьФормыИзУп(П.formsFromUp);
 	Черновик.УстановитьТолькоRestored(П.onlyRestored);
 	ИтогЧ = Черновик.Записать(Модули, Исходная.Корень, П.out, П.extension, П.prefix, Лог, Поставщик.Корень);
 	Лог.Добавить("Черновик расширения " + П.extension + " (префикс " + П.prefix + "): " + Отчет.ВJSON(ИтогЧ));
@@ -473,18 +482,26 @@
 	КонецЕсли;
 
 	Если П.modulesFormsOnly Тогда
-		НачатьШаг("modulesForms", "Дословная подмена .bsl и Form.xml в restored из БП");
 		Мф = Загрузить("МодулиИФормыБыстро");
 		КаталогВосст = ОбъединитьПути(П.out, "restored");
-		Рмф = Мф.ПрименитьДословноБпКRestored(КаталогВосст, Поставщик.Корень, Исходная.Корень, Лог, П.out);
-		Сводка.Вставить("engine", "modules-forms-only");
+		Если П.formsFromUp Тогда
+			НачатьШаг("modulesForms", "Подмена не-форменных .bsl из БП; формы целиком из УП");
+			Рмф = Мф.ПрименитьМодулиБпФормыИзУп(КаталогВосст, Поставщик.Корень, Исходная.Корень, Лог, П.out);
+			Сводка.Вставить("engine", "modules-forms-only-forms-from-up");
+		Иначе
+			НачатьШаг("modulesForms", "Дословная подмена .bsl и Form.xml в restored из БП");
+			Рмф = Мф.ПрименитьДословноБпКRestored(КаталогВосст, Поставщик.Корень, Исходная.Корень, Лог, П.out);
+			Сводка.Вставить("engine", "modules-forms-only");
+		КонецЕсли;
+		Сводка.Вставить("formsFromUp", П.formsFromUp);
 		Сводка.Вставить("formsKeptUp", Рмф.formsKeptUp);
 		Сводка.Вставить("formPrecheck", Новый Структура("checked, incompatible, topReasons",
 			Рмф.formPrecheck.checked, Рмф.formPrecheck.incompatible, Рмф.formPrecheck.topReasons));
-		Сводка.Вставить("modulesForms", Новый Структура("modulesBsl, formsXml, formsKeptUp, hooks, wrappersAdded, extensionMethods",
-			Рмф.modulesBsl, Рмф.formsXml, Рмф.formsKeptUp.Количество(), ИтогЧ.hooks, ИтогОб.count, ИтогЧ.methods));
-		Лог.Добавить("modulesForms: итог — модулей .bsl " + Рмф.modulesBsl + ", Form.xml " + Рмф.formsXml
-			+ ", Form.xml оставлено УП " + Рмф.formsKeptUp.Количество()
+		Сводка.Вставить("modulesForms", Новый Структура("modulesBsl, formsXml, formsKeptUp, formsUpRestored, hooks, wrappersAdded, extensionMethods",
+			Рмф.modulesBsl, Рмф.formsXml, Рмф.formsKeptUp.Количество(),
+			?(Рмф.Свойство("formsUpRestored"), Рмф.formsUpRestored, 0), ИтогЧ.hooks, ИтогОб.count, ИтогЧ.methods));
+		Лог.Добавить("modulesForms: итог — модулей .bsl " + Рмф.modulesBsl + ", Form.xml БП " + Рмф.formsXml
+			+ ", форм УП " + ?(Рмф.Свойство("formsUpRestored"), Рмф.formsUpRestored, Рмф.formsKeptUp.Количество())
 			+ "; хуков в расширении " + ИтогЧ.hooks + ", обёрток &Вместо " + ИтогОб.count);
 		ЗавершитьРаботуСЛогом(П, Лог, Отчет, Старт, "log.txt", Сводка);
 		Возврат;

@@ -12,8 +12,14 @@
 	Лог.Добавить("В расширение добавлены обёртки &Вместо: " + ИтогОб.count + " методов");
 	Мф = Ф.Подключить("МодулиИФормыБыстро");
 	КаталогВосст = ОбъединитьПути(П.out, "restored");
-	Рмф = Мф.ПрименитьДословноБпКRestored(КаталогВосст, Поставщик.Корень, Исходная.Корень, Лог, П.out);
-	Сводка.Вставить("engine", "v2-m4-modules-forms-only");
+	Если П.Свойство("formsFromUp") И П.formsFromUp Тогда
+		Рмф = Мф.ПрименитьМодулиБпФормыИзУп(КаталогВосст, Поставщик.Корень, Исходная.Корень, Лог, П.out);
+		Сводка.Вставить("engine", "v2-m4-modules-forms-only-forms-from-up");
+	Иначе
+		Рмф = Мф.ПрименитьДословноБпКRestored(КаталогВосст, Поставщик.Корень, Исходная.Корень, Лог, П.out);
+		Сводка.Вставить("engine", "v2-m4-modules-forms-only");
+	КонецЕсли;
+	Сводка.Вставить("formsFromUp", ?(П.Свойство("formsFromUp"), П.formsFromUp, Ложь));
 	Сводка.Вставить("formsKeptUp", Рмф.formsKeptUp);
 	Сводка.Вставить("formPrecheck", Новый Структура("checked, incompatible, topReasons",
 		Рмф.formPrecheck.checked, Рмф.formPrecheck.incompatible, Рмф.formPrecheck.topReasons));

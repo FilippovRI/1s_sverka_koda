@@ -49,7 +49,9 @@ $OS tests/test_task_full_metadata.os || { echo "FAIL: unit task full metadata"; 
 $OS tests/test_modcheck_closure.os || { echo "FAIL: unit modcheck closure"; fail=1; }
 $OS tests/test_main_no_autorun.os || { echo "FAIL: Главный.os no autorun on load"; fail=1; }
 $OS tests/test_modules_forms_only.os || { echo "FAIL: modules-forms-only overlay"; fail=1; }
+$OS tests/test_forms_from_up.os || { echo "FAIL: forms-from-up overlay"; fail=1; }
 $OS tests/test_form_overlay_precheck.os || { echo "FAIL: form overlay precheck"; fail=1; }
+$OS tests/test_form_datapath_dynlist.os || { echo "FAIL: form datapath dynlist"; fail=1; }
 $OS tests/test_perf_scaffold.os || { echo "FAIL: perf scaffold copy"; fail=1; }
 $OS tests/test_only_restored.os || { echo "FAIL: only-restored"; fail=1; }
 $OS tests/test_standard_commands_ext.os || { echo "FAIL: unit standard commands ext"; fail=1; }

@@ -1,0 +1,29 @@
+﻿param(
+    [string]$OutRoot = 'D:\typovaya-up-out-mf2'
+)
+$ErrorActionPreference = 'Continue'
+$bin = 'C:\Program Files\1cv8\8.5.1.1150\bin'
+$ibcmd = Join-Path $bin 'ibcmd.exe'
+$repo = Split-Path $PSScriptRoot -Parent
+$tmp = 'D:\typovaya-up-tmp-check'
+$db = Join-Path $tmp 'ib'
+$data = Join-Path $tmp 'ibcmd-data'
+$log = Join-Path $tmp 'import_restored.log'
+$src = Join-Path $OutRoot 'restored'
+New-Item -ItemType Directory -Force -Path $tmp, $data | Out-Null
+if (Test-Path $db) { Remove-Item -LiteralPath $db -Recurse -Force -EA SilentlyContinue }
+& $ibcmd infobase create "--db-path=$db" "--data=$data" 2>&1 | Out-Null
+$logLines = @()
+& $ibcmd infobase config import "--db-path=$db" "--data=$data" $src 2>&1 | ForEach-Object { $logLines += $_ }
+$code = $LASTEXITCODE
+$logLines | Set-Content -LiteralPath $log -Encoding UTF8
+$oscript = (Get-Command oscript -EA SilentlyContinue).Source
+if (-not $oscript) { $oscript = 'oscript' }
+& $oscript (Join-Path $repo 'src\СводкаОшибокImport.os') $log
+if ($code -eq 0) {
+    & $ibcmd infobase config apply "--db-path=$db" "--data=$data" --force 2>&1 | Add-Content -LiteralPath $log -Encoding UTF8
+    if ($LASTEXITCODE -ne 0) { $code = $LASTEXITCODE }
+}
+Remove-Item -LiteralPath $db, $data -Recurse -Force -EA SilentlyContinue
+Write-Host "temp import restored exit=$code log=$log"
+exit $code
