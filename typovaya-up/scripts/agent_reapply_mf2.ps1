@@ -23,7 +23,7 @@ if (-not (Test-Path (Join-Path $Out 'restored\Configuration.xml'))) {
     robocopy (Join-Path $From 'restored') (Join-Path $Out 'restored') /E /NFL /NDL /NJH /NJS | Out-Null
 }
 Log-A 'oscript mf_overlay_restored'
-& $oscript (Join-Path $repo 'tasks\mf_overlay_restored.os') '--в' $Out 2>&1 | Tee-Object -FilePath (Join-Path $Out 'reapply_oscript.log')
+& $oscript (Join-Path $repo 'tasks\mf_overlay_restored.os') '--out' $Out 2>&1 | Tee-Object -FilePath (Join-Path $Out 'reapply_oscript.log')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 New-Item -ItemType Directory -Force -Path (Join-Path $Out 'load') | Out-Null
 Copy-Item (Join-Path $repo 'scripts\_load_restored_ib3.ps1') (Join-Path $Out 'load\_load_restored_ib3.ps1') -Force
