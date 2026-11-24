@@ -1,0 +1,4 @@
+both_differ	Catalogs\КонтактныеЛица\Forms\ФормаВыбора\Ext\Form.xml	func=Field,Type	vis=DefaultVisible	pic=xr:Common,xr:LoadTransparent	other=Command
+xml_only	Catalogs\КонтактныеЛица\Forms\ФормаСписка\Ext\Form.xml	func=Type	vis=DefaultVisible	pic=xr:Common,xr:LoadTransparent	other=Command
+xml_only	DataProcessors\ДокументооборотСКонтролирующимиОрганами\Forms\ДанныеПоЛицензииНа1СОтчетность\Ext\Form.xml	func=CommandGroup,Type	vis=DefaultVisible	pic=xr:Common	other=Command
+xml_only	InformationRegisters\УчастникиКонтролируемыхСделок\Forms\ФормаСписка\Ext\Form.xml	func=DataPath	vis=SearchControlLocation,SearchStringLocation,ViewStatusLocation,Width	pic=	other=

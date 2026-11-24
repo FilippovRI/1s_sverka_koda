@@ -1,0 +1,17 @@
+both_differ	CommonForms\ВыборФайловСведенийФизическихЛиц\Ext\Form.xml	func=	vis=	pic=	other=
+both_differ	DataProcessors\ДокументооборотСКонтролирующимиОрганами\Forms\Мастер_ВыборВключаемогоСертификата\Ext\Form.xml	func=	vis=	pic=	other=
+both_differ	DataProcessors\ДокументооборотСКонтролирующимиОрганами\Forms\Мастер_ОшибкиПоискаСертификата\Ext\Form.xml	func=	vis=	pic=	other=
+xml_only	DataProcessors\ДокументооборотСКонтролирующимиОрганами\Forms\ПодтверждениеЗагрузкиКриптоПроCSP\Ext\Form.xml	func=	vis=	pic=	other=
+xml_only	DataProcessors\ОбщиеФормыСЭДОФСС\Forms\ПолучениеСообщенийЗаПериод\Ext\Form.xml	func=	vis=	pic=	other=
+xml_only	Documents\ВходящийДокументСЭДОФСС\Forms\ФормаСписка\Ext\Form.xml	func=	vis=	pic=	other=
+both_differ	Documents\ВходящийЗапросФССДляРасчетаПособия\Forms\ФормаСписка\Ext\Form.xml	func=	vis=	pic=	other=
+xml_only	Documents\ЗаявлениеВФССОВозмещенииРасходовНаПогребение\Forms\ФормаДокумента\Ext\Form.xml	func=	vis=	pic=	other=
+both_differ	Documents\СведенияОЗастрахованномЛицеФСС\Forms\ФормаДокумента\Ext\Form.xml	func=	vis=	pic=	other=
+both_differ	InformationRegisters\ЗастрахованныеЛицаСЭДО\Forms\ФормаСписка\Ext\Form.xml	func=	vis=	pic=	other=
+both_differ	InformationRegisters\МинимальнаяОплатаТрудаРФ\Forms\ФормаСписка\Ext\Form.xml	func=	vis=	pic=	other=
+both_differ	InformationRegisters\НастройкиПрямыхВыплатФССОрганизаций\Forms\ФормаЗаписи\Ext\Form.xml	func=	vis=	pic=	other=
+both_differ	InformationRegisters\ПредельнаяВеличинаБазыСтраховыхВзносов\Forms\ФормаСписка\Ext\Form.xml	func=	vis=	pic=	other=
+both_differ	InformationRegisters\РазмерВычетовНДФЛ\Forms\ФормаСписка\Ext\Form.xml	func=	vis=	pic=	other=
+both_differ	InformationRegisters\СтраховыеВзносыСкидкиКДоходам\Forms\ФормаСписка\Ext\Form.xml	func=	vis=	pic=	other=
+both_differ	InformationRegisters\ТарифыВзносовЗаЗанятыхНаРаботахСДосрочнойПенсией\Forms\ФормаСписка\Ext\Form.xml	func=	vis=	pic=	other=
+xml_only	InformationRegisters\ТарифыСтраховыхВзносов\Forms\ФормаСписка\Ext\Form.xml	func=	vis=	pic=	other=

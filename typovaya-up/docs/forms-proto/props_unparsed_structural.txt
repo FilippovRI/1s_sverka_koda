@@ -1,0 +1,6 @@
+both_differ	Catalogs\СпискиПрофессийДолжностейЛьготногоПенсионногоОбеспечения\Forms\ФормаСписка\Ext\Form.xml	func=	vis=	pic=	other=
+both_differ	CommonForms\ВыборСтандартногоПериодаМесяц\Ext\Form.xml	func=	vis=	pic=	other=
+xml_only	DataProcessors\ИнформационныйЦентр\Forms\ВзаимодействиеПоОбращению\Ext\Form.xml	func=	vis=	pic=	other=
+xml_only	DataProcessors\ИнформационныйЦентр\Forms\ВзаимодействияПоОбращению\Ext\Form.xml	func=	vis=	pic=	other=
+xml_only	DataProcessors\ИнформационныйЦентр\Forms\НеПросмотренныеВзаимодействия\Ext\Form.xml	func=	vis=	pic=	other=
+xml_only	DataProcessors\ИнформационныйЦентр\Forms\ОбращенияВСлужбуПоддержки\Ext\Form.xml	func=	vis=	pic=	other=
