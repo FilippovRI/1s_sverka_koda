@@ -31,3 +31,31 @@ oscript typovaya-up/scripts/run_forms_bp_proto.os ^
 ## Дальше
 
 Подключить флаг `--формы-бп-прототип` в `Главный.os`, когда рабочее дерево параллельного агента будет чистым. Полный перевод всех изменённых форм — только после проверки загрузки среза и оценки manual-хуков.
+
+
+## Срез «только модуль» (`module_only`)
+
+Формы, где Form.xml УП и БП совпадают, а отличается только Module.bsl. В restored — модуль (и тело) из БП; в extension — заимствованная форма с хуками, без программного слоя XML.
+
+```
+oscript typovaya-up/scripts/run_forms_bp_proto.os -и "D:\Выгрузка УП" -п "D:\выгрузка БП" -в "D:\typovaya-up-forms-proto" --forms-file "D:\typovaya-up-forms-proto\module_only_forms.txt"
+```
+
+Наложение среза на полные выгрузки: `scripts/overlay_forms_bp_proto.os`. Загрузка во временную базу `D:\typovaya-up-tmp-forms`: `scripts/load_forms_module_only.ps1` (копирует restored/extension из `typovaya-up-out-mf2` только чтением в `proto\load\`, затем overlay). Не запускать, пока идёт tu_rebuild9.
+
+## Прогон 109 форм module_only (2026-11-24)
+
+Каталог: `D:\typovaya-up-forms-proto`. Список: `module_only_forms.txt`. Генерация 16:03:56–16:07:09 Europe/Moscow, exit=0.
+
+| показатель | значение |
+|---|---|
+| forms / restoredXml / restoredModules / borrowed | 109 |
+| programmatic | 0 |
+| hooksAuto (изменённые методы, автоматические хуки) | 219 |
+| hooksAdded (новые методы только УП) | 74 |
+| hooksManual / todo | 9 |
+| hooksSkip / skipped | 0 |
+
+Девять ручных методов — `proto_todo.txt` (все `status=changed`, `hook=none`, `decision=manual`). У 101 формы хуки записаны в модуль расширения; у 8 (5 без диффа методов к хукам и 3 только manual) модуля в срезе нет.
+
+Загрузку `scripts/load_forms_module_only.ps1` запускать только после строки `check done` в `D:\typovaya-up-out-mf2\rebuild9.log`. Источник mf2 — только чтение, копия в `proto\load\`.

@@ -182,6 +182,48 @@
 Проверить(СтрНайти(ТекстФайла(ОбъединитьПути(Уп, ОтнОба)), "ФлагУП") > 0, "УП не тронут");
 Проверить(СтрНайти(ТекстФайла(ОбъединитьПути(Бп, ОтнОба)), "ФлагУП") = 0, "БП не тронут");
 
+ТОб = ТекстФайла(П(Выход, "extension", "Catalogs\Спр.xml"));
+Проверить(СтрНайти(ТОб, "<Form>Оба</Form>") > 0, "ChildObjects содержит Оба");
+Проверить(СтрНайти(ТОб, "<Form>ТолькоМодуль</Form>") > 0, "ChildObjects содержит ТолькоМодуль");
+
+Список = П(Фикст, "module_only.txt");
+Записать(Список, ОтнМод + Символы.ПС);
+Проверить(Прот.ПрочитатьСписокФорм(Список).Количество() = 1, "ПрочитатьСписокФорм");
+ВыходМ = П(Фикст, "out_mo");
+СтатМ = Прот.СгенерироватьСрезФорм(Уп, Бп, ВыходМ, Прот.ПрочитатьСписокФорм(Список), "УП_");
+Проверить(СтатМ.forms = 1, "module_only forms=" + СтатМ.forms);
+Проверить(СтатМ.programmatic = 0, "module_only без программного слоя XML: " + СтатМ.programmatic);
+Проверить(СтатМ.hooksAuto + СтатМ.hooksAdded > 0, "module_only хуки auto=" + СтатМ.hooksAuto);
+Проверить(СтрНайти(ТекстФайла(П(ВыходМ, "extension", "Catalogs\Спр.xml")), "<Form>ТолькоМодуль</Form>") > 0, "module_only ChildObjects");
+Проверить(СтрНайти(ТекстФайла(П(ВыходМ, "extension", "Catalogs\Спр.xml")), "<Form>Оба</Form>") = 0, "module_only срез без формы Оба");
+
+ЦельВосст = П(Фикст, "overlay", "restored");
+ЦельРасш = П(Фикст, "overlay", "extension");
+Записать(П(ЦельВосст, "Configuration.xml"), "<?xml version=""1.0""?><MetaDataObject/>");
+Записать(П(ЦельРасш, "Configuration.xml"), "<?xml version=""1.0"" encoding=""UTF-8""?>" + Символы.ПС
+	+ "<MetaDataObject>" + Символы.ПС
+	+ "	<Configuration>" + Символы.ПС
+	+ "		<ChildObjects>" + Символы.ПС
+	+ "			<Language>Русский</Language>" + Символы.ПС
+	+ "		</ChildObjects>" + Символы.ПС
+	+ "	</Configuration>" + Символы.ПС
+	+ "</MetaDataObject>" + Символы.ПС);
+Записать(П(ЦельРасш, "Catalogs\Спр.xml"), МетаОбъекта("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "Спр"));
+СтатН = Прот.НаложитьСрезФорм(ВыходМ, ЦельВосст, ЦельРасш);
+Проверить(СтатН.restoredCopied >= 1, "overlay restoredCopied=" + СтатН.restoredCopied);
+Проверить(СтатН.objectsMerged = 1, "overlay objectsMerged=" + СтатН.objectsMerged);
+Проверить(СтрНайти(ТекстФайла(П(ЦельРасш, "Catalogs\Спр.xml")), "<Form>ТолькоМодуль</Form>") > 0, "overlay дописал Form в существующий объект");
+Проверить(СтрНайти(ТекстФайла(П(ЦельРасш, "Catalogs\\Спр.xml")), "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa") > 0, "overlay не затёр существующий объект");
+Проверить((Новый Файл(П(ЦельВосст, ОтнМод))).Существует(), "overlay скопировал Form.xml в restored");
+
+Csv = П(Фикст, "mini.csv");
+Записать(Csv, "rel,object,status,xmlDiff" + Символы.ПС
+	+ """" + ОтнМод + """,""Catalogs\Спр"",module_only,0" + Символы.ПС
+	+ """" + ОтнОба + """,""Catalogs\Спр"",both_differ,1" + Символы.ПС);
+ПутCsv = Прот.ПутиПоСтатусуИзCsv(Csv, "module_only");
+Проверить(ПутCsv.Количество() = 1, "csv module_only count=" + ПутCsv.Количество());
+Проверить(ПутCsv[0] = ОтнМод, "csv module_only path");
+
 Если Ошибок > 0 Тогда
 	ВызватьИсключение "test_forms_bp_proto: " + Ошибок + " failures";
 КонецЕсли;
