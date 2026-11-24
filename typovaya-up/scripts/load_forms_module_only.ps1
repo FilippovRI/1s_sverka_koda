@@ -5,7 +5,8 @@ param(
   [string]$ProtoRoot = 'D:\typovaya-up-forms-proto',
   [string]$Mf2Root = 'D:\typovaya-up-out-mf2',
   [string]$TmpRoot = 'D:\typovaya-up-tmp-forms',
-  [string]$ExtName = 'УП_Доработки'
+  [string]$ExtName = 'УП_Доработки',
+  [string]$VendorBp = 'D:\выгрузка БП'
 )
 $ErrorActionPreference = 'Continue'
 $bin = 'C:\Program Files\1cv8\8.5.1.1150\bin'
@@ -58,6 +59,17 @@ L 'overlay slice onto load copies'
 $oc = $LASTEXITCODE
 L "overlay exit=$oc"
 if ($oc -ne 0) { exit 15 }
+
+# Класс 3 (T-1): реквизиты/ТЧ/значения перечислений БП со ссылкой из кода — на копии load/restored, не на mf2.
+$metaOs = Join-Path $repoScripts 'run_metadata_bp.os'
+if (Test-Path -LiteralPath $metaOs) {
+  L "ДобавлениеМетаданныхБп on load/restored (не трогает mf2 / mf2-manual)"
+  $loadOut = Join-Path $ProtoRoot 'load'
+  & $oscript $metaOs $loadOut $VendorBp
+  L "metadata bp add exit=$LASTEXITCODE"
+} else {
+  L 'SKIP ДобавлениеМетаданныхБп: нет typovaya-up/scripts/run_metadata_bp.os'
+}
 
 foreach ($p in @($db, $data)) {
   if (Test-Path -LiteralPath $p) { Remove-Item -LiteralPath $p -Recurse -Force }
