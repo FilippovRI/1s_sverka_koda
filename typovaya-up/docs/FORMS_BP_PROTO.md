@@ -59,3 +59,11 @@ oscript typovaya-up/scripts/run_forms_bp_proto.os -и "D:\Выгрузка УП"
 Девять ручных методов — `proto_todo.txt` (все `status=changed`, `hook=none`, `decision=manual`). У 101 формы хуки записаны в модуль расширения; у 8 (5 без диффа методов к хукам и 3 только manual) модуля в срезе нет.
 
 Загрузку `scripts/load_forms_module_only.ps1` запускать только после строки `check done` в `D:\typovaya-up-out-mf2\rebuild9.log`. Источник mf2 — только чтение, копия в `proto\load\`.
+
+Загрузка во временную базу `D:\typovaya-up-tmp-forms` (Europe/Moscow, 17:01–17:26, свежий restored из mf2 после `check done` в 16:59:40):
+
+- основная: ibcmd import/apply exit=0;
+- расширение: сначала 35 новых заимствованных объектов без `InternalInfo/GeneratedType` — отказ Designer; после копирования `InternalInfo` из restored загрузка упиралась в «Неверный путь к данным» на полном `Form.xml` у 12 форм. Для module_only тело `Form.xml` в extension не кладётся (форма наследуется из restored), остаются метаданные формы и модуль с хуками;
+- повторно: LoadConfigFromFiles exit=0, UpdateDBCfg exit=0, CheckModules exit=101 (как у параллельного check9). Новые сообщения CheckModules — три общие формы (`ВводВременногоПароля`, `ОтключениеПодтвержденияКриптоопераций`, `СвязанныеДокументы`): в модуле расширения не видны методы типовой формы.
+
+Генератор копирует `InternalInfo` из УП, overlay подставляет его из целевого restored для новых объектов.

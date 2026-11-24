@@ -1,4 +1,4 @@
-# Загрузка restored+extension со срезом «только модуль» во временную базу D:\typovaya-up-tmp-forms.
+﻿# Загрузка restored+extension со срезом «только модуль» во временную базу D:\typovaya-up-tmp-forms.
 # Источник restored/extension — копия D:\typovaya-up-out-mf2 (только чтение) в proto\load\.
 # Не трогает typovaya-up-out-mf2, typovaya-up-tmp-check, исходные выгрузки и InfoBase3.
 param(

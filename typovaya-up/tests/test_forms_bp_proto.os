@@ -65,10 +65,20 @@
 		+ "КонецПроцедуры" + Символы.ПС;
 КонецФункции
 
-Функция МетаОбъекта(Уид, Имя)
+Функция МетаОбъекта(Уид, Имя, ИдТипа = "")
+	Инфо = "";
+	Если ИдТипа <> "" Тогда
+		Инфо = "		<InternalInfo>" + Символы.ПС
+			+ "			<xr:GeneratedType name=""CatalogRef." + Имя + """ category=""Ref"">" + Символы.ПС
+			+ "				<xr:TypeId>" + ИдТипа + "</xr:TypeId>" + Символы.ПС
+			+ "				<xr:ValueId>bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb</xr:ValueId>" + Символы.ПС
+			+ "			</xr:GeneratedType>" + Символы.ПС
+			+ "		</InternalInfo>" + Символы.ПС;
+	КонецЕсли;
 	Возврат "<?xml version=""1.0"" encoding=""UTF-8""?>" + Символы.ПС
-		+ "<MetaDataObject xmlns=""http://v8.1c.ru/8.3/MDClasses"" version=""2.21"">" + Символы.ПС
+		+ "<MetaDataObject xmlns=""http://v8.1c.ru/8.3/MDClasses"" xmlns:xr=""http://v8.1c.ru/8.3/xcf/readable"" version=""2.21"">" + Символы.ПС
 		+ "	<Catalog uuid=""" + Уид + """>" + Символы.ПС
+		+ Инфо
 		+ "		<Properties><Name>" + Имя + "</Name></Properties>" + Символы.ПС
 		+ "	</Catalog>" + Символы.ПС
 		+ "</MetaDataObject>" + Символы.ПС;
@@ -106,8 +116,8 @@
 Выход = ОбъединитьПути(Фикст, "out");
 Записать(ОбъединитьПути(Уп, "Configuration.xml"), "<?xml version=""1.0""?><MetaDataObject/>");
 Записать(ОбъединитьПути(Бп, "Configuration.xml"), "<?xml version=""1.0""?><MetaDataObject/>");
-Записать(П(Уп, "Catalogs", "Спр.xml"), МетаОбъекта("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "Спр"));
-Записать(П(Бп, "Catalogs", "Спр.xml"), МетаОбъекта("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "Спр"));
+Записать(П(Уп, "Catalogs", "Спр.xml"), МетаОбъекта("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "Спр", "11111111-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+Записать(П(Бп, "Catalogs", "Спр.xml"), МетаОбъекта("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "Спр", "11111111-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
 Записать(П(Уп, "Catalogs", "ТолькоУпОбъект.xml"), МетаОбъекта("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "ТолькоУпОбъект"));
 
 ПоложитьФорму(Уп, "Идент", XmlФормы(Ложь), МодульБп(), "11111111-1111-1111-1111-111111111111");
@@ -167,6 +177,8 @@
 ТРасшXml = ТекстФайла(П(Выход, "extension", ОтнОба));
 Проверить(СтрНайти(ТРасшXml, "ФлагУП") = 0, "в Form.xml extension нет реквизита УП (программный слой)");
 Проверить(СтрНайти(ТекстФайла(П(Выход, "extension", "Catalogs\Спр.xml")), "Adopted") > 0, "объект заимствован");
+Проверить(СтрНайти(ТекстФайла(П(Выход, "extension", "Catalogs\Спр.xml")), "11111111-aaaa-aaaa-aaaa-aaaaaaaaaaaa") > 0, "InternalInfo из УП");
+Проверить(СтрНайти(ТекстФайла(П(Выход, "extension", "Catalogs\Спр.xml")), "xmlns:xr=") > 0, "xmlns:xr у заимствованного объекта");
 Проверить(СтрНайти(ТекстФайла(П(Выход, "extension", "Catalogs\Спр\Forms\Оба.xml")), "ExtendedConfigurationObject") > 0, "форма заимствована");
 Проверить(СтрНайти(ТекстФайла(П(Выход, "extension", "Catalogs\Спр\Forms\Оба.xml")), "44444444-4444-4444-4444-444444444444") > 0, "UUID формы из УП");
 
@@ -196,6 +208,9 @@
 Проверить(СтатМ.hooksAuto + СтатМ.hooksAdded > 0, "module_only хуки auto=" + СтатМ.hooksAuto);
 Проверить(СтрНайти(ТекстФайла(П(ВыходМ, "extension", "Catalogs\Спр.xml")), "<Form>ТолькоМодуль</Form>") > 0, "module_only ChildObjects");
 Проверить(СтрНайти(ТекстФайла(П(ВыходМ, "extension", "Catalogs\Спр.xml")), "<Form>Оба</Form>") = 0, "module_only срез без формы Оба");
+Проверить(Не (Новый Файл(П(ВыходМ, "extension", ОтнМод))).Существует(), "module_only: в extension нет тела Form.xml");
+Проверить((Новый Файл(П(ВыходМ, "extension", "Catalogs\Спр\Forms\ТолькоМодуль.xml"))).Существует(), "module_only: мета формы есть");
+Проверить((Новый Файл(П(ВыходМ, "extension", "Catalogs\Спр\Forms\ТолькоМодуль\Ext\Form\Module.bsl"))).Существует(), "module_only: модуль с хуками есть");
 
 ЦельВосст = П(Фикст, "overlay", "restored");
 ЦельРасш = П(Фикст, "overlay", "extension");
@@ -215,6 +230,16 @@
 Проверить(СтрНайти(ТекстФайла(П(ЦельРасш, "Catalogs\Спр.xml")), "<Form>ТолькоМодуль</Form>") > 0, "overlay дописал Form в существующий объект");
 Проверить(СтрНайти(ТекстФайла(П(ЦельРасш, "Catalogs\\Спр.xml")), "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa") > 0, "overlay не затёр существующий объект");
 Проверить((Новый Файл(П(ЦельВосст, ОтнМод))).Существует(), "overlay скопировал Form.xml в restored");
+
+// новый объект среза: InternalInfo берётся из restored
+ОтнНов = "Catalogs\НовыйСпр\Forms\Форма\Ext\Form.xml";
+Записать(П(ВыходМ, "restored", ОтнНов), XmlФормы(Ложь));
+Записать(П(ВыходМ, "extension", "Catalogs\НовыйСпр.xml"), Прот.МетаЗаимствованногоОбъекта("Catalogs", "НовыйСпр", "cccccccc-cccc-cccc-cccc-cccccccccccc", Неопределено, ""));
+Записать(П(ЦельВосст, "Catalogs\НовыйСпр.xml"), МетаОбъекта("cccccccc-cccc-cccc-cccc-cccccccccccc", "НовыйСпр", "22222222-cccc-cccc-cccc-cccccccccccc"));
+СтатН2 = Прот.НаложитьСрезФорм(ВыходМ, ЦельВосст, ЦельРасш);
+Проверить(СтатН2.objectsNew >= 1, "overlay objectsNew=" + СтатН2.objectsNew);
+Проверить(СтрНайти(ТекстФайла(П(ЦельРасш, "Catalogs\НовыйСпр.xml")), "22222222-cccc-cccc-cccc-cccccccccccc") > 0, "overlay InternalInfo из restored");
+Проверить(СтрНайти(ТекстФайла(П(ЦельРасш, "Catalogs\НовыйСпр.xml")), "Adopted") > 0, "новый объект заимствован");
 
 Csv = П(Фикст, "mini.csv");
 Записать(Csv, "rel,object,status,xmlDiff" + Символы.ПС
