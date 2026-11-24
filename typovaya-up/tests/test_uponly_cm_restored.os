@@ -69,6 +69,7 @@
 Зап(ОбъединитьПути(Осн, "ScheduledJobs", "Задание.xml"), "<ScheduledJob uuid=""66666666-6666-6666-6666-666666666666""><MethodName>CommonModule.НСКТест.М</MethodName></ScheduledJob>");
 Зап(ОбъединитьПути(Осн, "Configuration.xml"), Конф("CommonModule.Общий,CommonModule.НСКТест,CommonModule.НСКЗаим,EventSubscription.Подп,EventSubscription.ПодпОбщ,ScheduledJob.Задание"));
 
+Зап(ОбъединитьПути(Уп, "CommonModules", "НСКТест.xml"), СтрЗаменить(XmlМодуля("22222222-2222-2222-2222-222222222222"), "<Server>true</Server>", "<Server>true</Server><Privileged>true</Privileged>"));
 Пер = ЗагрузитьСценарий(ОбъединитьПути(Ск, "ПереносОбъектовУп.os"));
 ОТУ = ЗагрузитьСценарий(ОбъединитьПути(Ск, "ОбъектыТолькоУп.os"));
 Пер.Инициализировать(ЗагрузитьСценарий(ОбъединитьПути(Ск, "ЧерновикРасширения.os")), ОТУ);
@@ -93,6 +94,7 @@
 	П(Тх <> "" И СтрНайти(Тх, "Adopted") = 0, Имя + ": собственный объект extension");
 	П(СтрНайти(ОТУ.ПрочитатьТекст(ОбъединитьПути(Расш, "CommonModules", Имя, "Ext/Module.bsl")), "// УП " + Имя) > 0, Имя + ": код из УП");
 КонецЦикла;
+П(СтрНайти(ОТУ.ПрочитатьТекст(ОбъединитьПути(Расш, "CommonModules", "НСКТест.xml")), "<Privileged>false</Privileged>") > 0, "привилегированный ОМ в extension: Privileged=false");
 Ке = ОТУ.ПрочитатьТекст(ОбъединитьПути(Расш, "Configuration.xml"));
 П(СтрНайти(Ке, "<CommonModule>НСКТест</CommonModule>") > 0, "Configuration.xml extension");
 П(Не Есть(ОбъединитьПути(Расш, "CommonModules", "Общий.xml")), "Общий не в extension");
