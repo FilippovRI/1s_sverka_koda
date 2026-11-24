@@ -599,6 +599,30 @@ XmlБпКд = СтрЗаменить(XmlФормы(Ложь), "</Attributes>",
 Проверить(СтатКд.skipped = 0, "qref skipped=" + СтатКд.skipped);
 Проверить((Новый Файл(П(ВыходКд, "restored", ОтнКд))).Существует(), "форма с ТЧ, на которую есть ссылка из кода, остаётся в срезе");
 
+
+// ExcludedCommand, которого нет в typovaya-форме.
+УпИс = П(Фикст, "up_excmd");
+БпИс = П(Фикст, "bp_excmd");
+ВыходИс = П(Фикст, "out_excmd");
+Записать(П(УпИс, "Catalogs", "СпрИс.xml"), МетаОбъекта("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa91", "СпрИс"));
+Записать(П(БпИс, "Catalogs", "СпрИс.xml"), МетаОбъекта("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa91", "СпрИс"));
+XmlУпИс = XmlФормы(Ложь);
+XmlБпИс = СтрЗаменить(XmlФормы(Ложь), "<Attributes>",
+	"	<CommandSet>" + Символы.ПС
+	+ "		<ExcludedCommand>CreateInitialImage</ExcludedCommand>" + Символы.ПС
+	+ "	</CommandSet>" + Символы.ПС
+	+ "	<Attributes>");
+ПоложитьФормуВ(УпИс, "СпрИс", "ФормаИс", XmlУпИс, МодульБп(), "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa92");
+ПоложитьФормуВ(БпИс, "СпрИс", "ФормаИс", XmlБпИс, МодульБп(), "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa92");
+ОтнИс = "Catalogs\СпрИс\Forms\ФормаИс\Ext\Form.xml";
+ФильтрИс = Новый Массив;
+ФильтрИс.Добавить(ОтнИс);
+СтатИс = Прот.СгенерироватьСрезФорм(УпИс, БпИс, ВыходИс, ФильтрИс, "УП_");
+Проверить(СтатИс.forms = 0, "excmd forms=" + СтатИс.forms);
+Проверить(СтатИс.skipped = 1, "excmd skipped=" + СтатИс.skipped);
+Проверить(СтрНайти(СтатИс.todo[0], "CreateInitialImage") > 0, "todo называет CreateInitialImage");
+Проверить(Не (Новый Файл(П(ВыходИс, "restored", ОтнИс))).Существует(), "форма с ExcludedCommand вне typovaya не в restored среза");
+
 Если Ошибок > 0 Тогда
 	ВызватьИсключение "test_forms_bp_proto: " + Ошибок + " failures";
 КонецЕсли;
