@@ -1,4 +1,4 @@
-// Класс 3 CheckModules: реквизиты/ТЧ/значения перечислений БП, которых нет в метаданных УП.
+﻿// Класс 3 CheckModules: реквизиты/ТЧ/значения перечислений БП, которых нет в метаданных УП.
 // Только отчёт (todo_missing_metadata.md / .csv), без заимствования и хуков.
 
 Перем РвAttr;
@@ -83,7 +83,10 @@
 		"Catalog:Catalogs:Справочник,Document:Documents:Документ,Enum:Enums:Перечисление,"
 		+ "ChartOfCharacteristicTypes:ChartsOfCharacteristicTypes:ПланВидовХарактеристик,"
 		+ "ChartOfAccounts:ChartsOfAccounts:ПланСчетов,DataProcessor:DataProcessors:Обработка,Report:Reports:Отчет,"
-		+ "InformationRegister:InformationRegisters:РегистрСведений,AccumulationRegister:AccumulationRegisters:РегистрНакопления", ",") Цикл
+		+ "InformationRegister:InformationRegisters:РегистрСведений,AccumulationRegister:AccumulationRegisters:РегистрНакопления,"
+		+ "ChartOfCalculationTypes:ChartsOfCalculationTypes:ПланВидовРасчета,AccountingRegister:AccountingRegisters:РегистрБухгалтерии,"
+		+ "CalculationRegister:CalculationRegisters:РегистрРасчета,BusinessProcess:BusinessProcesses:БизнесПроцесс,Task:Tasks:Задача,"
+		+ "ExchangePlan:ExchangePlans:ПланОбмена", ",") Цикл
 		Ч = СтрРазделить(П, ":");
 		Пап = Ч[1];
 		ТегРу = Ч[2];
@@ -198,7 +201,10 @@
 	КонецЕсли;
 	Карта = Новый Соответствие;
 	Для Каждого П Из СтрРазделить("Catalogs:Справочник,Documents:Документ,CommonModules:ОбщийМодуль,Enums:Перечисление,"
-		+ "DataProcessors:Обработка,Reports:Отчет,InformationRegisters:РегистрСведений,AccumulationRegisters:РегистрНакопления", ",") Цикл
+		+ "DataProcessors:Обработка,Reports:Отчет,InformationRegisters:РегистрСведений,AccumulationRegisters:РегистрНакопления,"
+		+ "ChartsOfCalculationTypes:ПланВидовРасчета,ChartsOfCharacteristicTypes:ПланВидовХарактеристик,ChartsOfAccounts:ПланСчетов,"
+		+ "AccountingRegisters:РегистрБухгалтерии,CalculationRegisters:РегистрРасчета,BusinessProcesses:БизнесПроцесс,Tasks:Задача,"
+		+ "ExchangePlans:ПланОбмена", ",") Цикл
 		П2 = СтрРазделить(П, ":");
 		Карта.Вставить(П2[0], П2[1]);
 	КонецЦикла;
