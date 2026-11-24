@@ -568,6 +568,12 @@
 				Сводка.Вставить("upOnlyCmFromRestored", Новый Структура("removed, extAdded, extHad, extReplacedAdopted, refsFiles, refsLines, xmlRefs",
 					Руо.removed, Руо.extAdded, Руо.extHad, Руо.extReplacedAdopted, Руо.refsFiles, Руо.refsLines, Руо.xmlRefs));
 				ЗавершитьШаг();
+				// Решение 24.11 (t724s2564): мелкие объекты только УП со ссылками на убранные ОМ — в extension; прочее — todo.
+				НачатьШаг("smallUpOnlyObjects", "Мелкие объекты только УП (обработки, отчёты, общие команды/формы) → extension");
+				Рмо = Загрузить("ПереносМелкихОбъектовУп").Применить(ОбъединитьПути(П.out, "extension"), КаталогВосст, Исходная.Корень, Поставщик.Корень,
+					П.extension, Лог, П.out);
+				Сводка.Вставить("smallUpOnlyObjects", Новый Структура("moved, files, todoA, todoB", Рмо.moved, Рмо.files, Рмо.todoA, Рмо.todoB));
+				ЗавершитьШаг();
 			КонецЕсли;
 			Если Исходная.Корень <> "" И Поставщик.Корень <> "" Тогда
 				НачатьШаг("upModulesExtension", "Общие модули УП в extension по ссылкам из кода расширения");
@@ -603,6 +609,8 @@
 				Сводка.Вставить("upModulesExtensionPass2", Ру2);
 				ЗавершитьШаг();
 			КонецЕсли;
+			ПроверитьСсылкиRestored(КаталогВосст, Лог, Сводка);
+			Загрузить("ВозвратОбъектовБпВRestored").ОбновитьКэш(КаталогВосст, Поставщик.Корень, П.out);
 			ЗавершитьРаботуСЛогом(П, Лог, Отчет, Старт, "log.txt", Сводка);
 			Возврат;
 		ИначеЕсли П.formsFromUp Тогда
@@ -631,10 +639,17 @@
 				Новый Соответствие, П.extension, Лог, П.out);
 			Сводка.Вставить("upOnlyCmFromRestored", Новый Структура("removed, extAdded, extHad, extReplacedAdopted, refsFiles, refsLines, xmlRefs",
 				Руо.removed, Руо.extAdded, Руо.extHad, Руо.extReplacedAdopted, Руо.refsFiles, Руо.refsLines, Руо.xmlRefs));
+			Рмо = Загрузить("ПереносМелкихОбъектовУп").Применить(ОбъединитьПути(П.out, "extension"), КаталогВосст, Исходная.Корень, Поставщик.Корень,
+				П.extension, Лог, П.out);
+			Сводка.Вставить("smallUpOnlyObjects", Новый Структура("moved, files, todoA, todoB", Рмо.moved, Рмо.files, Рмо.todoA, Рмо.todoB));
 			НачатьШаг("returnBpObjects", "Возврат ОМ только БП и их цепочки объектов БП в restored");
 			Рво = Загрузить("ВозвратОбъектовБпВRestored").Вернуть(КаталогВосст, Поставщик.Корень, ОбъединитьПути(П.out, "extension"), Лог, П.out);
 			Сводка.Вставить("returnBpObjects", Новый Структура("count, byTag, files, configLines, extRemoved",
 				Рво.order.Количество(), Рво.byTag, Рво.files, Рво.configLines, Рво.extRemoved));
+		КонецЕсли;
+		Если (Новый Файл(ОбъединитьПути(КаталогВосст, "Configuration.xml"))).Существует() Тогда
+			ПроверитьСсылкиRestored(КаталогВосст, Лог, Сводка);
+			Загрузить("ВозвратОбъектовБпВRestored").ОбновитьКэш(КаталогВосст, Поставщик.Корень, П.out);
 		КонецЕсли;
 		Лог.Добавить("modulesForms: итог — модулей .bsl " + Рмф.modulesBsl + ", Form.xml БП " + Рмф.formsXml
 			+ ", форм УП " + ?(Рмф.Свойство("formsUpRestored"), Рмф.formsUpRestored, Рмф.formsKeptUp.Количество())
@@ -848,6 +863,17 @@
 	КонецЕсли;
 	ЗавершитьРаботуСЛогом(П, Лог, Отчет, Старт, "log.txt", Сводка);
 
+КонецПроцедуры
+
+// Перед ibcmd import: ссылки restored на отсутствующие объекты (restored_missing_refs.txt в каталоге выхода).
+Процедура ПроверитьСсылкиRestored(КаталогВосст, Лог, Сводка)
+	НачатьШаг("restoredRefsCheck", "Проверка ссылок restored на отсутствующие объекты (до загрузки)");
+	Рпс = Загрузить("ПроверкаСсылокRestored").Проверить(КаталогВосст, Лог, (Новый Файл(КаталогВосст)).Путь);
+	Сводка.Вставить("restoredMissingRefs", Рпс.missing.Количество());
+	Если Рпс.missing.Количество() > 0 Тогда
+		Сообщить("ПРЕДУПРЕЖДЕНИЕ: в restored ссылки на отсутствующие объекты: " + Рпс.missing.Количество() + " (restored_missing_refs.txt) — ibcmd import упадёт");
+	КонецЕсли;
+	ЗавершитьШаг();
 КонецПроцедуры
 
 Функция ОмИзВозврата(Рво)
