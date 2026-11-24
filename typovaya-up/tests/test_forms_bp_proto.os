@@ -415,6 +415,34 @@ XmlБпКк = СтрЗаменить(XmlФормы(Ложь), "</Form>",
 Проверить(СтрНайти(СтатКк.todo[0], "КартинкаТолькоБп") > 0, "todo называет КартинкаТолькоБп");
 Проверить(Не (Новый Файл(П(ВыходКк, "restored", ОтнКк))).Существует(), "форма с отсутствующей общей картинкой не в restored среза");
 
+
+// Form.xml БП с CheckBoxType/EqualColumnsWidth, которых нет в typovaya-форме — не кладём в restored.
+УпСв = П(Фикст, "up_prop");
+БпСв = П(Фикст, "bp_prop");
+ВыходСв = П(Фикст, "out_prop");
+Записать(П(УпСв, "Catalogs", "СпрСв.xml"), МетаОбъекта("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa31", "СпрСв"));
+Записать(П(БпСв, "Catalogs", "СпрСв.xml"), МетаОбъекта("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa31", "СпрСв"));
+XmlУпСв = XmlФормы(Ложь);
+XmlБпСв = СтрЗаменить(XmlФормы(Ложь), "</Form>",
+	"	<ChildItems>" + Символы.ПС
+	+ "		<CheckBoxField name=""ФлагБп"" id=""10"">" + Символы.ПС
+	+ "			<CheckBoxType>Switcher</CheckBoxType>" + Символы.ПС
+	+ "			<EqualColumnsWidth>true</EqualColumnsWidth>" + Символы.ПС
+	+ "		</CheckBoxField>" + Символы.ПС
+	+ "	</ChildItems>" + Символы.ПС
+	+ "</Form>");
+ПоложитьФормуВ(УпСв, "СпрСв", "ФормаСв", XmlУпСв, МодульБп(), "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa32");
+ПоложитьФормуВ(БпСв, "СпрСв", "ФормаСв", XmlБпСв, МодульБп(), "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa32");
+ОтнСв = "Catalogs\СпрСв\Forms\ФормаСв\Ext\Form.xml";
+ФильтрСв = Новый Массив;
+ФильтрСв.Добавить(ОтнСв);
+СтатСв = Прот.СгенерироватьСрезФорм(УпСв, БпСв, ВыходСв, ФильтрСв, "УП_");
+Проверить(СтатСв.forms = 0, "props forms=" + СтатСв.forms);
+Проверить(СтатСв.skipped = 1, "props skipped=" + СтатСв.skipped);
+Проверить(СтатСв.todo.Количество() = 1, "props todo=" + СтатСв.todo.Количество());
+Проверить(СтрНайти(СтатСв.todo[0], "CheckBoxType") > 0, "todo называет CheckBoxType");
+Проверить(Не (Новый Файл(П(ВыходСв, "restored", ОтнСв))).Существует(), "форма со свойствами вне typovaya не в restored среза");
+
 Если Ошибок > 0 Тогда
 	ВызватьИсключение "test_forms_bp_proto: " + Ошибок + " failures";
 КонецЕсли;
