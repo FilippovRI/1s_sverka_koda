@@ -85,6 +85,10 @@
 	ТолькоExtension = Значение;
 КонецПроцедуры
 
+Процедура УстановитьДирективыВХуках(Значение) Экспорт
+	ДирективыВХуках = Значение;
+КонецПроцедуры
+
 Процедура ИнициализироватьПравилаXml()
 	ТипыБезChildObjects = Новый Соответствие;
 	Для Каждого Т Из СтрРазделить("CommonModule,Language,CommonCommand,Constant,Subsystem,Role,CommonPicture,StyleItem,CommonForm,"

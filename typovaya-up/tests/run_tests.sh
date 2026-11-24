@@ -30,6 +30,7 @@ $OS tests/test_arity_unresolved.os || { echo "FAIL: unit arity/unresolved"; fail
 $OS tests/test_dynlist.os || { echo "FAIL: unit dynlist"; fail=1; }
 $OS tests/test_ext_forms.os || { echo "FAIL: unit ext forms"; fail=1; }
 $OS tests/test_programmatic_forms.os || { echo "FAIL: unit programmatic forms"; fail=1; }
+$OS tests/test_forms_bp_proto.os || { echo "FAIL: unit forms bp proto"; fail=1; }
 $OS tests/test_form_dynamiclist_guard.os || { echo "FAIL: unit dynamiclist guard"; fail=1; }
 $OS tests/test_task10.os || { echo "FAIL: unit task10"; fail=1; }
 $OS tests/test_task11.os || { echo "FAIL: unit task11"; fail=1; }
