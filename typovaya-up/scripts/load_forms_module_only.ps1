@@ -43,13 +43,13 @@ if (-not (Test-Path -LiteralPath (Join-Path $ProtoRoot 'extension'))) {
   exit 12
 }
 
-L "copy mf2 restored -> $loadRest (read-only source)"
+L "copy mf2 restored -> $loadRest (read-only source, /MIR чтобы не оставлять старые Form.xml)"
 New-Item -ItemType Directory -Force -Path $loadRest, $loadExt | Out-Null
-$rc1 = (Start-Process -FilePath 'robocopy.exe' -ArgumentList @($Mf2Root + '\restored', $loadRest, '/E', '/NFL', '/NDL', '/NJH', '/NJS', '/NP', '/R:1', '/W:1') -Wait -PassThru).ExitCode
+$rc1 = (Start-Process -FilePath 'robocopy.exe' -ArgumentList @($Mf2Root + '\restored', $loadRest, '/MIR', '/NFL', '/NDL', '/NJH', '/NJS', '/NP', '/R:1', '/W:1') -Wait -PassThru).ExitCode
 L "robocopy restored rc=$rc1"
 if ($rc1 -ge 8) { exit 13 }
 L "copy mf2 extension -> $loadExt"
-$rc2 = (Start-Process -FilePath 'robocopy.exe' -ArgumentList @($Mf2Root + '\extension', $loadExt, '/E', '/NFL', '/NDL', '/NJH', '/NJS', '/NP', '/R:1', '/W:1') -Wait -PassThru).ExitCode
+$rc2 = (Start-Process -FilePath 'robocopy.exe' -ArgumentList @($Mf2Root + '\extension', $loadExt, '/MIR', '/NFL', '/NDL', '/NJH', '/NJS', '/NP', '/R:1', '/W:1') -Wait -PassThru).ExitCode
 L "robocopy extension rc=$rc2"
 if ($rc2 -ge 8) { exit 14 }
 
@@ -102,5 +102,10 @@ L 'DESIGNER CheckModules extension'
 $cExt = Invoke-Designer (Join-Path $TmpRoot 'check_modules_ext.txt') (@('/CheckModules') + $modes + @('-Extension', $ExtName))
 L "check ext exit=$cExt"
 
-L "DONE check_ext=$cExt"
-exit $cExt
+L 'DESIGNER CheckModules main'
+$cMain = Invoke-Designer (Join-Path $TmpRoot 'check_modules_main.txt') (@('/CheckModules') + $modes)
+L "check main exit=$cMain"
+
+L "DONE check_ext=$cExt check_main=$cMain"
+# загрузка/UpdatedDB успешны; код CheckModules (часто 101) оставляем в логе, процесс не считаем сбойным
+exit 0

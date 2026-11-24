@@ -116,4 +116,50 @@ CheckModules расширения не видит процедуры типов�
 | other_props (часто тег Command/Item без смены имени) | 31 | todo, ручной разбор |
 | unparsed_structural | 6 | todo, ручной разбор |
 
-Загрузку обновлённого расширения не запускать, пока в `D:\typovaya-up-out-mf2\after10.log` нет строки `ALL DONE`.
+## Пропуски и устойчивость генератора
+
+- Повторная генерация в тот же каталог перезаписывает блок хуков от маркера до конца модуля (иначе остаются старые короткие модули без типовых хелперов).
+- Если модуль БП ссылается на общие модули, которых нет в typovaya (сравнение с выгрузкой УП), форма в срез не включается: в restored остаётся модуль typovaya, причина пишется в todo. Сравнение только с УП (не с уже собранной typovaya в mf2) даёт лишние пропуски: в срезе 109 из 23 таких пропусков фактически новые ошибки CheckModules основной дали 6 форм — их модули при загрузке оставлены typovaya (копия из mf2).
+- Если `Form.xml` БП содержит `DataPath` на реквизиты, которых нет в метаданных typovaya/УП, форма пропускается (иначе ibcmd: «Неверный путь к данным»). Тест: `ФормаДп` / `РеквизитТолькоБп`.
+- Генератор пока не очищает выходные `restored/` и `extension/` в начале прогона: перед повторной генерацией их нужно удалить вручную, иначе пропущенные формы оставят старые файлы, и overlay утащит их в загрузку.
+- `scripts/load_forms_module_only.ps1`: robocopy `/MIR` (не `/E`), чтобы в `load/extension` не оставались старые `Form.xml`; после CheckModules расширения выполняется CheckModules основной. Код выхода 101 у CheckModules ожидаем и пишется в лог.
+
+## Результаты CheckModules (база mf2 suffix 10: main 670 / ext 820)
+
+Уникальные ключи `{location}: message` после свёртки режимов проверки. Каталоги `typovaya-up-out-mf2` и `typovaya-up-tmp-check` — только чтение.
+
+### 109 module_only — `D:\typovaya-up-tmp-forms`
+
+Повторный полный импорт 19:23:37–20:09:53 Europe/Moscow: 103 модуля БП + 6 модулей typovaya из mf2 (формы, чей модуль БП ссылается на общие модули, отсутствующие в typovaya). Загрузка расширения — после recopy `/MIR`.
+
+- расширение: uniq=820, added 0, gone 0, файл идентичен baseline (996722 байт, тот же SHA256);
+- основная: uniq=638, added 0, gone 32 (исчезли ссылки на модули только УП в этих формах — ожидаемо).
+
+### 20 xml_only nameDiff — `D:\typovaya-up-tmp-forms-xmlonly`
+
+Первая генерация клала все 20 `Form.xml` БП; ibcmd import 20:23:53, exit=-1 («Неверный путь к данным») на 10 формах с DataPath вне typovaya. После пропуска таких форм срез перегенерирован 20:27:57–20:28:03 Europe/Moscow: forms=10, skipped=10, restoredXml=10, restoredModules=9, borrowed=10, programmatic=9, todo=10, `Form.xml` в extension=0.
+
+Пропущены: СведенияОДоходахСтраховыеВзносы, ВидыВычетовНДФЛ, ВидыТарифовСтраховыхВзносов (ФормаСписка и ФормаЭлемента), КлассификаторТНВЭД, ЛицевыеСчетаСотрудниковПоЗарплатнымПроектам, НастройкиУчетаСтраховыхВзносов, ОбластиДанных, СведенияОбИнвалидностиФизическихЛиц, СтавкаВзносаНаСтрахованиеОтНесчастныхСлучаев.
+
+Повторная загрузка 10 typovaya-безопасных форм 20:28:55–21:05:29 Europe/Moscow: import/apply/LoadConfigFromFiles/UpdateDBCfg exit=0, CheckModules ext/main = 101/101.
+
+- расширение: uniq=820, added 0, gone 0, SHA256 = baseline;
+- основная: uniq=670, added 0, gone 0, SHA256 = baseline.
+
+### Пункт 3: 310 both_differ — `D:\typovaya-up-forms-both`
+
+Модуль как в пункте 1, Form.xml как в пункте 2 (функциональные отличия — todo, визуальные — форма БП + todo, элементы только УП — программный слой). Генерация с пропусками CM+DataPath и предварительной очисткой `restored/`/`extension/`, 20:28:55–20:50:44 Europe/Moscow, exit=0.
+
+| показатель | значение |
+|---|---|
+| forms (в срезе) | 167 |
+| skipped | 143 (108 — общие модули только БП, 35 — DataPath вне typovaya) |
+| restoredXml / borrowed | 167 |
+| restoredModules | 166 |
+| programmatic | 96 |
+| hooksAuto / hooksAdded / hooksManual / hooksSkip | 759 / 375 / 124 / 4 |
+| todo | 345 |
+| Form.xml в extension | 0 |
+| Module.bsl в extension | 152 |
+
+Загрузка во временную базу `D:\typovaya-up-tmp-forms-both` запущена 21:06:52 Europe/Moscow (`load_forms_module_only.ps1`, mf2 только чтение). Сравнение с baseline 670/820 — после CheckModules.
