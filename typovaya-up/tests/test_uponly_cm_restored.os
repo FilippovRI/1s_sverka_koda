@@ -63,7 +63,8 @@
 Зап(ОбъединитьПути(Осн, "Catalogs", "Спр", "Ext/ObjectModule.bsl"),
 	"// НСКТест.М();" + Символы.ПС + "НСКТест.М();" + Символы.ПС + "Общий.М();" + Символы.ПС);
 Зап(ОбъединитьПути(Осн, "EventSubscriptions", "Подп.xml"), "<EventSubscription uuid=""55555555-5555-5555-5555-555555555555""><Handler>CommonModule.НСКЗаим.М</Handler></EventSubscription>");
-Зап(ОбъединитьПути(Уп, "EventSubscriptions", "Подп.xml"), "<EventSubscription uuid=""55555555-5555-5555-5555-555555555555""><Handler>CommonModule.НСКЗаим.М</Handler><!-- УП --></EventSubscription>");
+Зап(ОбъединитьПути(Уп, "EventSubscriptions", "Подп.xml"), "<EventSubscription uuid=""55555555-5555-5555-5555-555555555555""><Source><v8:Type>cfg:CatalogObject.Спр</v8:Type></Source><Handler>CommonModule.НСКЗаим.М</Handler><!-- УП --></EventSubscription>");
+Зап(ОбъединитьПути(Осн, "Catalogs", "Спр.xml"), "<MetaDataObject><Catalog uuid=""77777777-7777-7777-7777-777777777777""><Properties><Name>Спр</Name></Properties></Catalog></MetaDataObject>");
 Зап(ОбъединитьПути(Осн, "EventSubscriptions", "ПодпОбщ.xml"), "<EventSubscription><Handler>CommonModule.Общий.М</Handler></EventSubscription>");
 Зап(ОбъединитьПути(Осн, "ScheduledJobs", "Задание.xml"), "<ScheduledJob uuid=""66666666-6666-6666-6666-666666666666""><MethodName>CommonModule.НСКТест.М</MethodName></ScheduledJob>");
 Зап(ОбъединитьПути(Осн, "Configuration.xml"), Конф("CommonModule.Общий,CommonModule.НСКТест,CommonModule.НСКЗаим,EventSubscription.Подп,EventSubscription.ПодпОбщ,ScheduledJob.Задание"));
@@ -104,6 +105,10 @@
 Тп = ОТУ.ПрочитатьТекст(ОбъединитьПути(Расш, "EventSubscriptions", "Подп.xml"));
 П(СтрНайти(Тп, "<!-- УП -->") > 0 И СтрНайти(Тп, "55555555-5555") = 0, "подписка в extension: XML из УП, новый uuid");
 П(Есть(ОбъединитьПути(Расш, "ScheduledJobs", "Задание.xml")), "задание в extension (из restored, в УП нет)");
+Тс = ОТУ.ПрочитатьТекст(ОбъединитьПути(Расш, "Catalogs", "Спр.xml"));
+П(СтрНайти(Тс, "<ObjectBelonging>Adopted</ObjectBelonging>") > 0 И СтрНайти(Тс, "77777777-7777-7777-7777-777777777777") > 0, "источник подписки заимствован");
+П(Р.handlersAdopted = 1, "handlersAdopted=1: " + Р.handlersAdopted);
+П(СтрНайти(ОТУ.ПрочитатьТекст(ОбъединитьПути(Расш, "Configuration.xml")), "<Catalog>Спр</Catalog>") > 0, "Configuration.xml extension: Catalog.Спр");
 Кф2 = ОТУ.ПрочитатьТекст(ОбъединитьПути(Осн, "Configuration.xml"));
 П(СтрНайти(Кф2, "<EventSubscription>Подп</EventSubscription>") = 0 И СтрНайти(Кф2, "<ScheduledJob>Задание</ScheduledJob>") = 0
 	И СтрНайти(Кф2, "<EventSubscription>ПодпОбщ</EventSubscription>") > 0, "Configuration.xml restored: подписка/задание");
@@ -119,8 +124,11 @@
 // Повтор после пересборки extension (restored уже очищен): ОМ снова попадает в extension.
 УдалитьФайлы(ОбъединитьПути(Расш, "CommonModules", "НСКТест.xml"));
 УдалитьФайлы(ОбъединитьПути(Расш, "CommonModules", "НСКТест"));
+УдалитьФайлы(ОбъединитьПути(Расш, "EventSubscriptions", "Подп.xml"));
 Р3 = Пер.УбратьОбщиеМодулиТолькоУпИзRestored(Расш, Осн, Уп, Бп, Новый Соответствие, "УП_Тест", Лог, Вр);
 П(Р3.removed = 0 И Р3.extAdded = 1 И Есть(ОбъединитьПути(Расш, "CommonModules", "НСКТест.xml")), "повтор после пересборки extension");
+П(Есть(ОбъединитьПути(Расш, "EventSubscriptions", "Подп.xml")) И Не Есть(ОбъединитьПути(Осн, "EventSubscriptions", "Подп.xml")), "повтор: подписка из УП снова в extension");
+П(Есть(ОбъединитьПути(Осн, "EventSubscriptions", "ПодпОбщ.xml")), "повтор: подписка на ОМ БП не тронута");
 УдалитьФайлы(Вр);
 Если Ошибок > 0 Тогда ВызватьИсключение "test_uponly_cm_restored"; КонецЕсли;
 Сообщить("OK: test_uponly_cm_restored");
