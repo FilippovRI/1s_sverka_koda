@@ -715,6 +715,34 @@ XmlБпВл = СтрЗаменить(XmlФормы(Ложь, "СпрВл"), "</A
 Проверить(СтрНайти(ТекстВл, "ПолныеПрава") = 0, "validator не ругает существующую роль");
 Проверить(СтрНайти(ТекстВл, "CatalogObject.СпрВл") = 0 И СтрНайти(ТекстВл, "cfg:CatalogObject") = 0, "validator не ругает существующий каталог");
 
+// CommandInterface: Command на объект, которого нет в typovaya.
+УпКи = П(Фикст, "up_cmdif");
+БпКи = П(Фикст, "bp_cmdif");
+ВыходКи = П(Фикст, "out_cmdif");
+Записать(П(УпКи, "Catalogs", "СпрКи.xml"), МетаОбъекта("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa9b", "СпрКи"));
+Записать(П(БпКи, "Catalogs", "СпрКи.xml"), МетаОбъекта("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa9b", "СпрКи"));
+XmlУпКи = XmlФормы(Ложь, "СпрКи");
+XmlБпКи = СтрЗаменить(XmlФормы(Ложь, "СпрКи"), "</Form>",
+	"	<CommandInterface>" + Символы.ПС
+	+ "		<NavigationPanel>" + Символы.ПС
+	+ "			<Item>" + Символы.ПС
+	+ "				<Command>Catalog.СпрТолькоБп.StandardCommand.OpenByValue</Command>" + Символы.ПС
+	+ "				<Type>Auto</Type>" + Символы.ПС
+	+ "			</Item>" + Символы.ПС
+	+ "		</NavigationPanel>" + Символы.ПС
+	+ "	</CommandInterface>" + Символы.ПС
+	+ "</Form>");
+ПоложитьФормуВ(УпКи, "СпрКи", "ФормаКи", XmlУпКи, МодульБп(), "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa9c");
+ПоложитьФормуВ(БпКи, "СпрКи", "ФормаКи", XmlБпКи, МодульБп(), "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa9c");
+ОтнКи = "Catalogs\СпрКи\Forms\ФормаКи\Ext\Form.xml";
+ФильтрКи = Новый Массив;
+ФильтрКи.Добавить(ОтнКи);
+СтатКи = Прот.СгенерироватьСрезФорм(УпКи, БпКи, ВыходКи, ФильтрКи, "УП_");
+Проверить(СтатКи.forms = 0, "cmdif forms=" + СтатКи.forms);
+Проверить(СтатКи.skipped = 1, "cmdif skipped=" + СтатКи.skipped);
+Проверить(СтрНайти(СтатКи.todo[0], "СпрТолькоБп") > 0, "todo называет СпрТолькоБп");
+Проверить(Не (Новый Файл(П(ВыходКи, "restored", ОтнКи))).Существует(), "форма с CommandInterface на отсутствующий объект не в restored среза");
+
 
 Если Ошибок > 0 Тогда
 	ВызватьИсключение "test_forms_bp_proto: " + Ошибок + " failures";
