@@ -247,3 +247,22 @@ todo пакета 2: 13 — тело БП с ОМ вне typovaya; 35 — выз
 Причина +3 не в restored: Documents\Анкета.xml typovaya побайтно совпадает с УП (реквизиты УП_Организация, РежимАнкетирования и ТЧ Состав на месте). Заимствованный xml расширения содержал только формы в ChildObjects, поэтому CheckModules расширения не видел реквизиты основной конфигурации. Исправление генератора: `МетаЗаимствованногоОбъекта` по ПутьМетаИсточника добавляет заимствованные Attribute/Dimension/Resource (с Type и uuid typovaya в ExtendedConfigurationObject) и TabularSection (пустой ChildObjects; колонки ТЧ на уровень объекта не поднимаются). Тест есть. Метаданные 14 объектов в срезе и load\extension перегенерированы; повторная загрузка расширения на той же ИБ запущена 10:52:31.
 
 Дополнительно в генераторе: полный набор xmlns (включая v8/cfg/xs) в корне заимствованного xml и InternalInfo ТЧ из typovaya — иначе LoadConfigFromFiles падает («Namespace prefix v8 on Type is not defined», «Отсутствует внутренняя информация для TabularSection»). Тесты обновлены. Повторная загрузка расширения 11:03:04, load ext exit=0 в 11:03:37 Europe/Moscow.
+
+
+## Результаты CheckModules, пакет оставшихся УП-ошибок main (uprest) — база class-a: 211 / 43
+
+Загрузка в отдельную ИБ D:\typovaya-up-tmp-forms-cm-uprest (эталон class-a\load не перезаписывался). Старт 15:04:53 Europe/Moscow, overlay restoredCopied=20 extCopied=20 objectsMerged=6 missingTarget=0, metadata bp add exit=0, валидатор Form.xml пропущен, ibcmd import/apply exit=0, load ext и UpdateDBCfg exit=0.
+
+CheckModules ext 15:24:39–15:26:59, exit=0: 43=43, official added=0, real_added=0.
+CheckModules main pid 12424, 15:26:59–15:48:18, exit=101.
+
+Уникальные ключи {location}: message vs class-a 211/43:
+
+| проверка | база class-a | пакет uprest | added | gone |
+|---|---|---|---|---|
+| main | 211 | 210 | 0 | 1 |
+| ext  | 43  | 43  | 0 | 0  |
+
+real_added=0, real_gone=1, сдвигов строк нет. Ушла известная ошибка отката: Обработка.ДокументооборотСКонтролирующимиОрганами.Форма.Документ_ЗаявлениеАбонентаСпецоператораСвязи_ФормаДокумента — «Переменная не определена (ОбщегоНазначенияНСКВызовСервера)». Новых ошибок нет, откат в генераторе не требовался. Копии: check_modules_main_uprest.txt / check_modules_ext_uprest.txt в D:\typovaya-up-tmp-forms-cm-uprest и в D:\typovaya-up-forms-cm-uprest.
+
+Новая база для следующих пакетов: 210 / 43.
