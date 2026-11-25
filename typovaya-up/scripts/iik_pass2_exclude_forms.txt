@@ -1,0 +1,11 @@
+# откат pass 2: fair added ext (3 формы) + fair added main после iik-p2 vs meta56
+Documents\БольничныйЛист\Forms\ФормаДокумента\Ext\Form.xml
+Catalogs\ТорговыеТочки\Forms\ФормаЭлемента\Ext\Form.xml
+CommonForms\РегламентированнаяОтчетность\Ext\Form.xml
+Catalogs\Организации\Forms\ФормаСписка\Ext\Form.xml
+Catalogs\Организации\Forms\ФормаОрганизации\Ext\Form.xml
+Catalogs\ОсновныеСредства\Forms\ФормаЭлемента\Ext\Form.xml
+Catalogs\ПодразделенияОрганизаций\Forms\ФормаЭлемента\Ext\Form.xml
+Catalogs\БанковскиеСчета\Forms\ФормаЭлемента\Ext\Form.xml
+Catalogs\РегистрацииВНалоговомОргане\Forms\ФормаЭлемента\Ext\Form.xml
+Catalogs\ЭлектронныеПредставленияРегламентированныхОтчетов\Forms\ФормаСписка\Ext\Form.xml
