@@ -71,6 +71,18 @@ if (Test-Path -LiteralPath $metaOs) {
   L 'SKIP ДобавлениеМетаданныхБп: нет typovaya-up/scripts/run_metadata_bp.os'
 }
 
+$validateOs = Join-Path $repoScripts 'run_validate_form_refs.os'
+$formsStat = Join-Path $ProtoRoot 'proto_forms_stat.csv'
+if ((Test-Path -LiteralPath $validateOs) -and (Test-Path -LiteralPath $formsStat)) {
+  L "validate Form.xml refs vs load/restored (after metadata BP)"
+  & $oscript $validateOs $loadRest $formsStat *>> (Join-Path $TmpRoot 'validate_form_refs.log')
+  $vc = $LASTEXITCODE
+  L "validate form refs exit=$vc"
+  if ($vc -ne 0) { exit 18 }
+} else {
+  L 'SKIP validate_form_refs: нет скрипта или proto_forms_stat.csv'
+}
+
 foreach ($p in @($db, $data)) {
   if (Test-Path -LiteralPath $p) { Remove-Item -LiteralPath $p -Recurse -Force }
 }
