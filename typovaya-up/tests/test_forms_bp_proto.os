@@ -751,6 +751,7 @@ XmlДпВ = СтрЗаменить(XmlФормы(Ложь, "СпрДпВ"), "</F
 	+ "		<InputField name=""Наименование"" id=""1""><DataPath>Объект.Description</DataPath></InputField>" + Символы.ПС
 	+ "		<InputField name=""Родитель"" id=""2""><DataPath>Объект.Parent</DataPath></InputField>" + Символы.ПС
 	+ "		<InputField name=""ВидТолькоБп"" id=""3""><DataPath>Объект.ВидТолькоБп</DataPath></InputField>" + Символы.ПС
+	+ "		<InputField name=""Движения"" id=""4""><DataPath>Объект.RegisterRecords</DataPath></InputField>" + Символы.ПС
 	+ "	</ChildItems>" + Символы.ПС
 	+ "</Form>");
 ПоложитьФормуВ(УпДпВ, "СпрДпВ", "ФормаДпВ", XmlДпВ, МодульБп(), "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa9e");
@@ -762,6 +763,7 @@ XmlДпВ = СтрЗаменить(XmlФормы(Ложь, "СпрДпВ"), "</F
 Проверить(СтрНайти(ТекстДпВ, "ВидТолькоБп") > 0, "validator DataPath называет Объект.ВидТолькоБп: " + ТекстДпВ);
 Проверить(СтрНайти(ТекстДпВ, "Description") = 0, "validator не ругает стандартный Description");
 Проверить(СтрНайти(ТекстДпВ, "Parent") = 0, "validator не ругает стандартный Parent");
+Проверить(СтрНайти(ТекстДпВ, "RegisterRecords") = 0, "validator не ругает стандартный RegisterRecords");
 
 
 Если Ошибок > 0 Тогда
