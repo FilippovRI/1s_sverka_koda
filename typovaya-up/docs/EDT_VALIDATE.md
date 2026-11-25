@@ -53,6 +53,8 @@ powershell -NoProfile -File typovaya-up\scripts\run_edt_validate.ps1 -Mode Overl
 
 ## Команды CLI (2026.2)
 
+`--project-name-list` в 2026.2 принимает **одно имя**. Два имени подряд дают «не найден вариант вызова команды» (код 204). Скрипт вызывает `validate` отдельно для основной и для расширения.
+
 `--build` принимает значение `true`/`false`. Нельзя одновременно передавать `--project` и `--project-name`: CLI тогда отвечает «не найден вариант вызова команды».
 
 ```text
@@ -60,7 +62,7 @@ powershell -NoProfile -File typovaya-up\scripts\run_edt_validate.ps1 -Mode Overl
 1cedtcli ... -command platform-versions
 1cedtcli ... -command import --configuration-files <xml> --project-name <имя> --version 8.5.1 --build true
 1cedtcli ... -command import --configuration-files <xml-расширения> --project-name <имя> --base-project-name <основная> --version 8.5.1 --build true
-1cedtcli ... -command validate --project-name-list <основная> <расширение> --file <отчёт.tsv>
+1cedtcli ... -command validate --file <отчёт.tsv> --project-name-list <имя-проекта>
 ```
 
 Импорт полной restored (~5,2 ГБ, ~65 тыс. файлов) по месту: к 15 ГБ нужно держать запас; watchdog остановит работу, если свободное место опустится ниже порога.

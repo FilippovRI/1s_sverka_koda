@@ -200,15 +200,20 @@ try {
             -LogOut (Join-Path $WorkRoot "overlay-ext-$stamp.log")
     }
 
-    $tsv = Join-Path $WorkRoot "validate-$Mode-$stamp.tsv"
-    Invoke-EdtCli -Cli $cli -Ini $ini -Data $Workspace `
-        -Command @('validate', '--project-name-list', $ProjectName, $ExtProjectName, '--file', $tsv) `
-        -LogOut (Join-Path $WorkRoot "validate-$Mode-$stamp.log")
-    Write-Host "validate tsv=$tsv"
-    if (Test-Path $tsv) {
-        $cmp = Join-Path $PSScriptRoot 'compare_edt_checkmodules.ps1'
-        if (Test-Path $cmp) {
-            & $cmp -EdtTsv $tsv -Mode $Mode
+    # 1cedtcli 2026.2 принимает только одно имя после --project-name-list.
+    $tsvList = @()
+    foreach ($name in @($ProjectName, $ExtProjectName)) {
+        $tsv = Join-Path $WorkRoot "validate-$Mode-$name-$stamp.tsv"
+        Invoke-EdtCli -Cli $cli -Ini $ini -Data $Workspace `
+            -Command @('validate', '--file', $tsv, '--project-name-list', $name) `
+            -LogOut (Join-Path $WorkRoot "validate-$Mode-$name-$stamp.log")
+        Write-Host "validate tsv=$tsv"
+        if (Test-Path $tsv) { $tsvList += $tsv }
+    }
+    $cmp = Join-Path $PSScriptRoot 'compare_edt_checkmodules.ps1'
+    if ((Test-Path $cmp) -and $tsvList.Count -gt 0) {
+        foreach ($tsv in $tsvList) {
+            & $cmp -EdtTsv $tsv -Mode $Mode -OutDir $WorkRoot
         }
     }
     Write-Host "OK $Mode free=$(Get-DFreeGB)GB"
