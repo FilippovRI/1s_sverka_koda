@@ -174,7 +174,7 @@ try {
     }
 
     $build = @()
-    if (-not $SkipBuild) { $build = @('--build') }
+    if (-not $SkipBuild) { $build = @('--build', 'true') }
 
     if ($Mode -eq 'Calibrate') {
         if (-not (Test-Path (Join-Path $CalibRestored 'Configuration.xml'))) {
@@ -184,19 +184,19 @@ try {
             throw "нет калибровочного расширения: $CalibExtension"
         }
         Invoke-EdtCli -Cli $cli -Ini $ini -Data $Workspace `
-            -Command (@('import', '--configuration-files', $CalibRestored, '--project-name', $ProjectName, '--project', $proj, '--version', $PlatformVersion) + $build) `
+            -Command (@('import', '--configuration-files', $CalibRestored, '--project-name', $ProjectName, '--version', $PlatformVersion) + $build) `
             -LogOut (Join-Path $WorkRoot "import-main-$stamp.log")
         Invoke-EdtCli -Cli $cli -Ini $ini -Data $Workspace `
-            -Command (@('import', '--configuration-files', $CalibExtension, '--project-name', $ExtProjectName, '--project', $extProj, '--base-project-name', $ProjectName, '--version', $PlatformVersion) + $build) `
+            -Command (@('import', '--configuration-files', $CalibExtension, '--project-name', $ExtProjectName, '--base-project-name', $ProjectName, '--version', $PlatformVersion) + $build) `
             -LogOut (Join-Path $WorkRoot "import-ext-$stamp.log")
     }
     elseif ($Mode -eq 'OverlayPackage') {
         if (-not (Test-Path $proj)) { throw "сначала Calibrate, нет проекта $proj" }
         Invoke-EdtCli -Cli $cli -Ini $ini -Data $Workspace `
-            -Command (@('import', '--configuration-files', $PackageRestored, '--project-name', $ProjectName, '--project', $proj, '--version', $PlatformVersion) + $build) `
+            -Command (@('import', '--configuration-files', $PackageRestored, '--project-name', $ProjectName, '--version', $PlatformVersion) + $build) `
             -LogOut (Join-Path $WorkRoot "overlay-main-$stamp.log")
         Invoke-EdtCli -Cli $cli -Ini $ini -Data $Workspace `
-            -Command (@('import', '--configuration-files', $PackageExtension, '--project-name', $ExtProjectName, '--project', $extProj, '--base-project-name', $ProjectName, '--version', $PlatformVersion) + $build) `
+            -Command (@('import', '--configuration-files', $PackageExtension, '--project-name', $ExtProjectName, '--base-project-name', $ProjectName, '--version', $PlatformVersion) + $build) `
             -LogOut (Join-Path $WorkRoot "overlay-ext-$stamp.log")
     }
 

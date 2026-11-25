@@ -1,4 +1,4 @@
-# Проверка выгрузок typovaya-up через 1C:EDT CLI
+﻿# Проверка выгрузок typovaya-up через 1C:EDT CLI
 
 Вместо загрузки в ИБ и `CheckModules` можно импортировать XML-выгрузку в workspace EDT и снять ошибки модулей командой `validate` (минуты после импорта, без базы).
 
@@ -53,11 +53,13 @@ powershell -NoProfile -File typovaya-up\scripts\run_edt_validate.ps1 -Mode Overl
 
 ## Команды CLI (2026.2)
 
+`--build` принимает значение `true`/`false`. Нельзя одновременно передавать `--project` и `--project-name`: CLI тогда отвечает «не найден вариант вызова команды».
+
 ```text
 1cedtcli -data <ws> -timeout <сек> -nl ru_RU -ini-file <ini-с-vm> -vmargs -Xmx4096m -command version
 1cedtcli ... -command platform-versions
-1cedtcli ... -command import --configuration-files <xml> --project-name <имя> --project <папка> --version 8.5.1 --build
-1cedtcli ... -command import --configuration-files <xml-расширения> --project-name <имя> --project <папка> --base-project-name <основная> --version 8.5.1 --build
+1cedtcli ... -command import --configuration-files <xml> --project-name <имя> --version 8.5.1 --build true
+1cedtcli ... -command import --configuration-files <xml-расширения> --project-name <имя> --base-project-name <основная> --version 8.5.1 --build true
 1cedtcli ... -command validate --project-name-list <основная> <расширение> --file <отчёт.tsv>
 ```
 
