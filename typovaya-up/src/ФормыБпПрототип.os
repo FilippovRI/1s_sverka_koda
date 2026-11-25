@@ -446,10 +446,9 @@
 Функция МетаЗаимствованногоОбъекта(Папка, Имя, УидБазы, ИменаФорм = Неопределено, ПутьМетаИсточника = "") Экспорт
 	Тип = ТипПоПапке(Папка);
 	БлокИнфо = ИзвлечьБлокInternalInfo(ПутьМетаИсточника);
-	Xr = ?(БлокИнфо = "", "", " xmlns:xr=""http://v8.1c.ru/8.3/xcf/readable""");
 	Ч = Новый Массив;
 	Ч.Добавить("<?xml version=""1.0"" encoding=""UTF-8""?>");
-	Ч.Добавить("<MetaDataObject xmlns=""http://v8.1c.ru/8.3/MDClasses"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""" + Xr + " version=""2.21"">");
+	Ч.Добавить("<MetaDataObject xmlns=""http://v8.1c.ru/8.3/MDClasses"" xmlns:app=""http://v8.1c.ru/8.2/managed-application/core"" xmlns:cfg=""http://v8.1c.ru/8.1/data/enterprise/current-config"" xmlns:cmi=""http://v8.1c.ru/8.2/managed-application/cmi"" xmlns:ent=""http://v8.1c.ru/8.1/data/enterprise"" xmlns:lf=""http://v8.1c.ru/8.2/managed-application/logform"" xmlns:pal=""http://v8.1c.ru/8.3/xcf/extrnprops"" xmlns:style=""http://v8.1c.ru/8.1/data/ui/style"" xmlns:sys=""http://v8.1c.ru/8.1/data/ui/fonts/system"" xmlns:v8=""http://v8.1c.ru/8.1/data/core"" xmlns:v8ui=""http://v8.1c.ru/8.1/data/ui"" xmlns:web=""http://v8.1c.ru/8.1/data/ui/colors/web"" xmlns:win=""http://v8.1c.ru/8.1/data/ui/colors/windows"" xmlns:xen=""http://v8.1c.ru/8.3/xcf/enums"" xmlns:xpr=""http://v8.1c.ru/8.3/xcf/predef"" xmlns:xr=""http://v8.1c.ru/8.3/xcf/readable"" xmlns:xs=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" version=""2.21"">");
 	Ч.Добавить("	<" + Тип + " uuid=""e1000001-0000-4000-8000-" + Прав("000000000000" + ХвостХеша(Папка + "." + Имя), 12) + """>");
 	Ч.Добавить("		" + ?(БлокИнфо = "", "<InternalInfo/>", БлокИнфо));
 	Ч.Добавить("		<Properties>");
@@ -2441,12 +2440,21 @@
 	Возврат СтрСоединить(Ч, Символы.ПС);
 КонецФункции
 
+Функция БлокInternalInfoИзТела(Тело)
+	Рв = Новый РегулярноеВыражение("(?s)<InternalInfo>.*?</InternalInfo>");
+	С = Рв.НайтиСовпадения(Тело);
+	Если С.Количество() = 0 Тогда
+		Возврат "<InternalInfo/>";
+	КонецЕсли;
+	Возврат СокрЛП(С[0].Значение);
+КонецФункции
+
 Функция XmlЗаимствованнойТч(Блок, Папка, ИмяОбъекта)
 	ИмяТч = ИмяИзБлокаМета(Блок.Тело);
 	УидРасш = "e1000003-0000-4000-8000-" + Прав("000000000000" + ХвостХеша(Папка + "." + ИмяОбъекта + ".TabularSection." + ИмяТч), 12);
 	Ч = Новый Массив;
 	Ч.Добавить("			<TabularSection uuid=""" + УидРасш + """>");
-	Ч.Добавить("				<InternalInfo/>");
+	Ч.Добавить("				" + БлокInternalInfoИзТела(Блок.Тело));
 	Ч.Добавить("				<Properties>");
 	Ч.Добавить("					<ObjectBelonging>Adopted</ObjectBelonging>");
 	Ч.Добавить("					<Name>" + ИмяТч + "</Name>");

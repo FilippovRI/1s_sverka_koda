@@ -1057,6 +1057,16 @@ XmlФормА = "<?xml version=""1.0"" encoding=""UTF-8""?>" + Символы.П
 	+ "				</Properties>" + Символы.ПС
 	+ "			</Attribute>" + Символы.ПС
 	+ "			<TabularSection uuid=""39062cb3-4ae8-4c0d-889b-038a55179946"">" + Символы.ПС
+	+ "				<InternalInfo>" + Символы.ПС
+	+ "					<xr:GeneratedType name=""DocumentTabularSection.АнкетаТест.Состав"" category=""TabularSection"">" + Символы.ПС
+	+ "						<xr:TypeId>f828b7bc-de68-4106-9f99-da7835593bb4</xr:TypeId>" + Символы.ПС
+	+ "						<xr:ValueId>8653b314-a456-466d-8d9a-92d30bb2e341</xr:ValueId>" + Символы.ПС
+	+ "					</xr:GeneratedType>" + Символы.ПС
+	+ "					<xr:GeneratedType name=""DocumentTabularSectionRow.АнкетаТест.Состав"" category=""TabularSectionRow"">" + Символы.ПС
+	+ "						<xr:TypeId>7d2528f6-e07d-4c56-bdef-0c0abff5698b</xr:TypeId>" + Символы.ПС
+	+ "						<xr:ValueId>b0248ba5-6616-4c2d-acd5-32fe01b153b4</xr:ValueId>" + Символы.ПС
+	+ "					</xr:GeneratedType>" + Символы.ПС
+	+ "				</InternalInfo>" + Символы.ПС
 	+ "				<Properties><Name>Состав</Name></Properties>" + Символы.ПС
 	+ "				<ChildObjects>" + Символы.ПС
 	+ "					<Attribute uuid=""c62d4212-36ca-4afb-bac9-269b6f64ca51"">" + Символы.ПС
@@ -1069,9 +1079,11 @@ XmlФормА = "<?xml version=""1.0"" encoding=""UTF-8""?>" + Символы.П
 	+ "</MetaDataObject>" + Символы.ПС);
 МетаДокРасшА = Прот.МетаЗаимствованногоОбъекта("Documents", "АнкетаТест", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", Неопределено, ПутьМетаДокА);
 Проверить(СтрНайти(МетаДокРасшА, "<Name>УП_Организация</Name>") > 0, "заимствован реквизит УП_Организация");
+Проверить(СтрНайти(МетаДокРасшА, "xmlns:v8=") > 0, "префикс v8 в корне для Type");
 Проверить(СтрНайти(МетаДокРасшА, "<ExtendedConfigurationObject>758b6112-9f92-42a8-99f3-99b6e3d4734e</ExtendedConfigurationObject>") > 0, "uuid реквизита typovaya в ExtendedConfigurationObject");
 Проверить(СтрНайти(МетаДокРасшА, "<Name>РежимАнкетирования</Name>") > 0, "заимствован реквизит РежимАнкетирования");
 Проверить(СтрНайти(МетаДокРасшА, "<TabularSection") > 0 И СтрНайти(МетаДокРасшА, "<Name>Состав</Name>") > 0, "заимствована ТЧ Состав");
+Проверить(СтрНайти(МетаДокРасшА, "<xr:TypeId>f828b7bc-de68-4106-9f99-da7835593bb4</xr:TypeId>") > 0, "InternalInfo ТЧ из typovaya");
 Проверить(СтрНайти(МетаДокРасшА, "758b6112-9f92-42a8-99f3-99b6e3d4734e") > 0 И СтрНайти(МетаДокРасшА, "<Attribute uuid=""758b6112-9f92-42a8-99f3-99b6e3d4734e""") = 0, "у реквизита в расширении свой uuid");
 Проверить(СтрНайти(МетаДокРасшА, "<Name>Вопрос</Name>") = 0, "колонка ТЧ не поднимается на уровень объекта");
 
