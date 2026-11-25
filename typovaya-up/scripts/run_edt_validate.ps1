@@ -13,7 +13,7 @@ param(
     [string]$ProjectName = 'typovaya-up',
     [string]$ExtProjectName = 'UP_Dorabotki',
     [string]$PlatformVersion = '8.5.1',
-    [string]$Xmx = '4096m',
+    [string]$Xmx = '4096m',  # typovaya-up validate: 4096m OOM; на ~14 ГБ RAM использовать 6144m (системе ≥2–3 ГБ)
     [int]$TimeoutSec = 14400,
     [double]$MinFreeGB = 15,
     [switch]$SkipBuild
@@ -75,8 +75,19 @@ function Write-EdtIni([string]$CliPath, [string]$VmPath, [string]$DestIni) {
         $out.Add($line)
     }
     if (-not $inserted) { throw 'в 1cedt.ini нет секции -vmargs, некуда вставить -vm' }
-    $out | Set-Content -LiteralPath $DestIni -Encoding ASCII
-    Write-Host "ini=$DestIni vm=$VmPath"
+    $final = New-Object System.Collections.Generic.List[string]
+    $xmxSet = $false
+    foreach ($line in $out) {
+        if ($line -match '^-Xmx') {
+            $final.Add("-Xmx$Xmx")
+            $xmxSet = $true
+        } else {
+            $final.Add($line)
+        }
+    }
+    if (-not $xmxSet) { $final.Add("-Xmx$Xmx") }
+    $final | Set-Content -LiteralPath $DestIni -Encoding ASCII
+    Write-Host "ini=$DestIni vm=$VmPath xmx=$Xmx"
 }
 
 function Invoke-EdtCli {
@@ -113,11 +124,7 @@ function Start-DiskWatchdog([string]$PidFile, [string]$WatchLog) {
 `$parent = $self
 while (Get-Process -Id `$parent -ErrorAction SilentlyContinue) {
     `$free = [math]::Round((Get-PSDrive D).Free / 1GB, 2)
-    `$ws = 0
-    if (Test-Path -LiteralPath '$Workspace') {
-        `$ws = [math]::Round(((Get-ChildItem -LiteralPath '$Workspace' -Recurse -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1GB), 2)
-    }
-    Add-Content -LiteralPath `$log -Encoding UTF8 -Value ("`$(Get-Date -Format 'HH:mm:ss') free=`$free GB workspace=`$ws GB")
+    Add-Content -LiteralPath `$log -Encoding UTF8 -Value ("`$(Get-Date -Format 'HH:mm:ss') free=`$free GB")
     if (`$free -lt `$min) {
         Add-Content -LiteralPath `$log -Encoding UTF8 -Value "STOP: D free `$free GB < `$min GB — останавливаю свой 1cedtcli"
         Get-CimInstance Win32_Process | Where-Object {
