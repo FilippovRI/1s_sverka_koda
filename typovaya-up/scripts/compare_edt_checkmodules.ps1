@@ -20,6 +20,7 @@ function Get-CheckFindings([string]$Path, [string]$Scope) {
     $items = @()
     foreach ($line in $lines) {
         if ($line -notmatch $rx) { continue }
+        $obj = $Matches.obj
         $msg = $Matches.msg.Trim()
         $msg = ($msg -replace '\s+\(Проверка:.*$', '').Trim()
         $sym = $null
@@ -33,7 +34,6 @@ function Get-CheckFindings([string]$Path, [string]$Scope) {
         else {
             continue
         }
-        $obj = $Matches.obj
         $key = ("{0}|{1}|{2}" -f $obj, $kind, $sym)
         $items += [pscustomobject]@{
             Scope = $Scope
@@ -87,6 +87,7 @@ function Get-EdtFindings([string]$Path) {
         if ($msg -match 'Переменная не определена\s*\((?<s>[^)]+)\)') { $kind = 'Переменная не определена'; $sym = $Matches.s }
         elseif ($msg -match 'Процедура или функция не определена\s*\((?<s>[^)]+)\)') { $kind = 'Процедура или функция не определена'; $sym = $Matches.s }
         elseif ($msg -match 'Процедура не определена\s*\((?<s>[^)]+)\)') { $kind = 'Процедура не определена'; $sym = $Matches.s }
+        elseif ($msg -match "Переменная\s+['«""](?<s>[^'»""]+)['»""]\s+не определена") { $kind = 'Переменная не определена'; $sym = $Matches.s }
         elseif ($msg -match 'Variable .+ is not defined|variable\s+[«"'']?(?<s>[\wА-Яа-я_]+)[»"'']?') { $kind = 'Переменная не определена'; $sym = $Matches.s }
         elseif ($msg -match 'Method .+ is not found|procedure .+ not defined|(?<s>[\wА-Яа-я_]+)\s+is not found') { $kind = 'Процедура или функция не определена'; $sym = $Matches.s }
         $obj = $res
@@ -115,8 +116,10 @@ $edt = @(Get-EdtFindings $EdtTsv)
 function SymKey($x) { '{0}|{1}' -f $x.Kind, $x.Symbol }
 $cmSym = $cm | Where-Object { $_.Symbol } | Group-Object { SymKey $_ } | ForEach-Object { $_.Name }
 $edtSym = $edt | Where-Object { $_.Symbol } | Group-Object { SymKey $_ } | ForEach-Object { $_.Name }
-$cmSet = [System.Collections.Generic.HashSet[string]]::new([string[]]$cmSym)
-$edtSet = [System.Collections.Generic.HashSet[string]]::new([string[]]$edtSym)
+$cmSet = New-Object 'System.Collections.Generic.HashSet[string]'
+foreach ($s in @($cmSym)) { if ($s) { [void]$cmSet.Add([string]$s) } }
+$edtSet = New-Object 'System.Collections.Generic.HashSet[string]'
+foreach ($s in @($edtSym)) { if ($s) { [void]$edtSet.Add([string]$s) } }
 $both = $cmSym | Where-Object { $edtSet.Contains($_) } | Sort-Object -Unique
 $onlyCm = $cmSym | Where-Object { -not $edtSet.Contains($_) } | Sort-Object -Unique
 $onlyEdt = $edtSym | Where-Object { -not $cmSet.Contains($_) } | Sort-Object -Unique
