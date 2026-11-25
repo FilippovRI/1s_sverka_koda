@@ -623,6 +623,35 @@ XmlБпИс = СтрЗаменить(XmlФормы(Ложь), "<Attributes>",
 Проверить(СтрНайти(СтатИс.todo[0], "CreateInitialImage") > 0, "todo называет CreateInitialImage");
 Проверить(Не (Новый Файл(П(ВыходИс, "restored", ОтнИс))).Существует(), "форма с ExcludedCommand вне typovaya не в restored среза");
 
+// Role, которой нет в typovaya.
+УпРл = П(Фикст, "up_role");
+БпРл = П(Фикст, "bp_role");
+ВыходРл = П(Фикст, "out_role");
+Записать(П(УпРл, "Catalogs", "СпрРл.xml"), МетаОбъекта("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa93", "СпрРл"));
+Записать(П(БпРл, "Catalogs", "СпрРл.xml"), МетаОбъекта("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa93", "СпрРл"));
+XmlУпРл = XmlФормы(Ложь);
+XmlБпРл = СтрЗаменить(XmlФормы(Ложь), "</Form>",
+	"	<ViewStatus>" + Символы.ПС
+	+ "		<xr:Value name=""Role.ПолныеПрава"">true</xr:Value>" + Символы.ПС
+	+ "		<xr:Value name=""Role.ЧтениеТолькоБп"">true</xr:Value>" + Символы.ПС
+	+ "	</ViewStatus>" + Символы.ПС
+	+ "</Form>");
+ПоложитьФормуВ(УпРл, "СпрРл", "ФормаРл", XmlУпРл, МодульБп(), "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa94");
+ПоложитьФормуВ(БпРл, "СпрРл", "ФормаРл", XmlБпРл, МодульБп(), "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa94");
+// typovaya содержит Role.ПолныеПрава, Role.ЧтениеТолькоБп — нет.
+СоздатьКаталог(П(УпРл, "Roles"));
+Записать(П(УпРл, "Roles", "ПолныеПрава.xml"), "<?xml version=""1.0"" encoding=""UTF-8""?><MetaDataObject><Role uuid=""aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa95""><Properties><Name>ПолныеПрава</Name></Properties></Role></MetaDataObject>");
+ОтнРл = "Catalogs\СпрРл\Forms\ФормаРл\Ext\Form.xml";
+ФильтрРл = Новый Массив;
+ФильтрРл.Добавить(ОтнРл);
+СтатРл = Прот.СгенерироватьСрезФорм(УпРл, БпРл, ВыходРл, ФильтрРл, "УП_");
+Проверить(СтатРл.forms = 0, "role forms=" + СтатРл.forms);
+Проверить(СтатРл.skipped = 1, "role skipped=" + СтатРл.skipped);
+Проверить(СтрНайти(СтатРл.todo[0], "ЧтениеТолькоБп") > 0, "todo называет ЧтениеТолькоБп");
+Проверить(СтрНайти(СтатРл.todo[0], "ПолныеПрава") = 0, "существующая роль ПолныеПрава не в todo");
+Проверить(Не (Новый Файл(П(ВыходРл, "restored", ОтнРл))).Существует(), "форма с Role вне typovaya не в restored среза");
+
+
 Если Ошибок > 0 Тогда
 	ВызватьИсключение "test_forms_bp_proto: " + Ошибок + " failures";
 КонецЕсли;
