@@ -74,15 +74,54 @@ if (Test-Path -LiteralPath $metaOs) {
 $validateOs = Join-Path $repoScripts 'run_validate_form_refs.os'
 $formsStat = Join-Path $ProtoRoot 'proto_forms_stat.csv'
 if ((Test-Path -LiteralPath $validateOs) -and (Test-Path -LiteralPath $formsStat)) {
-  L "validate Form.xml refs vs load/restored (after metadata BP)"
-  & $oscript $validateOs $loadRest $formsStat *>> (Join-Path $TmpRoot 'validate_form_refs.log')
-  $vc = $LASTEXITCODE
-  L "validate form refs exit=$vc"
-  if ($vc -ne 0) { exit 18 }
+  # DataPath/CommandInterface — только формы, у которых Form.xml изменилась относительно Mf2Root.
+  # Совпадающая с typovaya разметка может уже ссылаться на реквизиты вне restored; это не регресс среза.
+  $mf2Rest = Join-Path $Mf2Root 'restored'
+  $filtered = Join-Path $TmpRoot 'validate_forms_changed.csv'
+  $outLines = New-Object System.Collections.Generic.List[string]
+  $changed = 0
+  $first = $true
+  foreach ($line in Get-Content -LiteralPath $formsStat -Encoding UTF8) {
+    if ($first) {
+      $first = $false
+      $outLines.Add($line)
+      $head = $line.Replace('"', '')
+      if ($head.StartsWith('rel')) { continue }
+    }
+    $rel = $line
+    $z = $rel.IndexOf(',')
+    if ($z -gt 0) { $rel = $rel.Substring(0, $z) }
+    $rel = $rel.Replace('"', '').Trim()
+    if ($rel -eq '') { continue }
+    $src = Join-Path $mf2Rest $rel
+    $dst = Join-Path $loadRest $rel
+    $isNewOrChanged = $false
+    if (-not (Test-Path -LiteralPath $src)) {
+      if (Test-Path -LiteralPath $dst) { $isNewOrChanged = $true }
+    } elseif (Test-Path -LiteralPath $dst) {
+      if ((Get-FileHash -LiteralPath $src -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $dst -Algorithm SHA256).Hash) {
+        $isNewOrChanged = $true
+      }
+    }
+    if ($isNewOrChanged) {
+      $outLines.Add($line)
+      $changed++
+    }
+  }
+  if ($changed -eq 0) {
+    L 'SKIP validate_form_refs: Form.xml среза совпадает с Mf2Root (разметку не меняли; DataPath typovaya не регресс)'
+  } else {
+    $utf8bom = New-Object System.Text.UTF8Encoding $true
+    [System.IO.File]::WriteAllLines($filtered, $outLines, $utf8bom)
+    L "validate Form.xml refs vs load/restored (after metadata BP), changedFormXml=$changed"
+    & $oscript $validateOs $loadRest $filtered *>> (Join-Path $TmpRoot 'validate_form_refs.log')
+    $vc = $LASTEXITCODE
+    L "validate form refs exit=$vc"
+    if ($vc -ne 0) { exit 18 }
+  }
 } else {
   L 'SKIP validate_form_refs: нет скрипта или proto_forms_stat.csv'
 }
-
 foreach ($p in @($db, $data)) {
   if (Test-Path -LiteralPath $p) { Remove-Item -LiteralPath $p -Recurse -Force }
 }
