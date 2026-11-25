@@ -259,6 +259,8 @@
 Записать(П(ЦельВосст, "Catalogs\НовыйСпр.xml"), МетаОбъекта("cccccccc-cccc-cccc-cccc-cccccccccccc", "НовыйСпр", "22222222-cccc-cccc-cccc-cccccccccccc"));
 СтатН2 = Прот.НаложитьСрезФорм(ВыходМ, ЦельВосст, ЦельРасш);
 Проверить(СтатН2.objectsNew >= 1, "overlay objectsNew=" + СтатН2.objectsNew);
+Проверить(СтатН2.cfgAdded >= 1, "overlay cfgAdded=" + СтатН2.cfgAdded);
+Проверить(СтрНайти(ТекстФайла(П(ЦельРасш, "Configuration.xml")), "<Catalog>НовыйСпр</Catalog>") > 0, "новый объект зарегистрирован в Configuration.xml");
 Проверить(СтрНайти(ТекстФайла(П(ЦельРасш, "Catalogs\НовыйСпр.xml")), "22222222-cccc-cccc-cccc-cccccccccccc") > 0, "overlay InternalInfo из restored");
 Проверить(СтрНайти(ТекстФайла(П(ЦельРасш, "Catalogs\НовыйСпр.xml")), "Adopted") > 0, "новый объект заимствован");
 
@@ -999,9 +1001,21 @@ XmlФормА = "<?xml version=""1.0"" encoding=""UTF-8""?>" + Символы.П
 Записать(П(БазаФормА, "Ext", "Form", "Module.bsl"), МодФормА);
 КатВосстА = П(Фикст, "out_class_a", "restored");
 КатРасшА = П(Фикст, "out_class_a", "extension");
+Записать(П(КатРасшА, "Configuration.xml"), "<?xml version=""1.0"" encoding=""UTF-8""?>" + Символы.ПС
+	+ "<MetaDataObject>" + Символы.ПС
+	+ "	<Configuration>" + Символы.ПС
+	+ "		<ChildObjects>" + Символы.ПС
+	+ "			<Language>Русский</Language>" + Символы.ПС
+	+ "		</ChildObjects>" + Символы.ПС
+	+ "	</Configuration>" + Символы.ПС
+	+ "</MetaDataObject>" + Символы.ПС);
 ПерКодА = Прот.ПеренестиКодОбъектаТолькоУпВРасширение("Catalogs\СпрКлассА", КореньА, КатВосстА, КатРасшА);
 Проверить(ПерКодА.movedModules.Количество() = 3, "перенесены 3 модуля: " + ПерКодА.movedModules.Количество());
 Проверить(ПерКодА.borrowedForms.Количество() = 1, "заимствована форма");
+Проверить(ПерКодА.cfgAdded, "объект добавлен в Configuration.xml расширения");
+Проверить(СтрНайти(ТекстФайла(П(КатРасшА, "Configuration.xml")), "<Catalog>СпрКлассА</Catalog>") > 0, "тег класса а в Configuration.xml");
+ПерКодА2 = Прот.ПеренестиКодОбъектаТолькоУпВРасширение("Catalogs\СпрКлассА", КореньА, КатВосстА, КатРасшА);
+Проверить(Не ПерКодА2.cfgAdded, "повторная регистрация не дублирует тег");
 Проверить(СокрЛП(ТекстФайла(П(КатВосстА, "Catalogs", "СпрКлассА", "Ext", "ObjectModule.bsl"))) = "", "ObjectModule restored пуст");
 Проверить(СокрЛП(ТекстФайла(П(КатВосстА, "Catalogs", "СпрКлассА", "Ext", "ManagerModule.bsl"))) = "", "ManagerModule restored пуст");
 ПутьМФормВосстА = П(П(КатВосстА, "Catalogs", "СпрКлассА", "Forms", "ФормаЭлемента"), "Ext", "Form", "Module.bsl");
