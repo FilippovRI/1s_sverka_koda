@@ -1,4 +1,5 @@
-﻿# откат pass 2: fair added ext (3 формы) + fair added main после iik-p2 vs meta56
+﻿# Ручной перенос (полный УП в restored, без расширения): typovaya-up/scripts/iik_manual_forms.txt
+# откат pass 2: fair added ext (3 формы) + fair added main после iik-p2 vs meta56
 # Группа 1 в exclude (p2g1e/p2g1f/p2g1g). Причины: typovaya-up/scripts/iik_pass2_exclude_todo.txt
 Documents\БольничныйЛист\Forms\ФормаДокумента\Ext\Form.xml
 Catalogs\ТорговыеТочки\Forms\ФормаЭлемента\Ext\Form.xml
