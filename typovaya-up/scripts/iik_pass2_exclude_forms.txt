@@ -1,7 +1,8 @@
 # откат pass 2: fair added ext (3 формы) + fair added main после iik-p2 vs meta56
-# Группа 1 снова в exclude (после p2g1e/p2g1f/p2g1g, не эталон). Причины: typovaya-up/scripts/iik_pass2_exclude_todo.txt
+# Группа 1 в exclude (p2g1e/p2g1f/p2g1g). Причины: typovaya-up/scripts/iik_pass2_exclude_todo.txt
 Documents\БольничныйЛист\Forms\ФормаДокумента\Ext\Form.xml
 Catalogs\ТорговыеТочки\Forms\ФормаЭлемента\Ext\Form.xml
+# Группа 2 снова в exclude (p2g2/p2g2b, 2 итерации). Причины: тот же todo.
 CommonForms\РегламентированнаяОтчетность\Ext\Form.xml
 Catalogs\Организации\Forms\ФормаСписка\Ext\Form.xml
 Catalogs\Организации\Forms\ФормаОрганизации\Ext\Form.xml
