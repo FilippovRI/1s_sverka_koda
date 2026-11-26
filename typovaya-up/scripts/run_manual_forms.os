@@ -71,7 +71,7 @@
 Иначе
 	РезУп = Новый Структура("forms, todo", 0, Новый Массив);
 КонецЕсли;
-РезВм = Новый Структура("forms, hooks, moved, prefixed, todo", 0, 0, 0, 0, Новый Массив);
+РезВм = Новый Структура("forms, hooks, moved, prefixed, helpers, todo", 0, 0, 0, 0, 0, Новый Массив);
 Если ЧерезВместо.Количество() > 0 Тогда
 	Если Тип = "" Или Пост = "" Тогда
 		Сообщить("Для &Вместо нужны -т (typovaya) и -п (БП).");
@@ -87,4 +87,4 @@
 Ч = Новый ЗаписьТекста(ОбъединитьПути(КатОтч, "iik_manual_forms_run.log"), КодировкаТекста.UTF8);
 Ч.Записать(СтрСоединить(Лог, Символы.ПС) + Символы.ПС);
 Ч.Закрыть();
-Сообщить("OK run_manual_forms keep-up=" + РезУп.forms + " vmesto=" + РезВм.forms + " hooks=" + РезВм.hooks + " moved=" + РезВм.moved + " prefixed=" + РезВм.prefixed + " todo=" + (РезУп.todo.Количество() + РезВм.todo.Количество()));
+Сообщить("OK run_manual_forms keep-up=" + РезУп.forms + " vmesto=" + РезВм.forms + " hooks=" + РезВм.hooks + " moved=" + РезВм.moved + " prefixed=" + РезВм.prefixed + " helpers=" + РезВм.helpers + " todo=" + (РезУп.todo.Количество() + РезВм.todo.Количество()));
