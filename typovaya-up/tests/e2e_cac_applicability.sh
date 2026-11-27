@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # E2E (синтетика): реальная генерация с #Если в типовом и доработкой, зависящей от модуля только БП.
-# Проверяет: &Вместо в extension нет; тело с #Если не режется CAC и уходит на ручной разбор (доработка остаётся в restored);
+# Проверяет: &Вместо в extension нет; тело с #Если не режется CAC и уходит на ручной разбор (в restored — тело БП дословно);
 # метод, чьё тело БП ссылается на модуль только БП: в restored тело БП, доработка УП — хук ИиК в extension (keptSourceBody 0);
 # cac_vs_main сверяет с restored, а не со старым up-typical; --лог-проверки глушит метод БП и переписывает хук (stubbed_methods.json).
 set -uo pipefail; cd "$(dirname "$0")/.."; OS=${OSCRIPT:-oscript}; T=$(mktemp -d); fail=0
@@ -59,7 +59,8 @@ X="$O/extension/CommonModules/ХукНабор/Ext/Module.bsl"; R="$O/restored/C
 grep -q '&ИзменениеИКонтроль("ПериодОжидания")' "$X" && { echo "FAIL: e2e #Если разрезан CAC"; fail=1; }
 grep -q '&Вместо(' "$X" && { echo "FAIL: e2e &Вместо в extension"; fail=1; }
 grep -q 'ПериодОжидания' "$X" && { echo "FAIL: e2e хук для тела с #Если (должен быть ручной разбор)"; fail=1; }
-grep -A8 'Функция ПериодОжидания' "$R" | grep -q 'Если ЭтоВеб() Тогда' || { echo "FAIL: e2e доработка #Если не осталась в restored"; fail=1; }
+grep -A8 'Функция ПериодОжидания' "$R" | grep -q '#Если ВебКлиент' || { echo "FAIL: e2e в restored нет типового #Если"; fail=1; }
+grep -A8 'Функция ПериодОжидания' "$R" | grep -q 'Если ЭтоВеб() Тогда' && { echo "FAIL: e2e тело УП не должно быть в restored"; fail=1; }
 grep -q '&ИзменениеИКонтроль("СМодулемБп")' "$X" || { echo "FAIL: e2e нет хука ИиК для метода с модулем только БП"; fail=1; }
 grep -A4 'Процедура СМодулемБп' "$R" | grep -q 'ТолькоБП.Y();' || { echo "FAIL: e2e в restored не тело БП"; fail=1; }
 grep -A4 'Процедура СМодулемБп' "$R" | grep -q 'Б = 2;' && { echo "FAIL: e2e доработка УП осталась в restored"; fail=1; }

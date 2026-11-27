@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Прогон на фикстурах. OSCRIPT можно переопределить: OSCRIPT=/path/oscript tests/run_tests.sh
-set -uo pipefail; cd "$(dirname "$0")/.."; OS=${OSCRIPT:-oscript}; OUT=$(mktemp -d); fail=0
+set -uo pipefail; cd "$(dirname "$0")/.."; OS=${OSCRIPT:-oscript}; OPM="$(dirname "$OS")/opm"; command -v "$OPM" >/dev/null 2>&1 || OPM=opm; export PATH="$(dirname "$OS"):${PATH:-}"; OUT=$(mktemp -d); fail=0
+( cd v2 && "$OPM" install --dev -l >/dev/null 2>&1 && "$OPM" build >/dev/null 2>&1 && TMP=$(mktemp -d) && unzip -q typovaya-up-2.0.0.ospx -d "$TMP" && unzip -qo "$TMP/content.zip" -d "$TMP/pkg" && cp "$TMP/pkg/lib.config" lib.config && ln -sfn ../../tests/testlib oscript_modules/testlib 2>/dev/null || true && $OS tasks/smoke.os ) || { echo "FAIL: v2 smoke"; fail=1; }
+( cd v2 && $OS tasks/test.os ) || { echo "FAIL: v2 oneunit"; fail=1; }
 $OS src/Главный.os >/dev/null; [ $? -eq 1 ] || { echo "FAIL: без аргументов код должен быть 1"; fail=1; }
 $OS tests/test_hooks.os || { echo "FAIL: unit hooks"; fail=1; }
 $OS tests/test_parse.os || { echo "FAIL: unit parse"; fail=1; }
@@ -20,6 +22,8 @@ $OS tests/test_self_check.os || { echo "FAIL: unit self check"; fail=1; }
 $OS tests/test_ibcmd_extension.os || { echo "FAIL: unit ibcmd extension"; fail=1; }
 $OS tests/test_extension_helpers.os || { echo "FAIL: unit extension helpers"; fail=1; }
 $OS tests/test_restored_refs.os || { echo "FAIL: unit restored refs"; fail=1; }
+$OS tests/test_deleted_refs.os || { echo "FAIL: deleted refs"; fail=1; }
+$OS tests/test_form_smoke.os || { echo "FAIL: form smoke"; fail=1; }
 $OS tests/test_reverse_build.os || { echo "FAIL: unit reverse build"; fail=1; }
 $OS tests/test_function_hooks.os || { echo "FAIL: unit function hooks"; fail=1; }
 $OS tests/test_contracts.os || { echo "FAIL: unit contracts"; fail=1; }
@@ -27,6 +31,9 @@ $OS tests/test_signature_transfer.os || { echo "FAIL: unit signature transfer"; 
 $OS tests/test_arity_unresolved.os || { echo "FAIL: unit arity/unresolved"; fail=1; }
 $OS tests/test_dynlist.os || { echo "FAIL: unit dynlist"; fail=1; }
 $OS tests/test_ext_forms.os || { echo "FAIL: unit ext forms"; fail=1; }
+$OS tests/test_programmatic_forms.os || { echo "FAIL: unit programmatic forms"; fail=1; }
+$OS tests/test_forms_bp_proto.os || { echo "FAIL: unit forms bp proto"; fail=1; }
+$OS tests/test_form_dynamiclist_guard.os || { echo "FAIL: unit dynamiclist guard"; fail=1; }
 $OS tests/test_task10.os || { echo "FAIL: unit task10"; fail=1; }
 $OS tests/test_task11.os || { echo "FAIL: unit task11"; fail=1; }
 $OS tests/test_stub_methods.os || { echo "FAIL: unit stub methods"; fail=1; }
@@ -39,6 +46,25 @@ $OS tests/test_forms_transfer.os || { echo "FAIL: unit forms transfer"; fail=1; 
 $OS tests/test_forms_restored.os || { echo "FAIL: unit forms restored"; fail=1; }
 $OS tests/test_form_meta.os || { echo "FAIL: unit form meta"; fail=1; }
 $OS tests/test_stub_objects.os || { echo "FAIL: unit stub objects"; fail=1; }
+$OS tests/test_stub_definedtype_composition.os || { echo "FAIL: stub definedtype composition"; fail=1; }
+$OS tests/test_defined_type_from_up.os || { echo "FAIL: unit defined type UP"; fail=1; }
+$OS tests/test_task_full_metadata.os || { echo "FAIL: unit task full metadata"; fail=1; }
+$OS tests/test_modcheck_closure.os || { echo "FAIL: unit modcheck closure"; fail=1; }
+$OS tests/test_main_no_autorun.os || { echo "FAIL: Главный.os no autorun on load"; fail=1; }
+$OS tests/test_modules_forms_only.os || { echo "FAIL: modules-forms-only overlay"; fail=1; }
+$OS tests/test_forms_from_up.os || { echo "FAIL: forms-from-up overlay"; fail=1; }
+$OS tests/test_extension_no_forms.os || { echo "FAIL: extension no forms check"; fail=1; }
+$OS tests/test_bp_modules_extension.os || { echo "FAIL: bp modules in extension"; fail=1; }
+$OS tests/test_extension_up_cm.os || { echo "FAIL: UP CM into extension by refs"; fail=1; }
+$OS tests/test_extension_attrs_filter.os || { echo "FAIL: extension BP attrs filter"; fail=1; }
+$OS tests/test_extension_diff_fss.os || { echo "FAIL: extension diff FSS class3"; fail=1; }
+$OS tests/test_modules_as_value.os || { echo "FAIL: CM ref without dot"; fail=1; }
+$OS tests/test_form_overlay_precheck.os || { echo "FAIL: form overlay precheck"; fail=1; }
+$OS tests/test_form_datapath_dynlist.os || { echo "FAIL: form datapath dynlist"; fail=1; }
+$OS tests/test_perf_scaffold.os || { echo "FAIL: perf scaffold copy"; fail=1; }
+$OS tests/test_only_restored.os || { echo "FAIL: only-restored"; fail=1; }
+$OS tests/test_only_extension.os || { echo "FAIL: only-extension no restored writes"; fail=1; }
+$OS tests/test_standard_commands_ext.os || { echo "FAIL: unit standard commands ext"; fail=1; }
 $OS tests/test_skeleton.os || { echo "FAIL: unit skeleton"; fail=1; }
 $OS tests/test_meta.os || { echo "FAIL: unit meta"; fail=1; }
 $OS tests/test_settings.os || { echo "FAIL: unit settings"; fail=1; }

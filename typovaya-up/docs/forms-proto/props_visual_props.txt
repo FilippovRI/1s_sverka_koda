@@ -1,0 +1,16 @@
+xml_only	Catalogs\СпособыОпределенияЦенКонтролируемыхСделок\Forms\ФормаВыбора\Ext\Form.xml	func=	vis=SearchControlLocation,SearchStringLocation,ViewStatusLocation	pic=	other=
+xml_only	Catalogs\СпособыОпределенияЦенКонтролируемыхСделок\Forms\ФормаСписка\Ext\Form.xml	func=	vis=InitialTreeView,SearchControlLocation,SearchStringLocation,ViewStatusLocation,Width	pic=	other=
+both_differ	CommonForms\РедактированиеИсторииКонтактнойИнформации\Ext\Form.xml	func=	vis=TextColor	pic=	other=
+xml_only	DataProcessors\ДокументооборотСКонтролирующимиОрганами\Forms\ИнформацияПоТребованиям\Ext\Form.xml	func=	vis=Width	pic=	other=
+xml_only	Documents\ВыгрузкаРегламентированныхОтчетов\Forms\ФормаВыбора\Ext\Form.xml	func=	vis=ScrollOnCompress	pic=	other=
+both_differ	Documents\ЗаявлениеВФССОВозмещенииВыплатРодителямДетейИнвалидов\Forms\ФормаДокумента\Ext\Form.xml	func=	vis=AutoMarkIncomplete	pic=xr:LoadTransparent,xr:Ref	other=MarkRequiredComplete
+both_differ	Documents\ОтветНаЗапросРеквизитовДляВыплатыПособия\Forms\ФормаСписка\Ext\Form.xml	func=	vis=United	pic=	other=
+both_differ	Documents\ОтветСтрахователяНаТребованиеПроверкиФСС\Forms\ФормаДокумента\Ext\Form.xml	func=	vis=Mask	pic=	other=
+xml_only	Documents\УведомлениеОКонтролируемыхСделках\Forms\ФормаВыбора\Ext\Form.xml	func=	vis=SearchControlLocation,SearchStringLocation,ViewStatusLocation	pic=	other=
+both_differ	Documents\УведомлениеОКонтролируемыхСделках\Forms\ФормаВыгрузкиВXML\Ext\Form.xml	func=	vis=CurrentRowUse	pic=	other=
+xml_only	Documents\УведомлениеОПредоставленииПолномочийПредставителю\Forms\ФормаВводаРеквизитов\Ext\Form.xml	func=	vis=Mask	pic=	other=
+xml_only	Documents\УведомлениеОПрекращенииПолномочийПредставителя\Forms\ФормаВводаРеквизитов\Ext\Form.xml	func=	vis=Mask	pic=	other=
+both_differ	InformationRegisters\ГраницыКонтролируемостиСделок\Forms\ФормаСписка\Ext\Form.xml	func=	vis=CurrentRowUse,SearchControlLocation,SearchStringLocation,ViewStatusLocation,Width	pic=	other=
+both_differ	InformationRegisters\НастройкиОбменаМинобороны\Forms\ФормаЗаписи\Ext\Form.xml	func=	vis=AutoMaxWidth	pic=	other=
+xml_only	InformationRegisters\НастройкиФормированияКонтролируемыхСделок\Forms\НастройкиФормированияСпискаСделок\Ext\Form.xml	func=	vis=CurrentRowUse,Width	pic=	other=
+xml_only	InformationRegisters\РегистрацииУведомленийОПрекращенииОтпускаПоУходуЗаРебенком\Forms\ФормаЗаписи\Ext\Form.xml	func=	vis=MaxWidth	pic=	other=

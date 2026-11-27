@@ -33,9 +33,9 @@
 	+ "	<DefaultListForm>Catalog.ТестСправ.Form.Ф</DefaultListForm><Owners><xr:Item><xr:Ref>Catalog.Влад</xr:Ref></xr:Item></Owners></Properties>" + Символы.ПС
 	+ "	<ChildObjects><Attribute uuid=""x""><Properties><Name>X</Name></Properties></Attribute></ChildObjects>" + Символы.ПС
 	+ "</Catalog></MetaDataObject>";
-Зап(ОбъединитьПути(Бп, "Catalogs\ТестСправ.xml"), КатУ);
+Зап(ОбъединитьПути(Бп, "Catalogs/ТестСправ.xml"), КатУ);
 
-Форм = ОбъединитьПути(Осн, "Catalogs\Ном\Forms\Ф\Ext\Form.xml");
+Форм = ОбъединитьПути(Осн, "Catalogs/Ном/Forms/Ф/Ext/Form.xml");
 СоздатьКаталог((Новый Файл(Форм)).Путь);
 Зап(Форм, "<Form><Attributes><Attribute name=""A""><Type><v8:Type>cfg:CatalogRef.ТестСправ</v8:Type></Type></Attribute></Attributes></Form>");
 
@@ -43,7 +43,7 @@
 Заг = ЗагрузитьСценарий(ОбъединитьПути(ТекущийСценарий().Каталог, "..", "src", "ЗаготовкиОбъектовБп.os"));
 Лог = Новый Массив;
 Р = Заг.Применить(Осн, Бп, Лог);
-П = ОбъединитьПути(Осн, "Catalogs\ТестСправ.xml");
+П = ОбъединитьПути(Осн, "Catalogs/ТестСправ.xml");
 П((Новый Файл(П)).Существует(), "stub file");
 Вб = ЗагрузитьСценарий(ОбъединитьПути(ТекущийСценарий().Каталог, "..", "src", "ВозвратОбщихМодулейБп.os"));
 Т = Вб.ПрочитатьТекст(П);

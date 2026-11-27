@@ -1,0 +1,38 @@
+# Все 28 ручных форм (pack1/pass2 их пропускают).
+# Разделение после p2m3:
+#   iik_manual_keepup_forms.txt — 19 проблемных: полный модуль и Form.xml УП в restored, в расширение ничего.
+#   iik_manual_vmesto_forms.txt — 9 чистых: &Вместо и хелперы БП.
+# Справочник.БанковскиеСчета.МодульОбъекта в список не входит (не форма).
+# Не включаются (нет в exclude и без остаточных ошибок main p2g3c):
+# Documents\БольничныйЛист\Forms\ФормаСписка\Ext\Form.xml
+# Documents\ЗаявленияОПредоставленииСведенийОТрудовойДеятельности\Forms\ФормаДокумента\Ext\Form.xml
+# DataProcessors\ДокументооборотСКонтролирующимиОрганами\Forms\УправлениеОбменом\Ext\Form.xml
+#
+Documents\БольничныйЛист\Forms\ФормаДокумента\Ext\Form.xml
+Catalogs\ТорговыеТочки\Forms\ФормаЭлемента\Ext\Form.xml
+CommonForms\РегламентированнаяОтчетность\Ext\Form.xml
+Catalogs\Организации\Forms\ФормаСписка\Ext\Form.xml
+Catalogs\ОсновныеСредства\Forms\ФормаЭлемента\Ext\Form.xml
+Catalogs\ПодразделенияОрганизаций\Forms\ФормаЭлемента\Ext\Form.xml
+Catalogs\БанковскиеСчета\Forms\ФормаЭлемента\Ext\Form.xml
+Catalogs\РегистрацииВНалоговомОргане\Forms\ФормаЭлемента\Ext\Form.xml
+Catalogs\ЭлектронныеПредставленияРегламентированныхОтчетов\Forms\ФормаСписка\Ext\Form.xml
+Documents\ЗаявлениеОВвозеТоваров\Forms\ФормаДокумента\Ext\Form.xml
+Documents\КнигаПокупокДляПередачиВЭлектронномВиде\Forms\ФормаДокумента\Ext\Form.xml
+Documents\КнигаПродажДляПередачиВЭлектронномВиде\Forms\ФормаДокумента\Ext\Form.xml
+Documents\КонтролируемаяСделка\Forms\Лист1Б\Ext\Form.xml
+Documents\ПрочиеКонтролируемыеСделки\Forms\ФормаДокумента\Ext\Form.xml
+DataProcessors\ДокументооборотСКонтролирующимиОрганами\Forms\МастерФормированияЗаявкиНаПодключениеНастройкаПрограммыУпрощенный\Ext\Form.xml
+DataProcessors\ДокументооборотСКонтролирующимиОрганами\Forms\Удалить_МастерФормированияЗаявкиНаИзменениеПараметровПодключения\Ext\Form.xml
+DataProcessors\ДокументооборотСКонтролирующимиОрганами\Forms\Удалить_МастерФормированияЗаявкиНаПодключениеНастройкаПрограммыУпрощенный\Ext\Form.xml
+InformationRegisters\ПараметрыТорговыхТочек\Forms\ФормаЗаписи\Ext\Form.xml
+Catalogs\ДоверенностиНалогоплательщика\Forms\ФормаВводаДоверенности\Ext\Form.xml
+Catalogs\ДоверенностиНалогоплательщика\Forms\ФормаЗагрузкиДоверенностей\Ext\Form.xml
+Catalogs\ДоговорыКонтрагентов\Forms\ФормаВыбора\Ext\Form.xml
+Catalogs\ДоговорыКонтрагентов\Forms\ФормаСписка\Ext\Form.xml
+Catalogs\Организации\Forms\МастерСозданияНалогоплательщика\Ext\Form.xml
+Catalogs\Организации\Forms\ФормаОрганизации\Ext\Form.xml
+Catalogs\ОсновныеСредства\Forms\ФормаГрупповогоСоздания\Ext\Form.xml
+Catalogs\ПодразделенияОрганизаций\Forms\ФормаСписка\Ext\Form.xml
+Catalogs\Сотрудники\Forms\ФормаСписка\Ext\Form.xml
+Catalogs\СпособыОпределенияЦенКонтролируемыхСделок\Forms\ФормаЭлемента\Ext\Form.xml

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses">
+	<Catalog uuid="bb-2222-2222-2222-222222222222">
+		<InternalInfo>
+			<xr:GeneratedType name="CatalogObject.ДубльInternalInfo" category="Object">
+				<xr:TypeId>f99fe44f-f0cf-4efb-9e5d-456511c699c4</xr:TypeId>
+				<xr:ValueId>b2222222-2222-2222-2222-222222222222</xr:ValueId>
+			</xr:GeneratedType>
+		</InternalInfo>
+		<Properties><Name>ДубльInternalInfo</Name></Properties>
+		<ChildObjects/>
+	</Catalog>
+</MetaDataObject>

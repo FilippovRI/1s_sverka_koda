@@ -1,0 +1,11 @@
+both_differ	Catalogs\ДокументыРеализацииПолномочийНалоговыхОрганов\Forms\ФормаЭлемента\Ext\Form.xml	func=	vis=	pic=	other=Command
+xml_only	Catalogs\ДополнительныеОтчетыИОбработки\Forms\ФормаЭлемента\Ext\Form.xml	func=	vis=	pic=	other=
+both_differ	Catalogs\МакетыПенсионныхДел\Forms\ФормаЭлемента\Ext\Form.xml	func=	vis=	pic=	other=Command
+both_differ	Catalogs\ОписиИсходящихДокументовВНалоговыеОрганы\Forms\ФормаЭлемента\Ext\Form.xml	func=	vis=	pic=	other=Command
+xml_only	Catalogs\ПерепискаСКонтролирующимиОрганами\Forms\ФормаВходящееПисьмо\Ext\Form.xml	func=	vis=	pic=	other=Command
+both_differ	Catalogs\ПерепискаСКонтролирующимиОрганами\Forms\ФормаИсходящееПисьмо\Ext\Form.xml	func=	vis=	pic=	other=Command
+both_differ	Catalogs\ЭлектронныеПредставленияРегламентированныхОтчетов\Forms\ФормаЭлемента\Ext\Form.xml	func=	vis=	pic=	other=Command
+both_differ	CommonForms\ЗагрузкаФайловОтчета\Ext\Form.xml	func=	vis=	pic=	other=Command
+xml_only	Documents\ВходящийДокументСЭДОФСС\Forms\ФормаДокумента\Ext\Form.xml	func=	vis=	pic=	other=Command
+both_differ	Documents\ЗапросНаИнформационноеОбслуживаниеНалогоплательщика\Forms\ФормаДокумента\Ext\Form.xml	func=	vis=	pic=	other=Command
+both_differ	Documents\УведомлениеОПолучателеДокументов\Forms\ФормаДокумента\Ext\Form.xml	func=	vis=	pic=	other=Command
